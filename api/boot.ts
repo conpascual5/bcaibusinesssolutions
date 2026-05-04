@@ -1,14 +1,14 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "./router";
-import { createContext } from "./context";
-import { env } from "./lib/env";
+import { appRouter } from "./router.js";
+import { createContext } from "./context.js";
+import { env } from "./lib/env.js";
 
 const app = new Hono();
 
 // Health check endpoint - lets frontend verify API is reachable
-import { testDbConnection } from "./queries/connection";
+import { testDbConnection } from "./queries/connection.js";
 app.get("/api/health", async (c) => {
   const dbOk = await testDbConnection();
   return c.json({
@@ -24,7 +24,7 @@ app.get("/api/fal-debug", async (c) => {
   const apiKey = c.req.query("apiKey");
   if (!apiKey) return c.json({ error: "Missing apiKey query param" }, 400);
 
-  const { testFalEndpoints } = await import("./fal-debug");
+  const { testFalEndpoints } = await import("./fal-debug.js");
   const results = await testFalEndpoints(apiKey);
   return c.json({ results });
 });
@@ -81,7 +81,7 @@ export default app;
 // Only start the Node server when NOT on Vercel
 if (env.isProduction && !process.env.VERCEL) {
   const { serve } = await import("@hono/node-server");
-  const { serveStaticFiles } = await import("./lib/vite");
+  const { serveStaticFiles } = await import("./lib/vite.js");
   serveStaticFiles(app);
 
   const port = parseInt(process.env.PORT || "3000");

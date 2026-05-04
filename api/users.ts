@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, adminQuery, authedQuery } from "./middleware";
-import { getDb } from "./queries/connection";
-import { users } from "../db/schema";
+import { createRouter, adminQuery, authedQuery } from "./middleware.js";
+import { getDb } from "./queries/connection.js";
+import { users } from "../db/schema.js";
 import { desc, eq } from "drizzle-orm";
 
 export const userRouter = createRouter({
