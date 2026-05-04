@@ -1,13 +1,14 @@
-import { drizzle } from "drizzle-orm/libsql";
-import { createClient } from "@libsql/client";
+import initSqlJs, { Database as SqlJsDatabase } from "sql.js";
+import { drizzle } from "drizzle-orm/sql-js";
 import { env } from "../lib/env.js";
 import * as schema from "../../db/schema.js";
 import * as relations from "../../db/relations.js";
 import path from "path";
-import { mkdirSync } from "fs";
+import fs from "fs";
 
 let db: ReturnType<typeof drizzle> | null = null;
 let initPromise: Promise<void> | null = null;
+let sqlJsDb: SqlJsDatabase | null = null;
 
 async function ensureTables(d: ReturnType<typeof drizzle>) {
   try {
@@ -88,28 +89,57 @@ async function ensureTables(d: ReturnType<typeof drizzle>) {
   )`);
 }
 
-export function getDb() {
+export async function getDb() {
   if (!db) {
+    const SQL = await initSqlJs();
+    
     // On Vercel, use /tmp which is writable; otherwise use local data dir
     const dbDir = env.isVercel ? "/tmp/data" : path.resolve(process.cwd(), "data");
     const dbPath = path.resolve(dbDir, "app.db");
 
     // Ensure directory exists
     try {
-      mkdirSync(dbDir, { recursive: true });
+      fs.mkdirSync(dbDir, { recursive: true });
     } catch {}
 
-    const client = createClient({
-      url: `file:${dbPath}`,
-    });
-    const newDb = drizzle(client, {
+    let buffer: Buffer | null = null;
+    try {
+      buffer = fs.readFileSync(dbPath);
+    } catch {
+      // File doesn't exist yet, will create new DB
+    }
+
+    sqlJsDb = new SQL.Database(buffer);
+    
+    // Auto-save to disk periodically
+    const saveDb = () => {
+      try {
+        if (sqlJsDb) {
+          const data = sqlJsDb.export();
+          fs.mkdirSync(dbDir, { recursive: true });
+          fs.writeFileSync(dbPath, Buffer.from(data));
+        }
+      } catch (err) {
+        console.error("[DB] Save failed:", err);
+      }
+    };
+
+    // Save on process exit
+    process.on("exit", saveDb);
+    // Save on SIGINT/SIGTERM
+    process.on("SIGINT", () => { saveDb(); process.exit(0); });
+    process.on("SIGTERM", () => { saveDb(); process.exit(0); });
+
+    const newDb = drizzle(sqlJsDb, {
       schema: { ...schema, ...relations },
       logger: false,
     }) as any;
     db = newDb;
 
-    // Start table creation and store the promise so waitForDb can await it
-    initPromise = ensureTables(newDb).catch((err) => {
+    // Start table creation and store the promise
+    initPromise = ensureTables(newDb).then(() => {
+      saveDb(); // Save after creating tables
+    }).catch((err) => {
       console.error("[DB] Table creation failed:", err);
       throw err;
     });
@@ -119,7 +149,7 @@ export function getDb() {
 
 /** Wait for the database to be fully initialized (tables created) */
 export async function waitForDb() {
-  getDb();
+  await getDb();
   if (initPromise) await initPromise;
 }
 
@@ -129,13 +159,13 @@ export async function waitForDb() {
  */
 export async function getDbReady() {
   await waitForDb();
-  return getDb();
+  return db!;
 }
 
 export async function testDbConnection(): Promise<boolean> {
   try {
     await waitForDb();
-    const d = getDb();
+    const d = db!;
     await d.run("SELECT 1");
     return true;
   } catch (err) {
