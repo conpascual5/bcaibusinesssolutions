@@ -23,10 +23,10 @@ app.post("/api/analyze-copy", async (c) => {
     let apiKey = env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
       try {
-        const { getDb } = await import("./queries/connection.js");
+        const { getDbReady } = await import("./queries/connection.js");
         const { settings } = await import("../db/schema.js");
         const { eq } = await import("drizzle-orm");
-        const db = getDb();
+        const db = await getDbReady();
         const [row] = await db.select().from(settings).where(eq(settings.key, "deepseek_api_key")).limit(1);
         apiKey = row?.value ?? "";
       } catch {
@@ -199,11 +199,10 @@ app.post("/api/reactivate-admin", async (c) => {
   try {
     const { email } = await c.req.json();
     if (!email) return c.json({ error: "Email required" }, 400);
-    const { getDb, waitForDb } = await import("./queries/connection.js");
+    const { getDbReady } = await import("./queries/connection.js");
     const { users } = await import("../db/schema.js");
     const { eq } = await import("drizzle-orm");
-    await waitForDb();
-    const db = getDb();
+    const db = await getDbReady();
     const [admin] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!admin) return c.json({ error: "User not found" }, 404);
     await db.update(users).set({ isActive: true }).where(eq(users.email, email));
@@ -216,9 +215,8 @@ app.post("/api/reactivate-admin", async (c) => {
 // Setup endpoint - creates database tables directly
 app.post("/api/setup", async (c) => {
   try {
-    const { getDb, waitForDb } = await import("./queries/connection.js");
-    await waitForDb();
-    const db = getDb();
+    const { getDbReady } = await import("./queries/connection.js");
+    const db = await getDbReady();
 
     await db.run(`CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -301,9 +299,8 @@ app.post("/api/setup", async (c) => {
 // Setup-tables endpoint - creates tables directly via DB connection
 app.post("/api/setup-tables", async (c) => {
   try {
-    const { getDb, waitForDb } = await import("./queries/connection.js");
-    await waitForDb();
-    const db = getDb();
+    const { getDbReady } = await import("./queries/connection.js");
+    const db = await getDbReady();
 
     // Create tables using raw SQL (SQLite syntax)
     await db.run(`

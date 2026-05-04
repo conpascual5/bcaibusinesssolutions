@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware.js";
-import { getDb, waitForDb } from "./queries/connection.js";
+import { getDbReady } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { hashPassword, verifyPassword, signJWT } from "./auth-utils.js";
@@ -15,8 +15,7 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      await waitForDb();
-      const db = getDb();
+      const db = await getDbReady();
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) {
         throw new Error("Email already registered");
@@ -43,8 +42,7 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      await waitForDb();
-      const db = getDb();
+      const db = await getDbReady();
       const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (!user) throw new Error("Invalid credentials");
       if (!user.isActive) throw new Error("Account deactivated");
@@ -62,8 +60,7 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      await waitForDb();
-      const db = getDb();
+      const db = await getDbReady();
       const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (!user) {
         // Don't reveal whether email exists — return success either way
@@ -78,8 +75,7 @@ export const authRouter = createRouter({
 
   me: publicQuery.query(async ({ ctx }) => {
     if (!ctx.user) return null;
-    await waitForDb();
-    const db = getDb();
+    const db = await getDbReady();
     const [user] = await db.select().from(users).where(eq(users.id, ctx.user.userId)).limit(1);
     if (!user || !user.isActive) return null;
     return { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin };
