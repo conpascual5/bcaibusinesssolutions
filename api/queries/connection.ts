@@ -17,6 +17,13 @@ export function getDb() {
       schema: { ...schema, ...relations },
       logger: false,
     }) as any;
+
+    // Auto-migrate: add phone column if it doesn't exist
+    try {
+      (db as any).run(`ALTER TABLE users ADD COLUMN phone TEXT`);
+    } catch {
+      // Column already exists — ignore
+    }
   }
   return db!;
 }
