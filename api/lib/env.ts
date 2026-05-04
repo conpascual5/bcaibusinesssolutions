@@ -1,7 +1,14 @@
-// Only load dotenv in non-Vercel environments
+// Load dotenv synchronously — only in non-Vercel environments
 if (!process.env.VERCEL) {
-  const { config } = await import("dotenv");
-  config();
+  try {
+    // Use createRequire for ESM compatibility
+    const { createRequire } = await import("module");
+    const require = createRequire(import.meta.url);
+    const dotenv = require("dotenv");
+    dotenv.config();
+  } catch {
+    // dotenv not available, that's fine
+  }
 }
 
 function required(name: string): string {
