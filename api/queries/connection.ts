@@ -1,11 +1,8 @@
 import { env } from "../lib/env.js";
 
 // Use Neon/Postgres when DATABASE_URL is set (works on both Vercel and local)
-// Falls back to SQLite when no DATABASE_URL is configured
+// Falls back to SQLite only when no DATABASE_URL is configured (local dev only)
 const useNeon = !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
-
-// Track whether Neon has been tried and failed — fall back to SQLite
-let neonFailed = false;
 
 async function getNeonDbReady() {
   const { getNeonDbReady: neonGetReady } = await import("./neon-connection.js");
@@ -38,37 +35,22 @@ async function testSqliteConnection() {
 }
 
 export async function getDbReady() {
-  if (useNeon && !neonFailed) {
-    try {
-      return await getNeonDbReady();
-    } catch (err: any) {
-      console.error("[DB] Neon connection failed, falling back to SQLite:", err?.message ?? err);
-      neonFailed = true;
-    }
+  if (useNeon) {
+    return getNeonDbReady();
   }
   return getSqliteDbReady();
 }
 
 export async function waitForDb() {
-  if (useNeon && !neonFailed) {
-    try {
-      return await waitForNeonDb();
-    } catch (err: any) {
-      console.error("[DB] Neon wait failed, falling back to SQLite:", err?.message ?? err);
-      neonFailed = true;
-    }
+  if (useNeon) {
+    return waitForNeonDb();
   }
   return waitForSqliteDb();
 }
 
 export async function testDbConnection(): Promise<boolean> {
-  if (useNeon && !neonFailed) {
-    try {
-      return await testNeonConnection();
-    } catch (err: any) {
-      console.error("[DB] Neon test failed, falling back to SQLite:", err?.message ?? err);
-      neonFailed = true;
-    }
+  if (useNeon) {
+    return testNeonConnection();
   }
   return testSqliteConnection();
 }
