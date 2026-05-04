@@ -29,14 +29,12 @@ app.get("/api/fal-debug", async (c) => {
   return c.json({ results });
 });
 
-app.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));
-
-// Image upload/samples endpoints (must be before bodyLimit for DELETE to work)
+// Image upload/samples endpoints
 import { writeFile, mkdir } from "fs/promises";
 import { join, extname } from "path";
 import { randomUUID } from "crypto";
 
-app.post("/api/upload", async (c) => {
+app.post("/api/upload", bodyLimit({ maxSize: 50 * 1024 * 1024 }), async (c) => {
   try {
     const formData = await c.req.formData();
     const file = formData.get("file") as File | null;
