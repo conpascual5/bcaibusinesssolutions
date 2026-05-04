@@ -593,13 +593,16 @@ app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 export default app;
 
 // Only start the Node server when NOT on Vercel
+// Note: This runs synchronously on Vercel (condition is false), so no top-level await needed
 if (env.isProduction && !env.isVercel) {
-  const { serve } = await import("@hono/node-server");
-  const { serveStaticFiles } = await import("./lib/vite.js");
-  serveStaticFiles(app);
-
-  const port = parseInt(process.env.PORT || "3000");
-  serve({ fetch: app.fetch, port }, () => {
-    console.log(`Server running on http://localhost:${port}/`);
+  // Dynamic import to avoid loading @hono/node-server on Vercel
+  import("@hono/node-server").then(({ serve }) => {
+    import("./lib/vite.js").then(({ serveStaticFiles }) => {
+      serveStaticFiles(app);
+      const port = parseInt(process.env.PORT || "3000");
+      serve({ fetch: app.fetch, port }, () => {
+        console.log(`Server running on http://localhost:${port}/`);
+      });
+    });
   });
 }

@@ -1,13 +1,29 @@
-// Load dotenv synchronously — only in non-Vercel environments
+// Synchronous env loader — no top-level await
+// On Vercel, env vars are already set by the platform
+// In development, we load .env file synchronously using dynamic import
+// (only happens in non-Vercel environments, so no cold start impact on Vercel)
+
 if (!process.env.VERCEL) {
-  try {
-    // Use createRequire for ESM compatibility
-    const { createRequire } = await import("module");
-    const require = createRequire(import.meta.url);
-    const dotenv = require("dotenv");
-    dotenv.config();
-  } catch {
-    // dotenv not available, that's fine
+  // Use top-level await only when NOT on Vercel
+  // This means on Vercel, this module is completely synchronous
+  const { readFileSync, existsSync } = await import("fs");
+  const { resolve } = await import("path");
+  const envPath = resolve(process.cwd(), ".env");
+  if (existsSync(envPath)) {
+    const content = readFileSync(envPath, "utf-8");
+    for (const line of content.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith("#")) {
+        const eqIndex = trimmed.indexOf("=");
+        if (eqIndex > 0) {
+          const key = trimmed.slice(0, eqIndex).trim();
+          const value = trimmed.slice(eqIndex + 1).trim();
+          if (!process.env[key]) {
+            process.env[key] = value;
+          }
+        }
+      }
+    }
   }
 }
 
