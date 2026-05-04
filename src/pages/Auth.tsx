@@ -29,7 +29,12 @@ export default function Auth() {
     },
     onError: (err) => {
       console.error('[auth] Login error:', err);
-      setError(err.message || 'Login failed. Please check your credentials.');
+      const msg = err.message || '';
+      if (msg.includes('Database connection failed') || msg.includes('timed out') || msg.includes('504')) {
+        setError('The server is taking too long to respond. Please try again in a few seconds.');
+      } else {
+        setError(msg || 'Login failed. Please check your credentials.');
+      }
     },
   });
 

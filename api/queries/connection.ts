@@ -4,9 +4,17 @@ import { getNeonDbReady, waitForNeonDb, testNeonConnection } from "./neon-connec
 // If DATABASE_URL is a Postgres connection string, use Neon. Otherwise fall back to SQLite.
 const useNeon = !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
 
+// Track whether Neon has been tried and failed — fall back to SQLite
+let neonFailed = false;
+
 export async function getDbReady() {
-  if (useNeon) {
-    return getNeonDbReady();
+  if (useNeon && !neonFailed) {
+    try {
+      return await getNeonDbReady();
+    } catch (err: any) {
+      console.error("[DB] Neon connection failed, falling back to SQLite:", err?.message ?? err);
+      neonFailed = true;
+    }
   }
   // Dynamic import for SQLite — only loaded when not using Neon
   const { getDbReady: getSqliteDbReady } = await import("./sqlite-connection.js");
@@ -14,16 +22,26 @@ export async function getDbReady() {
 }
 
 export async function waitForDb() {
-  if (useNeon) {
-    return waitForNeonDb();
+  if (useNeon && !neonFailed) {
+    try {
+      return await waitForNeonDb();
+    } catch (err: any) {
+      console.error("[DB] Neon wait failed, falling back to SQLite:", err?.message ?? err);
+      neonFailed = true;
+    }
   }
   const { waitForDb: waitForSqliteDb } = await import("./sqlite-connection.js");
   return waitForSqliteDb();
 }
 
 export async function testDbConnection(): Promise<boolean> {
-  if (useNeon) {
-    return testNeonConnection();
+  if (useNeon && !neonFailed) {
+    try {
+      return await testNeonConnection();
+    } catch (err: any) {
+      console.error("[DB] Neon test failed, falling back to SQLite:", err?.message ?? err);
+      neonFailed = true;
+    }
   }
   const { testDbConnection: testSqliteConnection } = await import("./sqlite-connection.js");
   return testSqliteConnection();

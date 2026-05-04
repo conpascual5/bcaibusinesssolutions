@@ -109,6 +109,21 @@ export async function getNeonDb() {
   return db!;
 }
 
+// Test the Neon connection with a short timeout
+export async function testNeonConnectionQuick(): Promise<boolean> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    const d = await getNeonDb();
+    await (d as any).execute("SELECT 1");
+    clearTimeout(timeout);
+    return true;
+  } catch (err) {
+    console.error("[Neon DB] Quick connection test failed:", err);
+    return false;
+  }
+}
+
 export async function waitForNeonDb() {
   await getNeonDb();
   if (initPromise) {
@@ -120,7 +135,10 @@ export async function waitForNeonDb() {
 }
 
 export async function getNeonDbReady() {
-  await waitForNeonDb();
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error("Neon connection timed out after 8 seconds")), 8000)
+  );
+  await Promise.race([waitForNeonDb(), timeoutPromise]);
   return db!;
 }
 
