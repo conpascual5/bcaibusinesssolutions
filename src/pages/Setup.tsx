@@ -23,34 +23,40 @@ export default function Setup() {
       // Try the API setup endpoint first
       const res = await fetch("/api/setup", { method: "POST" });
       const contentType = res.headers.get("content-type") || "";
+      let data: any;
       if (contentType.includes("application/json")) {
-        const data = await res.json();
-        if (data.success) {
-          setPushResult("success");
-          setPushMessage(data.message);
-        } else {
-          // Try fallback endpoint
-          const fallbackRes = await fetch("/api/setup-tables", { method: "POST" });
-          const fbContentType = fallbackRes.headers.get("content-type") || "";
-          if (fbContentType.includes("application/json")) {
-            const fallbackData = await fallbackRes.json();
-            if (fallbackData.success) {
-              setPushResult("success");
-              setPushMessage(fallbackData.message);
-            } else {
-              setPushResult("error");
-              setPushMessage(fallbackData.error || data.error || "Unknown error");
-            }
-          } else {
-            const text = await fallbackRes.text();
-            setPushResult("error");
-            setPushMessage(`Fallback returned non-JSON (${fallbackRes.status}): ${text.slice(0, 200)}`);
-          }
-        }
+        data = await res.json();
       } else {
         const text = await res.text();
         setPushResult("error");
         setPushMessage(`Server returned non-JSON response (${res.status}): ${text.slice(0, 200)}`);
+        setPushing(false);
+        return;
+      }
+      if (data.success) {
+        setPushResult("success");
+        setPushMessage(data.message);
+      } else {
+        // Try fallback endpoint
+        const fallbackRes = await fetch("/api/setup-tables", { method: "POST" });
+        const fbContentType = fallbackRes.headers.get("content-type") || "";
+        let fallbackData: any;
+        if (fbContentType.includes("application/json")) {
+          fallbackData = await fallbackRes.json();
+        } else {
+          const text = await fallbackRes.text();
+          setPushResult("error");
+          setPushMessage(`Fallback returned non-JSON (${fallbackRes.status}): ${text.slice(0, 200)}`);
+          setPushing(false);
+          return;
+        }
+        if (fallbackData.success) {
+          setPushResult("success");
+          setPushMessage(fallbackData.message);
+        } else {
+          setPushResult("error");
+          setPushMessage(fallbackData.error || data.error || "Unknown error");
+        }
       }
     } catch (err) {
       setPushResult("error");

@@ -214,7 +214,7 @@ app.post("/api/reactivate-admin", async (c) => {
 
 // Setup endpoint - creates database tables
 // Uses Neon serverless driver when DATABASE_URL is a Postgres URL
-// Falls back to SQLite connection for local development
+// Falls back to SQLite for local development
 app.post("/api/setup", async (c) => {
   try {
     const { env } = await import("./lib/env.js");
@@ -302,10 +302,28 @@ app.post("/api/setup", async (c) => {
         );
       `);
     } else {
-      // Local SQLite — use the existing connection
-      const { getDbReady } = await import("./queries/connection.js");
-      const db = await getDbReady();
-      await db.run(`CREATE TABLE IF NOT EXISTS users (
+      // Local SQLite — use sql.js directly (no dependency on connection module)
+      const initSqlJs = (await import("sql.js")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+
+      const dbDir = path.resolve(process.cwd(), "data");
+      const dbPath = path.resolve(dbDir, "app.db");
+
+      // Ensure directory exists
+      fs.mkdirSync(dbDir, { recursive: true });
+
+      let buffer = null;
+      try {
+        buffer = fs.readFileSync(dbPath);
+      } catch {
+        // No existing DB file, will create from scratch
+      }
+
+      const SQL = await initSqlJs();
+      const sqlJsDb = new SQL.Database(buffer);
+
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
@@ -314,7 +332,7 @@ app.post("/api/setup", async (c) => {
         is_admin INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS searches (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS searches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
         product_query TEXT NOT NULL,
@@ -322,13 +340,13 @@ app.post("/api/setup", async (c) => {
         user_agent TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS settings (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         key TEXT NOT NULL UNIQUE,
         value TEXT NOT NULL,
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS images (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         url TEXT NOT NULL,
@@ -338,21 +356,21 @@ app.post("/api/setup", async (c) => {
         content_type TEXT NOT NULL DEFAULT 'image/jpeg',
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS chats (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         title TEXT NOT NULL DEFAULT 'New Chat',
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS messages (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         chat_id INTEGER NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS generated_images (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS generated_images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         product_image_url TEXT NOT NULL,
@@ -365,7 +383,7 @@ app.post("/api/setup", async (c) => {
         status TEXT NOT NULL DEFAULT 'pending',
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         user_name TEXT NOT NULL,
@@ -375,6 +393,11 @@ app.post("/api/setup", async (c) => {
         is_read INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
+
+      // Save to disk
+      const data = sqlJsDb.export();
+      fs.writeFileSync(dbPath, Buffer.from(data));
+      sqlJsDb.close();
     }
 
     return c.json({ success: true, message: "Database tables created successfully" });
@@ -472,10 +495,28 @@ app.post("/api/setup-tables", async (c) => {
         );
       `);
     } else {
-      // Local SQLite — use the existing connection
-      const { getDbReady } = await import("./queries/connection.js");
-      const db = await getDbReady();
-      await db.run(`CREATE TABLE IF NOT EXISTS users (
+      // Local SQLite — use sql.js directly (no dependency on connection module)
+      const initSqlJs = (await import("sql.js")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+
+      const dbDir = path.resolve(process.cwd(), "data");
+      const dbPath = path.resolve(dbDir, "app.db");
+
+      // Ensure directory exists
+      fs.mkdirSync(dbDir, { recursive: true });
+
+      let buffer = null;
+      try {
+        buffer = fs.readFileSync(dbPath);
+      } catch {
+        // No existing DB file, will create from scratch
+      }
+
+      const SQL = await initSqlJs();
+      const sqlJsDb = new SQL.Database(buffer);
+
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
@@ -484,7 +525,7 @@ app.post("/api/setup-tables", async (c) => {
         is_admin INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS searches (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS searches (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
         product_query TEXT NOT NULL,
@@ -492,13 +533,13 @@ app.post("/api/setup-tables", async (c) => {
         user_agent TEXT,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS settings (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         key TEXT NOT NULL UNIQUE,
         value TEXT NOT NULL,
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS images (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         url TEXT NOT NULL,
@@ -508,21 +549,21 @@ app.post("/api/setup-tables", async (c) => {
         content_type TEXT NOT NULL DEFAULT 'image/jpeg',
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS chats (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         title TEXT NOT NULL DEFAULT 'New Chat',
         created_at TEXT NOT NULL DEFAULT (datetime('now')),
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS messages (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         chat_id INTEGER NOT NULL,
         role TEXT NOT NULL,
         content TEXT NOT NULL,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS generated_images (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS generated_images (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         product_image_url TEXT NOT NULL,
@@ -535,7 +576,7 @@ app.post("/api/setup-tables", async (c) => {
         status TEXT NOT NULL DEFAULT 'pending',
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
-      await db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS chat_messages (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         user_name TEXT NOT NULL,
@@ -545,6 +586,11 @@ app.post("/api/setup-tables", async (c) => {
         is_read INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
+
+      // Save to disk
+      const data = sqlJsDb.export();
+      fs.writeFileSync(dbPath, Buffer.from(data));
+      sqlJsDb.close();
     }
 
     return c.json({ success: true, message: "All tables created successfully" });
