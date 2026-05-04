@@ -1,3 +1,6 @@
+import { readFileSync, existsSync } from "fs";
+import { resolve } from "path";
+
 // Synchronous env loader — no top-level await
 // On Vercel, env vars are already set by the platform
 // In development, we load .env file synchronously
@@ -5,11 +8,9 @@
 // Only load .env in non-Vercel environments
 if (!process.env.VERCEL) {
   try {
-    const fs = require("fs");
-    const path = require("path");
-    const envPath = path.resolve(process.cwd(), ".env");
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, "utf-8");
+    const envPath = resolve(process.cwd(), ".env");
+    if (existsSync(envPath)) {
+      const content = readFileSync(envPath, "utf-8");
       for (const line of content.split("\n")) {
         const trimmed = line.trim();
         if (trimmed && !trimmed.startsWith("#")) {

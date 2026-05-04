@@ -212,91 +212,170 @@ app.post("/api/reactivate-admin", async (c) => {
   }
 });
 
-// Setup endpoint - creates database tables using Neon serverless driver
-// Uses raw neon() directly — no drizzle overhead, no SQLite fallback
+// Setup endpoint - creates database tables
+// Uses Neon serverless driver when DATABASE_URL is a Postgres URL
+// Falls back to SQLite connection for local development
 app.post("/api/setup", async (c) => {
   try {
-    const { neon } = await import("@neondatabase/serverless");
     const { env } = await import("./lib/env.js");
 
     if (!env.databaseUrl) {
       return c.json({ success: false, error: "DATABASE_URL not configured" }, 400);
     }
 
-    const sql = neon(env.databaseUrl);
+    const isNeon = env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://");
 
-    await sql(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        is_admin BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS searches (
-        id SERIAL PRIMARY KEY,
+    if (isNeon) {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(env.databaseUrl);
+
+      await sql(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          name VARCHAR(100) NOT NULL,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          is_admin BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS searches (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          product_query VARCHAR(500) NOT NULL,
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS settings (
+          id SERIAL PRIMARY KEY,
+          key VARCHAR(100) NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS images (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          url TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          width INTEGER NOT NULL DEFAULT 0,
+          height INTEGER NOT NULL DEFAULT 0,
+          content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS chats (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS messages (
+          id SERIAL PRIMARY KEY,
+          chat_id INTEGER NOT NULL,
+          role VARCHAR(20) NOT NULL,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS generated_images (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          product_image_url TEXT NOT NULL,
+          theme_title VARCHAR(200) NOT NULL,
+          prompt TEXT NOT NULL,
+          result_image_url TEXT,
+          overlay_text VARCHAR(500),
+          overlay_settings TEXT,
+          final_image_url TEXT,
+          status VARCHAR(50) NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          user_name VARCHAR(100) NOT NULL,
+          user_email VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          is_admin BOOLEAN NOT NULL DEFAULT false,
+          is_read BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+    } else {
+      // Local SQLite — use the existing connection
+      const { getDbReady } = await import("./queries/connection.js");
+      const db = await getDbReady();
+      await db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        is_admin INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
-        product_query VARCHAR(500) NOT NULL,
-        ip_address VARCHAR(100),
+        product_query TEXT NOT NULL,
+        ip_address TEXT,
         user_agent TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS settings (
-        id SERIAL PRIMARY KEY,
-        key VARCHAR(100) NOT NULL UNIQUE,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT NOT NULL UNIQUE,
         value TEXT NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS images (
-        id SERIAL PRIMARY KEY,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         url TEXT NOT NULL,
         prompt TEXT NOT NULL,
         width INTEGER NOT NULL DEFAULT 0,
         height INTEGER NOT NULL DEFAULT 0,
-        content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS chats (
-        id SERIAL PRIMARY KEY,
+        content_type TEXT NOT NULL DEFAULT 'image/jpeg',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS messages (
-        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL DEFAULT 'New Chat',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         chat_id INTEGER NOT NULL,
-        role VARCHAR(20) NOT NULL,
+        role TEXT NOT NULL,
         content TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS generated_images (
-        id SERIAL PRIMARY KEY,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS generated_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         product_image_url TEXT NOT NULL,
-        theme_title VARCHAR(200) NOT NULL,
+        theme_title TEXT NOT NULL,
         prompt TEXT NOT NULL,
         result_image_url TEXT,
-        overlay_text VARCHAR(500),
+        overlay_text TEXT,
         overlay_settings TEXT,
         final_image_url TEXT,
-        status VARCHAR(50) NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS chat_messages (
-        id SERIAL PRIMARY KEY,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        user_name VARCHAR(100) NOT NULL,
-        user_email VARCHAR(255) NOT NULL,
+        user_name TEXT NOT NULL,
+        user_email TEXT NOT NULL,
         message TEXT NOT NULL,
-        is_admin BOOLEAN NOT NULL DEFAULT false,
-        is_read BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
+        is_admin INTEGER NOT NULL DEFAULT 0,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+    }
 
     return c.json({ success: true, message: "Database tables created successfully" });
   } catch (err) {
@@ -308,87 +387,165 @@ app.post("/api/setup", async (c) => {
 // Setup-tables endpoint - same as /api/setup, kept for compatibility
 app.post("/api/setup-tables", async (c) => {
   try {
-    const { neon } = await import("@neondatabase/serverless");
     const { env } = await import("./lib/env.js");
 
     if (!env.databaseUrl) {
       return c.json({ success: false, error: "DATABASE_URL not configured" }, 400);
     }
 
-    const sql = neon(env.databaseUrl);
+    const isNeon = env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://");
 
-    await sql(`
-      CREATE TABLE IF NOT EXISTS users (
-        id SERIAL PRIMARY KEY,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        is_admin BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS searches (
-        id SERIAL PRIMARY KEY,
+    if (isNeon) {
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(env.databaseUrl);
+
+      await sql(`
+        CREATE TABLE IF NOT EXISTS users (
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(255) NOT NULL UNIQUE,
+          password_hash VARCHAR(255) NOT NULL,
+          name VARCHAR(100) NOT NULL,
+          is_active BOOLEAN NOT NULL DEFAULT true,
+          is_admin BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS searches (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER,
+          product_query VARCHAR(500) NOT NULL,
+          ip_address VARCHAR(100),
+          user_agent TEXT,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS settings (
+          id SERIAL PRIMARY KEY,
+          key VARCHAR(100) NOT NULL UNIQUE,
+          value TEXT NOT NULL,
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS images (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          url TEXT NOT NULL,
+          prompt TEXT NOT NULL,
+          width INTEGER NOT NULL DEFAULT 0,
+          height INTEGER NOT NULL DEFAULT 0,
+          content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS chats (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+          updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS messages (
+          id SERIAL PRIMARY KEY,
+          chat_id INTEGER NOT NULL,
+          role VARCHAR(20) NOT NULL,
+          content TEXT NOT NULL,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS generated_images (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          product_image_url TEXT NOT NULL,
+          theme_title VARCHAR(200) NOT NULL,
+          prompt TEXT NOT NULL,
+          result_image_url TEXT,
+          overlay_text VARCHAR(500),
+          overlay_settings TEXT,
+          final_image_url TEXT,
+          status VARCHAR(50) NOT NULL DEFAULT 'pending',
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+        CREATE TABLE IF NOT EXISTS chat_messages (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER NOT NULL,
+          user_name VARCHAR(100) NOT NULL,
+          user_email VARCHAR(255) NOT NULL,
+          message TEXT NOT NULL,
+          is_admin BOOLEAN NOT NULL DEFAULT false,
+          is_read BOOLEAN NOT NULL DEFAULT false,
+          created_at TIMESTAMP NOT NULL DEFAULT NOW()
+        );
+      `);
+    } else {
+      // Local SQLite — use the existing connection
+      const { getDbReady } = await import("./queries/connection.js");
+      const db = await getDbReady();
+      await db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        is_admin INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
-        product_query VARCHAR(500) NOT NULL,
-        ip_address VARCHAR(100),
+        product_query TEXT NOT NULL,
+        ip_address TEXT,
         user_agent TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS settings (
-        id SERIAL PRIMARY KEY,
-        key VARCHAR(100) NOT NULL UNIQUE,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT NOT NULL UNIQUE,
         value TEXT NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS images (
-        id SERIAL PRIMARY KEY,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         url TEXT NOT NULL,
         prompt TEXT NOT NULL,
         width INTEGER NOT NULL DEFAULT 0,
         height INTEGER NOT NULL DEFAULT 0,
-        content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS chats (
-        id SERIAL PRIMARY KEY,
+        content_type TEXT NOT NULL DEFAULT 'image/jpeg',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS messages (
-        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL DEFAULT 'New Chat',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         chat_id INTEGER NOT NULL,
-        role VARCHAR(20) NOT NULL,
+        role TEXT NOT NULL,
         content TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS generated_images (
-        id SERIAL PRIMARY KEY,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS generated_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
         product_image_url TEXT NOT NULL,
-        theme_title VARCHAR(200) NOT NULL,
+        theme_title TEXT NOT NULL,
         prompt TEXT NOT NULL,
         result_image_url TEXT,
-        overlay_text VARCHAR(500),
+        overlay_text TEXT,
         overlay_settings TEXT,
         final_image_url TEXT,
-        status VARCHAR(50) NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-      CREATE TABLE IF NOT EXISTS chat_messages (
-        id SERIAL PRIMARY KEY,
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      await db.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER NOT NULL,
-        user_name VARCHAR(100) NOT NULL,
-        user_email VARCHAR(255) NOT NULL,
+        user_name TEXT NOT NULL,
+        user_email TEXT NOT NULL,
         message TEXT NOT NULL,
-        is_admin BOOLEAN NOT NULL DEFAULT false,
-        is_read BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );
-    `);
+        is_admin INTEGER NOT NULL DEFAULT 0,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+    }
 
     return c.json({ success: true, message: "All tables created successfully" });
   } catch (err) {

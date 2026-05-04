@@ -20,17 +20,35 @@ export default function Setup() {
     setPushResult("idle");
     setPushMessage("");
     try {
-      // Try the API setup endpoint first (works on non-Vercel)
+      // Try the API setup endpoint first
       const res = await fetch("/api/setup", { method: "POST" });
-      const data = await res.json();
+      let data: any;
+      try {
+        data = await res.json();
+      } catch {
+        // Response wasn't JSON — read as text for debugging
+        const text = await res.text();
+        setPushResult("error");
+        setPushMessage(`Server returned non-JSON response (${res.status}): ${text.slice(0, 200)}`);
+        setPushing(false);
+        return;
+      }
       if (data.success) {
         setPushResult("success");
         setPushMessage(data.message);
       } else {
-        // On Vercel, the setup endpoint won't work, so we try direct SQL
-        // through a special endpoint that creates tables via the DB connection
+        // Try fallback endpoint
         const fallbackRes = await fetch("/api/setup-tables", { method: "POST" });
-        const fallbackData = await fallbackRes.json();
+        let fallbackData: any;
+        try {
+          fallbackData = await fallbackRes.json();
+        } catch {
+          const text = await fallbackRes.text();
+          setPushResult("error");
+          setPushMessage(`Fallback returned non-JSON (${fallbackRes.status}): ${text.slice(0, 200)}`);
+          setPushing(false);
+          return;
+        }
         if (fallbackData.success) {
           setPushResult("success");
           setPushMessage(fallbackData.message);
