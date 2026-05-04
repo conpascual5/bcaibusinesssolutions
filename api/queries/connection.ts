@@ -18,10 +18,12 @@ export function getDb() {
       connectionLimit: 5,
       enableKeepAlive: true,
       keepAliveInitialDelay: 10000,
+      ssl: {
+        rejectUnauthorized: true,
+      },
     });
 
     instance = drizzle(pool, {
-      mode: "planetscale",
       schema: fullSchema,
     });
   }
