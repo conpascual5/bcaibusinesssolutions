@@ -7,6 +7,83 @@ import { env } from "./lib/env.js";
 
 const app = new Hono();
 
+// Competitor Ad Copy Analyzer endpoint using Deepseek
+app.post("/api/analyze-copy", async (c) => {
+  try {
+    const { text, type } = await c.req.json();
+    if (!text) return c.json({ error: "No text provided" }, 400);
+
+    const apiKey = env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+    if (!apiKey) {
+      return c.json({ error: "Deepseek API key not configured. Please set DEEPSEEK_API_KEY in your .env file." }, 500);
+    }
+
+    const prompt = `You are an expert advertising analyst and copywriter. Analyze the following ${type === 'url' ? 'landing page content' : 'ad copy'} and provide:
+
+1. **Psychological Triggers Analysis**: For each of these triggers - Scarcity, Social Proof, Problem-Agitation-Solution, Urgency, Authority, Reciprocity - determine if it's being used and cite specific evidence from the text.
+
+2. **Counter-Positioning Strategies**: Suggest 3 ways to counter-position or improve this copy. For each strategy, provide:
+   - A compelling title
+   - The strategic approach
+   - A concrete example of counter-copy
+
+3. **Summary**: A brief 2-3 sentence analysis of the overall persuasion strategy.
+
+Format your response as valid JSON with this exact structure:
+{
+  "psychologicalTriggers": [
+    { "name": "Scarcity", "description": "...", "found": true/false, "evidence": "..." }
+  ],
+  "counterPositioning": [
+    { "title": "...", "strategy": "...", "example": "..." }
+  ],
+  "summary": "..."
+}
+
+TEXT TO ANALYZE:
+${text}`;
+
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages: [
+          { role: "system", content: "You are a precise JSON generator. Always respond with valid JSON only, no markdown formatting." },
+          { role: "user", content: prompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      console.error("Deepseek API error:", response.status, errText);
+      return c.json({ error: `Deepseek API error: ${response.status}` }, 500);
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      return c.json({ error: "No response from AI" }, 500);
+    }
+
+    // Parse the JSON from the response
+    const cleaned = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    const parsed = JSON.parse(cleaned);
+
+    return c.json(parsed);
+  } catch (err: any) {
+    console.error("Analyze copy error:", err);
+    return c.json({ error: err.message || "Analysis failed" }, 500);
+  }
+});
+
 // Health check endpoint - lets frontend verify API is reachable
 import { testDbConnection } from "./queries/connection.js";
 app.get("/api/health", async (c) => {

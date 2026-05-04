@@ -20,4 +20,5 @@ export const env = {
   isVercel: !!process.env.VERCEL,
   databaseUrl: required("DATABASE_URL"),
   falApiKey: process.env.FAL_API_KEY ?? "",
+  deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
 };

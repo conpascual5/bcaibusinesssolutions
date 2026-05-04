@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Crosshair, Sparkles, User, Users, Target, BarChart3, Lightbulb, LogOut, Shield, Plus, ImageIcon, Library, MessageSquare, Film, Layers } from 'lucide-react';
+import { Crosshair, Sparkles, Users, Target, BarChart3, Lightbulb, ImageIcon, MessageSquare, Film, Layers } from 'lucide-react';
 import { generateTargeting } from '@/lib/targetingEngine';
 import type { TargetingResult } from '@/lib/targetingEngine';
 import { PersonaCard, KeywordsCard, DemographicsCard, BehavioralLayerCard, WhyCard, CaptionCard, VideoScriptCard } from '@/components/ResultCards';
@@ -9,7 +9,7 @@ import { useAuth } from '@/providers/auth';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<TargetingResult | null>(null);
@@ -48,49 +48,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Branding Bar */}
-      <div className="bg-gradient-to-r from-[#1a1b2e] to-[#2d2e4f] text-white py-2 px-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <span className="text-sm font-semibold">BC AI Business Solutions</span>
-          <div className="flex items-center gap-4">
-            {user.isAdmin && (
-              <button
-                onClick={() => navigate('/admin')}
-                className="text-xs bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
-              >
-                <Shield className="w-3 h-3" />
-                Admin Panel
-              </button>
-            )}
-            <button
-              onClick={() => navigate('/library')}
-              className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
-            >
-              <Library className="w-3 h-3" />
-              Library
-            </button>
-            <button
-              onClick={() => navigate('/captions')}
-              className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              Caption Generator
-            </button>
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <User className="w-3 h-3" />
-              {user.name}
-            </div>
-            <button
-              onClick={logout}
-              className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1"
-            >
-              <LogOut className="w-3 h-3" />
-              Log Out
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <div className="max-w-4xl mx-auto px-4 pt-12 pb-8">
         <div className="text-center">

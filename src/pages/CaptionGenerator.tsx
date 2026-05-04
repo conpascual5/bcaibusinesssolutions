@@ -1,13 +1,9 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router';
-import { Upload, ArrowLeft, Sparkles, Copy, Check, MessageSquare, ImageIcon, Wand2, LogOut, User, Shield, Library } from 'lucide-react';
-import { useAuth } from '@/providers/auth';
+import { Upload, Sparkles, Copy, Check, MessageSquare, ImageIcon, Wand2 } from 'lucide-react';
 import { generateImageCaptions } from '@/lib/captionEngine';
 import type { ImageCaption } from '@/lib/captionEngine';
 
 export default function CaptionGenerator() {
-  const navigate = useNavigate();
-  const { user, logout } = useAuth();
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageDescription, setImageDescription] = useState('');
   const [captions, setCaptions] = useState<ImageCaption[]>([]);

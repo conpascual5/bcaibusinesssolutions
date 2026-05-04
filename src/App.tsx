@@ -3,11 +3,15 @@ import { useAuth } from '@/providers/auth'
 import Landing from './pages/Landing'
 import Auth from './pages/Auth'
 import Home from './pages/Home'
+import Dashboard from './pages/Dashboard'
 import CaptionGenerator from './pages/CaptionGenerator'
 import Library from './pages/Library'
 import Admin from './pages/Admin'
 import Setup from './pages/Setup'
 import Upload from './pages/Upload'
+import CompetitorAnalysis from './pages/CompetitorAnalysis'
+import Invoices from './pages/Invoices'
+import AppLayout from './components/AppLayout'
 import ChatWidget from './components/ChatWidget'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -32,16 +36,27 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppLayoutRoute({ children }: { children: React.ReactNode }) {
+  return (
+    <AppLayout>
+      {children}
+    </AppLayout>
+  );
+}
+
 export default function App() {
   return (
     <>
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
-        <Route path="/app" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/captions" element={<ProtectedRoute><CaptionGenerator /></ProtectedRoute>} />
-        <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
-        <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+        <Route path="/app" element={<ProtectedRoute><AppLayoutRoute><Dashboard /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/targeting" element={<ProtectedRoute><AppLayoutRoute><Home /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/invoices" element={<ProtectedRoute><AppLayoutRoute><Invoices /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/captions" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />
         <Route path="/setup" element={<Setup />} />
         <Route path="/upload" element={<Upload />} />
       </Routes>
