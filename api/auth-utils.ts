@@ -32,7 +32,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
       ];
 
       for (const [algo, label, data] of attempts) {
-        const digest = await crypto.subtle.digest(algo, data);
+        const digest = await crypto.subtle.digest(algo, data as BufferSource);
         const computedHex = Array.from(new Uint8Array(digest))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
