@@ -38,4 +38,16 @@ export const setupRouter = createRouter({
     const [admin] = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
     return { exists: !!admin };
   }),
+
+  reactivateAdmin: publicQuery
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const [admin] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      if (!admin) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+      }
+      await db.update(users).set({ isActive: true }).where(eq(users.email, input.email));
+      return { success: true, message: "Admin account reactivated" };
+    }),
 });

@@ -166,6 +166,41 @@ export default function Setup() {
               </p>
             </div>
           )}
+
+          {checkAdmin.data?.exists && (
+            <div className="border-t border-slate-700 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">Reactivate Admin</p>
+                  <p className="text-sm text-slate-400">
+                    If your admin account was accidentally deactivated
+                  </p>
+                </div>
+                <Button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch("/api/reactivate-admin", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ email: "conpascual5@gmail.com" }),
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        alert("Admin account reactivated! Please log in again.");
+                      } else {
+                        alert("Failed: " + (data.error || "Unknown error"));
+                      }
+                    } catch (err) {
+                      alert("Failed to reactivate: " + String(err));
+                    }
+                  }}
+                  className="bg-amber-600 hover:bg-amber-700"
+                >
+                  Reactivate Admin
+                </Button>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

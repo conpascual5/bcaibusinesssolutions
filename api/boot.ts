@@ -183,6 +183,24 @@ app.use("/api/trpc/*", async (c) => {
   });
 });
 
+// Reactivate admin endpoint - no auth required (for recovery)
+app.post("/api/reactivate-admin", async (c) => {
+  try {
+    const { email } = await c.req.json();
+    if (!email) return c.json({ error: "Email required" }, 400);
+    const { getDb } = await import("./queries/connection.js");
+    const { users } = await import("../db/schema.js");
+    const { eq } = await import("drizzle-orm");
+    const db = getDb();
+    const [admin] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!admin) return c.json({ error: "User not found" }, 404);
+    await db.update(users).set({ isActive: true }).where(eq(users.email, email));
+    return c.json({ success: true, message: "Admin account reactivated" });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
 // Setup endpoint - creates database tables directly
 app.post("/api/setup", async (c) => {
   try {
