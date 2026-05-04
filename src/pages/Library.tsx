@@ -10,7 +10,7 @@ export default function Library() {
   const [activeTab, setActiveTab] = useState<'images' | 'searches'>('images');
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const { data: images, isLoading: imagesLoading, refetch: refetchImages } = trpc.image.listMyImages.useQuery();
+  const { data: images, isLoading: imagesLoading, refetch: refetchImages } = trpc.image.list.useQuery();
   const { data: searches, isLoading: searchesLoading } = trpc.search.list.useQuery();
   const deleteMutation = trpc.image.delete.useMutation({
     onSuccess: () => {
@@ -104,10 +104,10 @@ export default function Library() {
                 {userImages.map((img) => (
                   <div key={img.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-all group">
                     <div className="relative aspect-square bg-gray-100">
-                      {img.resultImageUrl || img.finalImageUrl ? (
+                      {img.url ? (
                         <img
-                          src={img.finalImageUrl || img.resultImageUrl || ''}
-                          alt={img.themeTitle}
+                          src={img.url}
+                          alt={img.prompt}
                           className="w-full h-full object-cover"
                           onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400x400?text=Image+Unavailable'; }}
                         />
@@ -116,20 +116,9 @@ export default function Library() {
                           <ImageIcon className="w-12 h-12" />
                         </div>
                       )}
-                      {img.status === 'pending' && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <Clock className="w-8 h-8 text-white animate-spin" />
-                        </div>
-                      )}
-                      {img.overlayText && (
-                        <div className="absolute top-2 left-2 px-2 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-semibold flex items-center gap-1">
-                          <Type className="w-3 h-3" />
-                          Has Text
-                        </div>
-                      )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-semibold text-gray-900 text-sm">{img.themeTitle}</h3>
+                      <p className="text-xs text-gray-500 truncate">{img.prompt}</p>
                       <p className="text-xs text-gray-400 mt-1">
                         {new Date(img.createdAt).toLocaleDateString('en-PH', {
                           month: 'short',
@@ -140,9 +129,9 @@ export default function Library() {
                         })}
                       </p>
                       <div className="flex items-center gap-2 mt-3">
-                        {img.resultImageUrl && (
+                        {img.url && (
                           <a
-                            href={img.finalImageUrl || img.resultImageUrl || ''}
+                            href={img.url}
                             download
                             target="_blank"
                             rel="noopener noreferrer"
@@ -228,7 +217,7 @@ export default function Library() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => deleteMutation.mutate({ id: deleteId })}
+                  onClick={() => deleteMutation.mutate({ imageId: deleteId })}
                   className="flex-1 py-2.5 bg-red-600 text-white rounded-xl text-sm font-semibold hover:bg-red-700 transition-colors"
                 >
                   Delete
