@@ -1,7 +1,7 @@
-import { getDbReady } from "../api/queries/connection";
-import { users } from "./schema";
+import { getDbReady } from "../api/queries/connection.js";
+import { users } from "./schema.js";
 import { eq } from "drizzle-orm";
-import { hashPassword } from "../api/auth-utils";
+import { hashPassword } from "../api/auth-utils.js";
 
 async function seed() {
   const db = await getDbReady();
