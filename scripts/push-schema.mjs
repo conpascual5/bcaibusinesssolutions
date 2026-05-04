@@ -65,8 +65,8 @@ async function main() {
   await connection.execute(`
     CREATE TABLE IF NOT EXISTS settings (
       id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      key VARCHAR(100) NOT NULL UNIQUE,
-      value TEXT NOT NULL,
+      \`key\` VARCHAR(100) NOT NULL UNIQUE,
+      \`value\` TEXT NOT NULL,
       updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `);
