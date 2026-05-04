@@ -18,7 +18,7 @@ export const env = {
   jwtSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
   isVercel: !!process.env.VERCEL,
-  databaseUrl: required("DATABASE_URL"),
+  databaseUrl: process.env.DATABASE_URL ?? "",
   falApiKey: process.env.FAL_API_KEY ?? "",
   deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
 };

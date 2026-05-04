@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware.js";
-import { getDb } from "./queries/connection.js";
+import { getDb, waitForDb } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { hashPassword, verifyPassword, signJWT } from "./auth-utils.js";
@@ -15,6 +15,7 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
+      await waitForDb();
       const db = getDb();
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) {
@@ -42,6 +43,7 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
+      await waitForDb();
       const db = getDb();
       const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (!user) throw new Error("Invalid credentials");
@@ -60,6 +62,7 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
+      await waitForDb();
       const db = getDb();
       const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (!user) {
