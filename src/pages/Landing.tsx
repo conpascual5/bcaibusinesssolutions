@@ -183,149 +183,36 @@ export default function Landing() {
               <Film className="w-3 h-3" /> Our Work
             </span>
             <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Sample Ad Creatives</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Real Facebook Reel ads we've produced for our clients. Tap to watch!</p>
+            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Real Facebook Reel ads we've produced for our clients. Watch them play below!</p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-            <a href="https://www.facebook.com/reel/1087625110144232" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
+            {[
+              '1087625110144232',
+              '1188006866703829',
+              '3884684911675100',
+              '2674574336223850',
+              '2003294173805933',
+              '1290479858733052',
+              '1286400282694511',
+              '2139295246876817',
+              '1925363451743818',
+              '1035184015492663',
+            ].map((id) => (
+              <div key={id} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-sm hover:shadow-lg transition-shadow">
+                <div className="aspect-[9/16] relative">
+                  <iframe
+                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${id}`)}&show_text=false&width=267`}
+                    className="absolute inset-0 w-full h-full"
+                    style={{ border: 'none', overflow: 'hidden' }}
+                    scrolling="no"
+                    frameBorder="0"
+                    allowFullScreen
+                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                    title="Facebook Reel"
+                  />
                 </div>
               </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-purple-100 to-rose-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/1188006866703829" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-blue-100 to-cyan-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/3884684911675100" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-amber-100 to-orange-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/2674574336223850" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-emerald-100 to-teal-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/2003294173805933" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-violet-100 to-indigo-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/1290479858733052" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-pink-100 to-rose-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/1286400282694511" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-sky-100 to-blue-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/2139295246876817" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-lime-100 to-green-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/1925363451743818" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-fuchsia-100 to-pink-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
-            <a href="https://www.facebook.com/reel/1035184015492663" target="_blank" rel="noopener noreferrer" className="group relative overflow-hidden rounded-2xl border border-gray-200 hover:shadow-xl transition-all aspect-[9/16] bg-gray-100 block">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-10" />
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-                  <Film className="w-5 h-5 text-gray-900 ml-0.5" />
-                </div>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 p-3 z-20">
-                <p className="text-white text-xs font-bold truncate">Facebook Reel</p>
-              </div>
-              <div className="w-full h-full bg-gradient-to-br from-cyan-100 to-teal-100 flex items-center justify-center">
-                <Film className="w-8 h-8 text-gray-400" />
-              </div>
-            </a>
+            ))}
           </div>
         </div>
       </section>
