@@ -39,15 +39,15 @@ app.use("/api/trpc/*", async (c) => {
     createContext,
   });
 });
-// Setup endpoint - pushes Drizzle schema
+// Setup endpoint - creates database tables directly
 app.post("/api/setup", async (c) => {
   try {
     const { execSync } = await import("child_process");
     const { resolve } = await import("path");
     const root = resolve(process.cwd());
 
-    console.log("Running drizzle-kit push...");
-    execSync("npx drizzle-kit push", { cwd: root, stdio: "inherit", timeout: 60000 });
+    console.log("Running push-schema script...");
+    execSync("node scripts/push-schema.mjs", { cwd: root, stdio: "inherit", timeout: 30000 });
     console.log("Schema pushed successfully!");
 
     return c.json({ success: true, message: "Database tables created successfully" });
