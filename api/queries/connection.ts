@@ -1,4 +1,5 @@
-import initSqlJs, { Database as SqlJsDatabase } from "sql.js";
+import initSqlJs from "sql.js";
+import type { Database as SqlJsDatabase } from "sql.js";
 import { drizzle } from "drizzle-orm/sql-js";
 import { env } from "../lib/env.js";
 import * as schema from "../../db/schema.js";

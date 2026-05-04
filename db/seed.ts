@@ -1,10 +1,10 @@
-import { getDb } from "../api/queries/connection";
+import { getDbReady } from "../api/queries/connection";
 import { users } from "./schema";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "../api/auth-utils";
 
 async function seed() {
-  const db = getDb();
+  const db = await getDbReady();
 
   const existing = await db.select().from(users).where(eq(users.email, "conpascual5@gmail.com")).limit(1);
   if (existing.length > 0) {
