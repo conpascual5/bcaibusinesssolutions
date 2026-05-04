@@ -9,8 +9,25 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  // Try current hashing method first
   const computed = await hashPassword(password);
-  return computed === hash;
+  if (computed === hash) return true;
+
+  // Fallback: check if hash is in old hex format (salt:hash)
+  if (hash.includes(":")) {
+    const [saltHex, hashHex] = hash.split(":");
+    if (saltHex && hashHex) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(password + saltHex);
+      const digest = await crypto.subtle.digest("SHA-256", data);
+      const computedHex = Array.from(new Uint8Array(digest))
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+      return computedHex === hashHex;
+    }
+  }
+
+  return false;
 }
 
 // JWT-like token using base64 encoding (simple, no external deps)
