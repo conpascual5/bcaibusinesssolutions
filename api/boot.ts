@@ -13,9 +13,22 @@ app.post("/api/analyze-copy", async (c) => {
     const { text, type } = await c.req.json();
     if (!text) return c.json({ error: "No text provided" }, 400);
 
-    const apiKey = env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
+    // Try env var first, then fall back to database setting
+    let apiKey = env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
-      return c.json({ error: "Deepseek API key not configured. Please set DEEPSEEK_API_KEY in your .env file." }, 500);
+      try {
+        const { getDb } = await import("./queries/connection.js");
+        const { settings } = await import("../db/schema.js");
+        const { eq } = await import("drizzle-orm");
+        const db = getDb();
+        const [row] = await db.select().from(settings).where(eq(settings.key, "deepseek_api_key")).limit(1);
+        apiKey = row?.value ?? "";
+      } catch {
+        // DB lookup failed, apiKey stays empty
+      }
+    }
+    if (!apiKey) {
+      return c.json({ error: "Deepseek API key not configured. Ask an admin to set it in Settings." }, 500);
     }
 
     const prompt = `You are an expert advertising analyst and copywriter. Analyze the following ${type === 'url' ? 'landing page content' : 'ad copy'} and provide:

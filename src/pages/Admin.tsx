@@ -11,11 +11,16 @@ export default function Admin() {
   const [selectedChatUser, setSelectedChatUser] = useState<number | null>(null);
   const [replyText, setReplyText] = useState('');
   const [apiKey, setApiKey] = useState('');
+  const [deepseekKey, setDeepseekKey] = useState('');
 
   const { data: debugAuth } = trpc.debug.auth.useQuery();
   const { data: usersList, refetch: refetchUsers } = trpc.user.list.useQuery();
   const { data: apiKeyData } = trpc.settings.getApiKey.useQuery();
+  const { data: deepseekKeyData } = trpc.settings.getDeepseekKey.useQuery();
   const setApiKeyMutation = trpc.settings.setApiKey.useMutation({
+    onSuccess: () => refetchUsers(),
+  });
+  const setDeepseekKeyMutation = trpc.settings.setDeepseekKey.useMutation({
     onSuccess: () => refetchUsers(),
   });
 
@@ -162,6 +167,36 @@ export default function Admin() {
                   className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Save API Key
+                </button>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mt-6">
+              <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Settings className="w-5 h-5 text-blue-600" />
+                Deepseek API Key
+              </h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Deepseek API Key</label>
+                  <input
+                    type="password"
+                    value={deepseekKey || deepseekKeyData?.apiKey || ''}
+                    onChange={(e) => setDeepseekKey(e.target.value)}
+                    placeholder="Enter your Deepseek API key"
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    Used for AI ad copy analysis. Get your key at{' '}
+                    <a href="https://platform.deepseek.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">platform.deepseek.com</a>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setDeepseekKeyMutation.mutate({ apiKey: deepseekKey })}
+                  disabled={!deepseekKey}
+                  className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Save Deepseek Key
                 </button>
               </div>
             </div>
