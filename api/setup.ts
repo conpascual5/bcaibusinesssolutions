@@ -22,13 +22,14 @@ export const setupRouter = createRouter({
         throw new TRPCError({ code: "CONFLICT", message: "User already exists" });
       }
       const passwordHash = await hashPassword(input.password);
-      const [user] = await db.insert(users).values({
+      const result = db.insert(users).values({
         email: input.email,
         passwordHash,
         name: input.name,
         isActive: true,
         isAdmin: true,
-      }).$returningId();
+      }).returning({ id: users.id }).all();
+      const user = result[0];
       return { id: user.id, email: input.email, name: input.name, isAdmin: true };
     }),
 

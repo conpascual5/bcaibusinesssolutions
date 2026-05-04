@@ -56,14 +56,15 @@ export const imageRouter = createRouter({
       const savedImages: any[] = [];
       if (data.images) {
         for (const img of data.images) {
-          const [saved] = await db.insert(images).values({
+          const imgResult = db.insert(images).values({
             userId: ctx.user.userId,
             url: img.url,
             prompt: input.prompt,
             width: img.width ?? 0,
             height: img.height ?? 0,
             contentType: img.content_type ?? "image/jpeg",
-          }).$returningId();
+          }).returning({ id: images.id }).all();
+          const saved = imgResult[0];
           savedImages.push({ id: saved.id, url: img.url, width: img.width, height: img.height, contentType: img.content_type });
         }
       }
