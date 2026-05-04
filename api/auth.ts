@@ -78,6 +78,7 @@ export const authRouter = createRouter({
 
   me: publicQuery.query(async ({ ctx }) => {
     if (!ctx.user) return null;
+    await waitForDb();
     const db = getDb();
     const [user] = await db.select().from(users).where(eq(users.id, ctx.user.userId)).limit(1);
     if (!user || !user.isActive) return null;

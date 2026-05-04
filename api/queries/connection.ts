@@ -108,8 +108,11 @@ export function getDb() {
     }) as any;
     db = newDb;
 
-    // Ensure tables exist (fire and forget — tables are created lazily)
-    ensureTables(newDb).catch((err) => console.error("[DB] Table creation failed:", err));
+    // Start table creation and store the promise so waitForDb can await it
+    initPromise = ensureTables(newDb).catch((err) => {
+      console.error("[DB] Table creation failed:", err);
+      throw err;
+    });
   }
   return db!;
 }
@@ -118,6 +121,15 @@ export function getDb() {
 export async function waitForDb() {
   getDb();
   if (initPromise) await initPromise;
+}
+
+/**
+ * Get the database instance after ensuring tables are created.
+ * This is the preferred way to get the DB — it waits for initialization.
+ */
+export async function getDbReady() {
+  await waitForDb();
+  return getDb();
 }
 
 export async function testDbConnection(): Promise<boolean> {

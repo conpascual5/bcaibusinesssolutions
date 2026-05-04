@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, authedQuery } from "./middleware.js";
-import { getDb } from "./queries/connection.js";
+import { getDbReady } from "./queries/connection.js";
 import { images, settings } from "../db/schema.js";
 import { eq, desc } from "drizzle-orm";
 import { env } from "./lib/env.js";
 
 async function getFalKey(): Promise<string> {
-  const db = getDb();
+  const db = await getDbReady();
   const [row] = await db.select().from(settings).where(eq(settings.key, "fal_api_key")).limit(1);
   return row?.value ?? env.falApiKey ?? "";
 }
@@ -52,7 +52,7 @@ export const imageRouter = createRouter({
       const data: any = await response.json();
 
       // Save images to DB
-      const db = getDb();
+      const db = await getDbReady();
       const savedImages: any[] = [];
       if (data.images) {
         for (const img of data.images) {
@@ -77,7 +77,7 @@ export const imageRouter = createRouter({
     }),
 
   list: authedQuery.query(async ({ ctx }) => {
-    const db = getDb();
+    const db = await getDbReady();
     return db
       .select()
       .from(images)

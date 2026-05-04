@@ -199,9 +199,10 @@ app.post("/api/reactivate-admin", async (c) => {
   try {
     const { email } = await c.req.json();
     if (!email) return c.json({ error: "Email required" }, 400);
-    const { getDb } = await import("./queries/connection.js");
+    const { getDb, waitForDb } = await import("./queries/connection.js");
     const { users } = await import("../db/schema.js");
     const { eq } = await import("drizzle-orm");
+    await waitForDb();
     const db = getDb();
     const [admin] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!admin) return c.json({ error: "User not found" }, 404);
@@ -215,7 +216,8 @@ app.post("/api/reactivate-admin", async (c) => {
 // Setup endpoint - creates database tables directly
 app.post("/api/setup", async (c) => {
   try {
-    const { getDb } = await import("./queries/connection.js");
+    const { getDb, waitForDb } = await import("./queries/connection.js");
+    await waitForDb();
     const db = getDb();
 
     await db.run(`CREATE TABLE IF NOT EXISTS users (
@@ -299,7 +301,8 @@ app.post("/api/setup", async (c) => {
 // Setup-tables endpoint - creates tables directly via DB connection
 app.post("/api/setup-tables", async (c) => {
   try {
-    const { getDb } = await import("./queries/connection.js");
+    const { getDb, waitForDb } = await import("./queries/connection.js");
+    await waitForDb();
     const db = getDb();
 
     // Create tables using raw SQL (SQLite syntax)
