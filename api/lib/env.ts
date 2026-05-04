@@ -1,39 +1,6 @@
 // Synchronous env loader — no top-level await, no fs imports
 // On Vercel, env vars are already set by the platform
-// In development, Vite's envDir loads .env automatically for the client,
-// but for the API server we need to load it manually.
-//
-// We use a lazy approach: only load .env when the module is first evaluated,
-// using a dynamic import that's safe because it only runs in Node.js (not browser).
-
-// Only load .env in non-Vercel environments
-if (!process.env.VERCEL) {
-  (async () => {
-    try {
-      const fs = await import("fs");
-      const path = await import("path");
-      const envPath = path.resolve(process.cwd(), ".env");
-      if (fs.existsSync(envPath)) {
-        const content = fs.readFileSync(envPath, "utf-8");
-        for (const line of content.split("\n")) {
-          const trimmed = line.trim();
-          if (trimmed && !trimmed.startsWith("#")) {
-            const eqIndex = trimmed.indexOf("=");
-            if (eqIndex > 0) {
-              const key = trimmed.slice(0, eqIndex).trim();
-              const value = trimmed.slice(eqIndex + 1).trim();
-              if (!process.env[key]) {
-                process.env[key] = value;
-              }
-            }
-          }
-        }
-      }
-    } catch {
-      // Silently fail — env vars should already be set
-    }
-  })();
-}
+// In development, Vite's loadEnv populates process.env before the server starts
 
 function required(name: string): string {
   const value = process.env[name];
