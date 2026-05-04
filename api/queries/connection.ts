@@ -1,7 +1,8 @@
 import { env } from "../lib/env.js";
 
-// If DATABASE_URL is a Postgres connection string, use Neon. Otherwise fall back to SQLite.
-const useNeon = !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
+// On Vercel, always use SQLite (pre-seeded during build) for reliability.
+// Neon/Postgres is only used in non-Vercel environments when DATABASE_URL is set.
+const useNeon = !env.isVercel && !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
 
 // Track whether Neon has been tried and failed — fall back to SQLite
 let neonFailed = false;
