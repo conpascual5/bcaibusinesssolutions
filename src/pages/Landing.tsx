@@ -57,7 +57,6 @@ export default function Landing() {
               <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Features</a>
               <a href="#services" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Services</a>
               <a href="#how" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
-              <Link to="/upload" className="text-sm text-blue-600 hover:text-blue-800 transition-colors font-medium">Upload Images</Link>
               <Link to="/auth" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Sign In</Link>
               <Link to="/auth" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200">
                 Get Started Free
@@ -73,7 +72,6 @@ export default function Landing() {
             <a href="#features" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Features</a>
             <a href="#services" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Services</a>
             <a href="#how" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
-            <Link to="/upload" className="block text-sm text-blue-600 py-2 font-medium" onClick={() => setMobileMenuOpen(false)}>Upload Images</Link>
             <Link to="/auth" className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Get Started Free</Link>
           </div>
         )}

@@ -7,6 +7,7 @@ import {
 export const users = sqliteTable("users", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   email: text("email", { length: 255 }).notNull().unique(),
+  phone: text("phone", { length: 20 }),
   passwordHash: text("password_hash", { length: 255 }).notNull(),
   name: text("name", { length: 100 }).notNull(),
   isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),

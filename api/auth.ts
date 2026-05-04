@@ -12,6 +12,7 @@ export const authRouter = createRouter({
         email: z.string().email().max(255),
         password: z.string().min(6).max(100),
         name: z.string().min(1).max(100),
+        phone: z.string().max(20).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -23,6 +24,7 @@ export const authRouter = createRouter({
       const passwordHash = await hashPassword(input.password);
       const result = await db.insert(users).values({
         email: input.email,
+        phone: input.phone || null,
         passwordHash,
         name: input.name,
         isActive: true,
@@ -51,6 +53,26 @@ export const authRouter = createRouter({
       
       const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
       return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin } };
+    }),
+
+  forgotPassword: publicQuery
+    .input(
+      z.object({
+        email: z.string().email(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = getDb();
+      const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+      if (!user) {
+        // Don't reveal whether email exists — return success either way
+        return { success: true, message: "If that email is registered, a password reset link has been sent." };
+      }
+      // Generate a simple reset token (in production, store this in DB with expiry)
+      const resetToken = btoa(`${user.id}:${user.email}:${Date.now()}`);
+      // In a real app, you'd email this. For now, we log it and return it.
+      console.log(`[forgot-password] Reset token for ${input.email}: ${resetToken}`);
+      return { success: true, message: "If that email is registered, a password reset link has been sent." };
     }),
 
   me: publicQuery.query(async ({ ctx }) => {
