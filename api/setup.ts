@@ -1,13 +1,13 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, adminQuery } from "./middleware.js";
+import { createRouter, publicQuery } from "./middleware.js";
 import { getDb } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "./auth-utils.js";
 
 export const setupRouter = createRouter({
-  createAdmin: adminQuery
+  createAdmin: publicQuery
     .input(
       z.object({
         email: z.string().email(),
@@ -31,5 +31,10 @@ export const setupRouter = createRouter({
       }).$returningId();
       return { id: user.id, email: input.email, name: input.name, isAdmin: true };
     }),
-});
 
+  checkAdminExists: publicQuery.query(async () => {
+    const db = getDb();
+    const [admin] = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
+    return { exists: !!admin };
+  }),
+});

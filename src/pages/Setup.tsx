@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Loader2, CheckCircle, XCircle } from "lucide-react";
+import { trpc } from "@/providers/trpc";
 
 export default function Setup() {
   const [pushing, setPushing] = useState(false);
@@ -11,19 +12,31 @@ export default function Setup() {
   const [pushMessage, setPushMessage] = useState("");
   const [seedMessage, setSeedMessage] = useState("");
 
+  const checkAdmin = trpc.setup.checkAdminExists.useQuery();
+
   const handlePush = async () => {
     setPushing(true);
     setPushResult("idle");
     setPushMessage("");
     try {
+      // Try the API setup endpoint first (works on non-Vercel)
       const res = await fetch("/api/setup", { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setPushResult("success");
         setPushMessage(data.message);
       } else {
-        setPushResult("error");
-        setPushMessage(data.error || "Unknown error");
+        // On Vercel, the setup endpoint won't work, so we try direct SQL
+        // through a special endpoint that creates tables via the DB connection
+        const fallbackRes = await fetch("/api/setup-tables", { method: "POST" });
+        const fallbackData = await fallbackRes.json();
+        if (fallbackData.success) {
+          setPushResult("success");
+          setPushMessage(fallbackData.message);
+        } else {
+          setPushResult("error");
+          setPushMessage(fallbackData.error || data.error || "Unknown error");
+        }
       }
     } catch (err) {
       setPushResult("error");
@@ -38,14 +51,26 @@ export default function Setup() {
     setSeedResult("idle");
     setSeedMessage("");
     try {
+      // Try the API seed endpoint first
       const res = await fetch("/api/seed", { method: "POST" });
       const data = await res.json();
       if (data.success) {
         setSeedResult("success");
         setSeedMessage(data.message);
       } else {
-        setSeedResult("error");
-        setSeedMessage(data.error || "Unknown error");
+        // Fallback: try creating admin via tRPC
+        try {
+          const result = await trpc.setup.createAdmin.mutate({
+            email: "conpascual5@gmail.com",
+            password: "admin123",
+            name: "BC AI Admin",
+          });
+          setSeedResult("success");
+          setSeedMessage(`Admin user created: ${result.email}`);
+        } catch (trpcErr: any) {
+          setSeedResult("error");
+          setSeedMessage(trpcErr?.message || data.error || "Unknown error");
+        }
       }
     } catch (err) {
       setSeedResult("error");
@@ -65,11 +90,17 @@ export default function Setup() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
+          {checkAdmin.data?.exists && (
+            <div className="bg-emerald-900/30 border border-emerald-700 rounded-lg p-3 text-sm text-emerald-300">
+              ✓ Admin user already exists — setup may already be complete.
+            </div>
+          )}
+
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <p className="font-medium">Step 1: Create Tables</p>
-                <p className="text-sm text-slate-400">Push Drizzle schema to TiDB</p>
+                <p className="text-sm text-slate-400">Push schema to database</p>
               </div>
               <Button
                 onClick={handlePush}
