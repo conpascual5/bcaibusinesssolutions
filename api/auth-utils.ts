@@ -23,6 +23,12 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
       const computedHex = Array.from(new Uint8Array(digest))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
+      console.log("[verify] saltHex:", saltHex);
+      console.log("[verify] stored hashHex:", hashHex);
+      console.log("[verify] stored hashHex length:", hashHex.length);
+      console.log("[verify] computedHex:", computedHex);
+      console.log("[verify] computedHex length:", computedHex.length);
+      console.log("[verify] match:", computedHex === hashHex);
       return computedHex === hashHex;
     }
   }
