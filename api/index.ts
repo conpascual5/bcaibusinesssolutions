@@ -5,4 +5,5 @@ export const config = {
   runtime: "nodejs",
 };
 
+// Wrap with handle() for proper Vercel integration
 export default handle(app);

@@ -1,11 +1,40 @@
 import { env } from "../lib/env.js";
-import { getNeonDbReady, waitForNeonDb, testNeonConnection } from "./neon-connection.js";
 
 // If DATABASE_URL is a Postgres connection string, use Neon. Otherwise fall back to SQLite.
 const useNeon = !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
 
 // Track whether Neon has been tried and failed — fall back to SQLite
 let neonFailed = false;
+
+async function getNeonDbReady() {
+  const { getNeonDbReady: neonGetReady } = await import("./neon-connection.js");
+  return neonGetReady();
+}
+
+async function waitForNeonDb() {
+  const { waitForNeonDb: neonWait } = await import("./neon-connection.js");
+  return neonWait();
+}
+
+async function testNeonConnection() {
+  const { testNeonConnection: neonTest } = await import("./neon-connection.js");
+  return neonTest();
+}
+
+async function getSqliteDbReady() {
+  const { getDbReady: sqliteGetReady } = await import("./sqlite-connection.js");
+  return sqliteGetReady();
+}
+
+async function waitForSqliteDb() {
+  const { waitForDb: sqliteWait } = await import("./sqlite-connection.js");
+  return sqliteWait();
+}
+
+async function testSqliteConnection() {
+  const { testDbConnection: sqliteTest } = await import("./sqlite-connection.js");
+  return sqliteTest();
+}
 
 export async function getDbReady() {
   if (useNeon && !neonFailed) {
@@ -16,8 +45,6 @@ export async function getDbReady() {
       neonFailed = true;
     }
   }
-  // Dynamic import for SQLite — only loaded when not using Neon
-  const { getDbReady: getSqliteDbReady } = await import("./sqlite-connection.js");
   return getSqliteDbReady();
 }
 
@@ -30,7 +57,6 @@ export async function waitForDb() {
       neonFailed = true;
     }
   }
-  const { waitForDb: waitForSqliteDb } = await import("./sqlite-connection.js");
   return waitForSqliteDb();
 }
 
@@ -43,6 +69,5 @@ export async function testDbConnection(): Promise<boolean> {
       neonFailed = true;
     }
   }
-  const { testDbConnection: testSqliteConnection } = await import("./sqlite-connection.js");
   return testSqliteConnection();
 }

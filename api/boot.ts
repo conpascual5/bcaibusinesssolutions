@@ -1,12 +1,11 @@
 import { Hono } from "hono";
-import type { HttpBindings } from "@hono/node-server";
 import { bodyLimit } from "hono/body-limit";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router.js";
 import { createContext } from "./context.js";
 import { env } from "./lib/env.js";
 
-const app = new Hono<{ Bindings: HttpBindings }>();
+const app = new Hono();
 
 // Global error handler — ensures all errors return JSON
 app.onError((err, c) => {
@@ -105,8 +104,8 @@ ${text}`;
 });
 
 // Health check endpoint - lets frontend verify API is reachable
-import { testDbConnection } from "./queries/connection.js";
 app.get("/api/health", async (c) => {
+  const { testDbConnection } = await import("./queries/connection.js");
   const dbOk = await testDbConnection();
   return c.json({
     status: dbOk ? "ok" : "db_unavailable",
