@@ -1,8 +1,8 @@
 import { env } from "../lib/env.js";
 import { getNeonDbReady, waitForNeonDb, testNeonConnection } from "./neon-connection.js";
 
-// If DATABASE_URL is set, use Neon (Postgres). Otherwise fall back to SQLite.
-const useNeon = !!env.databaseUrl;
+// If DATABASE_URL is a Postgres connection string, use Neon. Otherwise fall back to SQLite.
+const useNeon = !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
 
 export async function getDbReady() {
   if (useNeon) {

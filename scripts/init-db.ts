@@ -1,8 +1,16 @@
 /**
  * This script creates a pre-seeded SQLite database file that gets bundled
- * with the Vercel deployment. On cold starts, the app loads this file
- * instead of creating tables from scratch, saving ~10-15 seconds.
+ * with the Vercel deployment (only used when DATABASE_URL is not set).
+ * When DATABASE_URL is set (Neon/Postgres), tables are created at runtime.
  */
+const DATABASE_URL = process.env.DATABASE_URL;
+
+// If using Neon/Postgres, skip SQLite pre-seeding
+if (DATABASE_URL && !DATABASE_URL.startsWith("./") && !DATABASE_URL.startsWith("/")) {
+  console.log("DATABASE_URL detected — skipping SQLite pre-seeding (using Neon/Postgres)");
+  process.exit(0);
+}
+
 import initSqlJs from "sql.js";
 import fs from "fs";
 import path from "path";
