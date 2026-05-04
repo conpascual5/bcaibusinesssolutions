@@ -1,129 +1,69 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Upload, Wand2, ArrowLeft, ImageIcon, Minus, Plus, Loader2, Download, Sparkles, Trash2, Library, Type, Check, AlertCircle } from 'lucide-react';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
-import { generateImageThemes, type ImageTheme } from '@/lib/trendEngine';
-import { resizeImage } from '@/lib/imageResize';
-import TextOverlayModal from '@/components/TextOverlayModal';
+import { ArrowLeft, Sparkles, ImageIcon, Download, Trash2, Loader2, AlertTriangle } from 'lucide-react';
+
+const IMAGE_SIZES = [
+  { value: 'square_hd', label: 'Square HD (1024x1024)' },
+  { value: 'square', label: 'Square (512x512)' },
+  { value: 'portrait_4_3', label: 'Portrait 4:3' },
+  { value: 'portrait_16_9', label: 'Portrait 16:9' },
+  { value: 'landscape_4_3', label: 'Landscape 4:3' },
+  { value: 'landscape_16_9', label: 'Landscape 16:9' },
+] as const;
+
+const STYLES = [
+  { value: 'auto', label: 'Auto' },
+  { value: 'cinematic', label: 'Cinematic' },
+  { value: 'digital-art', label: 'Digital Art' },
+  { value: 'photographic', label: 'Photographic' },
+  { value: 'anime', label: 'Anime' },
+  { value: 'fantasy-art', label: 'Fantasy Art' },
+  { value: 'comic-book', label: 'Comic Book' },
+  { value: 'low-poly', label: 'Low Poly' },
+  { value: 'line-art', label: 'Line Art' },
+  { value: 'pixel-art', label: 'Pixel Art' },
+  { value: '3d-model', label: '3D Model' },
+  { value: 'watercolor', label: 'Watercolor' },
+  { value: 'isometric', label: 'Isometric' },
+  { value: 'craft-clay', label: 'Craft Clay' },
+  { value: 'origami', label: 'Origami' },
+  { value: 'modeling-compound', label: 'Modeling Compound' },
+] as const;
 
 export default function Generate() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [productName, setProductName] = useState('');
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
-  const [themes, setThemes] = useState<ImageTheme[]>([]);
-  const [selectedTheme, setSelectedTheme] = useState<ImageTheme | null>(null);
-  const [imageCount, setImageCount] = useState(4);
-  const [imageSize, setImageSize] = useState<'1:1' | '9:16' | '16:9'>('1:1');
-  const [generatedImages, setGeneratedImages] = useState<{ id: number; url: string }[]>([]);
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [generationStep, setGenerationStep] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [imageSize, setImageSize] = useState<'square_hd' | 'square' | 'portrait_4_3' | 'portrait_16_9' | 'landscape_4_3' | 'landscape_16_9'>('square_hd');
+  const [imageCount, setImageCount] = useState(1);
+  const [style, setStyle] = useState<'auto' | 'cinematic' | 'digital-art' | 'photographic' | 'anime' | 'fantasy-art' | 'comic-book' | 'low-poly' | 'line-art' | 'pixel-art' | '3d-model' | 'watercolor' | 'isometric' | 'craft-clay' | 'origami' | 'modeling-compound'>('auto');
   const [error, setError] = useState('');
-  const [overlayImage, setOverlayImage] = useState<string | null>(null);
-  const [overlayImageId, setOverlayImageId] = useState<number | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [addTextOverlay, setAddTextOverlay] = useState(false);
-  const [overlayText, setOverlayText] = useState('');
-  const [overlayFont, setOverlayFont] = useState('Inter');
-  const [overlayColor, setOverlayColor] = useState('#FFFFFF');
-  const [overlaySize, setOverlaySize] = useState(48);
-  const [overlayPosition, setOverlayPosition] = useState('center');
 
   const generateMutation = trpc.image.generate.useMutation();
-  const saveOverlayMutation = trpc.image.saveOverlay.useMutation();
-  const { data: myImages, refetch: refetchImages } = trpc.image.listMyImages.useQuery();
+  const { data: myImages, refetch: refetchImages } = trpc.image.list.useQuery();
+  const deleteMutation = trpc.image.delete.useMutation({
+    onSuccess: () => refetchImages(),
+  });
 
-  useEffect(() => {
-    if (!user) {
-      navigate('/auth');
-    }
-  }, [user, navigate]);
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError('Image masyadong malaki. Max 5MB lang.');
-      return;
-    }
-    try {
-      setGenerationStep('Resizing image...');
-      const resized = await resizeImage(file, 1024, 0.85);
-      setUploadedImage(resized);
-      setError('');
-      setGenerationStep('');
-    } catch {
-      const reader = new FileReader();
-      reader.onload = () => {
-        setUploadedImage(reader.result as string);
-        setError('');
-        setGenerationStep('');
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleAnalyzeThemes = () => {
-    if (!productName.trim()) return;
-    const t = generateImageThemes(productName);
-    setThemes(t);
-    setSelectedTheme(t[0] ?? null);
-  };
-
-  const handleGenerate = async () => {
-    if (!uploadedImage || !selectedTheme || !productName.trim()) return;
-    console.log('[generate] Starting generation...');
-    setIsGenerating(true);
+  const handleGenerate = () => {
+    if (!prompt.trim()) return;
     setError('');
-    setGenerationStep('Submitting to fal.ai... this may take 30-120 seconds');
-    setGeneratedImages([]);
-
-    try {
-      const result = await generateMutation.mutateAsync({
-        productImageUrl: uploadedImage,
-        themeTitle: selectedTheme.title,
-        themeDescription: selectedTheme.description,
-        productName: productName.trim(),
-        count: imageCount,
-        imageSize: imageSize,
-      });
-
-      console.log('[generate] Result:', result);
-      setGeneratedImages(result.images);
-      refetchImages();
-
-      if (result.failed > 0) {
-        setError(`${result.failed} image(s) failed. Errors: ${result.errors.join('; ')}`);
-      }
-    } catch (err: any) {
-      console.error('[generate] ERROR:', err);
-      setError(err?.message || 'Generation failed. Check console for details.');
-    } finally {
-      setIsGenerating(false);
-      setGenerationStep('');
-    }
-  };
-
-  const handleOverlaySave = (text: string, settings: any, finalUrl: string) => {
-    if (overlayImageId) {
-      saveOverlayMutation.mutate({
-        imageId: overlayImageId,
-        overlayText: text,
-        overlaySettings: settings,
-        finalImageUrl: finalUrl,
-      }, {
-        onSuccess: () => {
+    generateMutation.mutate(
+      { prompt: prompt.trim(), imageSize, numImages: imageCount, style },
+      {
+        onSuccess: (result) => {
           refetchImages();
-          setOverlayImage(null);
-          setOverlayImageId(null);
         },
-      });
-    }
+        onError: (err) => {
+          setError(err.message);
+        },
+      }
+    );
   };
 
-  if (!user) return null;
+  const userImages = myImages?.filter(img => img.userId === user?.id) ?? [];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -133,335 +73,126 @@ export default function Generate() {
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span className="text-sm font-semibold">BC AI Business Solutions</span>
           </div>
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate('/library')} className="text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg flex items-center gap-1 transition-colors">
-              <Library className="w-3 h-3" />
-              My Library
-            </button>
-            <button onClick={() => navigate('/app')} className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-              <ArrowLeft className="w-3 h-3" />
-              Back to App
-            </button>
-          </div>
+          <button onClick={() => navigate('/app')} className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1">
+            <ArrowLeft className="w-3 h-3" />
+            Back to App
+          </button>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Image Generation</h1>
-          <p className="text-gray-600">
-            I-upload ang produkto mo, pumili ng theme, at i-generate ang best ad images gamit ang AI.
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">AI Image Generator</h1>
+          <p className="text-gray-600">Generate stunning product images and marketing visuals using AI.</p>
         </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 text-red-700 rounded-xl text-sm font-medium border border-red-100 flex items-start gap-2">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            {error}
-          </div>
-        )}
-
-        <div className="grid lg:grid-cols-2 gap-8">
-          <div className="space-y-6">
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Product Name</label>
-              <input
-                type="text"
-                value={productName}
-                onChange={(e) => setProductName(e.target.value)}
-                placeholder="Hal. Wireless Headphones, Face Serum..."
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              />
-              <button
-                onClick={handleAnalyzeThemes}
-                disabled={!productName.trim()}
-                className="mt-3 w-full py-2.5 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition-all disabled:opacity-50"
-              >
-                <Wand2 className="w-4 h-4 inline mr-1" />
-                Generate Themes
-              </button>
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Product Image</label>
-              {uploadedImage ? (
-                <div className="relative">
-                  <img src={uploadedImage} alt="Product" className="w-full h-48 object-contain bg-gray-50 rounded-xl" />
-                  <button
-                    onClick={() => setUploadedImage(null)}
-                    className="absolute top-2 right-2 p-1.5 bg-white rounded-lg shadow-sm text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  onClick={() => fileInputRef.current?.click()}
-                  className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center hover:border-blue-400 hover:bg-blue-50/50 transition-all cursor-pointer"
-                >
-                  <Upload className="w-8 h-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-gray-500">Click para mag-upload ng product image</p>
-                  <p className="text-xs text-gray-400 mt-1">PNG, JPG (Max 5MB)</p>
-                </div>
-              )}
-              <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileUpload} className="hidden" />
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <label className="flex items-center gap-2 cursor-pointer mb-3">
-                <input
-                  type="checkbox"
-                  checked={addTextOverlay}
-                  onChange={(e) => setAddTextOverlay(e.target.checked)}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-600"
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Prompt</label>
+                <textarea
+                  value={prompt}
+                  onChange={(e) => setPrompt(e.target.value)}
+                  placeholder="Describe the image you want to generate..."
+                  rows={4}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                 />
-                <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                  <Type className="w-4 h-4" />
-                  Add text overlay to generated images
-                </span>
-              </label>
-
-              {addTextOverlay && (
-                <div className="space-y-3 pt-2 border-t border-gray-100">
-                  <textarea
-                    value={overlayText}
-                    onChange={(e) => setOverlayText(e.target.value)}
-                    rows={2}
-                    placeholder="e.g. SALE\n50% OFF\nLimited Time"
-                    className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <select
-                      value={overlayFont}
-                      onChange={(e) => setOverlayFont(e.target.value)}
-                      className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm outline-none"
-                    >
-                      <option value="Inter">Inter</option>
-                      <option value="Georgia">Georgia</option>
-                      <option value="Arial Black">Arial Black</option>
-                      <option value="Impact">Impact</option>
-                    </select>
-                    <input
-                      type="color"
-                      value={overlayColor}
-                      onChange={(e) => setOverlayColor(e.target.value)}
-                      className="w-full h-9 rounded-lg border border-gray-200"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    {['top', 'center', 'bottom'].map((pos) => (
-                      <button
-                        key={pos}
-                        onClick={() => setOverlayPosition(pos)}
-                        className={`flex-1 py-1.5 rounded-lg text-xs font-medium capitalize transition-colors ${
-                          overlayPosition === pos ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'
-                        }`}
-                      >
-                        {pos}
-                      </button>
-                    ))}
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500">Size ({overlaySize}px)</label>
-                    <input
-                      type="range"
-                      min={16}
-                      max={100}
-                      value={overlaySize}
-                      onChange={(e) => setOverlaySize(Number(e.target.value))}
-                      className="w-full mt-1"
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Number of Images to Generate</label>
-              <div className="flex items-center gap-4">
-                <button
-                  onClick={() => setImageCount(Math.max(1, imageCount - 1))}
-                  className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
-                >
-                  <Minus className="w-4 h-4" />
-                </button>
-                <span className="text-2xl font-bold text-gray-900 w-8 text-center">{imageCount}</span>
-                <button
-                  onClick={() => setImageCount(Math.min(10, imageCount + 1))}
-                  className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center hover:bg-gray-200 transition-colors"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
               </div>
-              <div className="mt-3 flex gap-2">
-                {[1, 2, 4, 6, 10].map(n => (
-                  <button
-                    key={n}
-                    onClick={() => setImageCount(n)}
-                    className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      imageCount === n ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {n}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-              <label className="block text-sm font-semibold text-gray-700 mb-3">Image Size (Aspect Ratio)</label>
-              <div className="grid grid-cols-3 gap-3">
-                <button
-                  onClick={() => setImageSize('1:1')}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                    imageSize === '1:1'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Image Size</label>
+                <select
+                  value={imageSize}
+                  onChange={(e) => setImageSize(e.target.value as typeof imageSize)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <div className="w-8 h-8 bg-gray-200 rounded-sm" />
-                  <span className="text-xs font-semibold">Square</span>
-                  <span className="text-[10px] text-gray-500">1:1 · Instagram</span>
-                </button>
-                <button
-                  onClick={() => setImageSize('9:16')}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                    imageSize === '9:16'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="w-5 h-8 bg-gray-200 rounded-sm" />
-                  <span className="text-xs font-semibold">Vertical</span>
-                  <span className="text-[10px] text-gray-500">9:16 · TikTok/Reels</span>
-                </button>
-                <button
-                  onClick={() => setImageSize('16:9')}
-                  className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all ${
-                    imageSize === '16:9'
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="w-8 h-5 bg-gray-200 rounded-sm" />
-                  <span className="text-xs font-semibold">Landscape</span>
-                  <span className="text-[10px] text-gray-500">16:9 · YouTube/Facebook</span>
-                </button>
+                  {IMAGE_SIZES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
               </div>
-            </div>
 
-            <button
-              onClick={handleGenerate}
-              disabled={!uploadedImage || !selectedTheme || !productName.trim() || isGenerating}
-              className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-lg hover:bg-gray-800 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  {generationStep || `Generating ${imageCount} Images...`}
-                </>
-              ) : (
-                <>
-                  <Wand2 className="w-5 h-5" />
-                  Generate {imageCount} AI Images
-                </>
-              )}
-            </button>
-
-            {(!productName.trim() || !selectedTheme || !uploadedImage) && !isGenerating && (
-              <div className="text-xs text-gray-500 text-center space-y-1">
-                {!productName.trim() && <p>Enter a product name above</p>}
-                {productName.trim() && themes.length === 0 && <p>Click &ldquo;Generate Themes&rdquo; to see theme options</p>}
-                {themes.length > 0 && !selectedTheme && <p>Select a theme from the panel on the right</p>}
-                {!uploadedImage && <p>Upload a product image</p>}
-              </div>
-            )}
-
-            {isGenerating && (
-              <div className="text-center text-sm text-gray-500">
-                <p>Using fal-ai/nano-banana-2/edit</p>
-                <p className="text-xs mt-1">thinking_level: high | resolution: 1K</p>
-                <p className="text-xs mt-1">This may take 30-120 seconds depending on queue</p>
-              </div>
-            )}
-          </div>
-
-          <div className="space-y-6">
-            {themes.length > 0 ? (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                  Select Theme
-                  {!selectedTheme && <span className="text-red-500 ml-1">*</span>}
-                </h3>
-                <div className="space-y-2 max-h-80 overflow-y-auto">
-                  {themes.map((theme) => (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Number of Images</label>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3, 4].map((n) => (
                     <button
-                      key={theme.id}
-                      onClick={() => setSelectedTheme(theme)}
-                      className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
-                        selectedTheme?.id === theme.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-100 hover:border-gray-300'
+                      key={n}
+                      onClick={() => setImageCount(n)}
+                      className={`w-10 h-10 rounded-xl text-sm font-semibold transition-all ${
+                        imageCount === n
+                          ? 'bg-gray-900 text-white shadow-md'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                       }`}
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-12 rounded-full" style={{ background: `linear-gradient(to bottom, ${theme.colorPalette[0]}, ${theme.colorPalette[1]})` }} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-gray-900 truncate">{theme.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{theme.description}</p>
-                        </div>
-                        {selectedTheme?.id === theme.id && <Check className="w-4 h-4 text-blue-500 flex-shrink-0" />}
-                      </div>
+                      {n}
                     </button>
                   ))}
                 </div>
-                {!selectedTheme && (
-                  <p className="text-xs text-amber-600 mt-3 text-center font-medium">Click a theme above to select it</p>
-                )}
               </div>
-            ) : (
-              <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 text-center">
-                <Wand2 className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-                <p className="text-sm text-gray-500">Enter a product name and click</p>
-                <p className="text-sm text-gray-500">&ldquo;Generate Themes&rdquo; to see options</p>
-              </div>
-            )}
 
-            {generatedImages.length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                    <Check className="w-4 h-4 text-green-500" />
-                    Newly Generated
-                  </h3>
-                  <span className="text-xs text-gray-500">{generatedImages.length} image(s)</span>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Style</label>
+                <select
+                  value={style}
+                  onChange={(e) => setStyle(e.target.value as typeof style)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  {STYLES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-sm text-red-700">{error}</p>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {generatedImages.map((img, i) => (
-                    <div key={img.id} className="relative group">
-                      <img
-                        src={img.url || ''}
-                        alt={`Generated ${i + 1}`}
-                        className="w-full h-40 object-cover rounded-xl bg-gray-100"
-                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=Image+Failed'; }}
-                      />
-                      <div className="absolute bottom-2 right-2 flex gap-1">
+              )}
+
+              <button
+                onClick={handleGenerate}
+                disabled={!prompt.trim() || generateMutation.isPending}
+                className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-xl text-sm font-semibold hover:from-blue-700 hover:to-indigo-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-200"
+              >
+                {generateMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    Generate Images
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            {generateMutation.data && (
+              <div className="mb-6">
+                <h2 className="text-lg font-bold text-gray-900 mb-3">Generated Images</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {generateMutation.data.images.map((img: any, idx: number) => (
+                    <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
+                      <div className="aspect-square bg-gray-100">
+                        <img src={img.url} alt={`Generated ${idx + 1}`} className="w-full h-full object-cover" />
+                      </div>
+                      <div className="p-3 flex items-center gap-2">
                         <a
-                          href={img.url || ''}
+                          href={img.url}
                           download
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="p-1.5 bg-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="flex-1 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold text-center hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
                         >
-                          <Download className="w-4 h-4 text-gray-700" />
+                          <Download className="w-3 h-3" />
+                          Download
                         </a>
-                        <button
-                          onClick={() => { setOverlayImage(img.url); setOverlayImageId(img.id); }}
-                          className="p-1.5 bg-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                          title="Add text overlay"
-                        >
-                          <Type className="w-4 h-4 text-blue-600" />
-                        </button>
                       </div>
                     </div>
                   ))}
@@ -469,59 +200,56 @@ export default function Generate() {
               </div>
             )}
 
-            {myImages && myImages.filter(img => img.status === 'completed').length > 0 && (
-              <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-sm font-semibold text-gray-700">Previously Generated</h3>
-                  <button onClick={() => navigate('/library')} className="text-xs text-blue-600 hover:underline">
-                    View All
-                  </button>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {myImages
-                    .filter(img => img.status === 'completed')
-                    .slice(0, 4)
-                    .map((img) => (
-                    <div key={img.id} className="relative group">
-                      <img
-                        src={img.finalImageUrl || img.resultImageUrl || ''}
-                        alt={img.themeTitle}
-                        className="w-full h-32 object-cover rounded-xl bg-gray-100"
-                        onError={(e) => { (e.target as HTMLImageElement).src = 'https://via.placeholder.com/300x300?text=Unavailable'; }}
-                      />
-                      <div className="absolute bottom-2 right-2 flex gap-1">
-                        <button
-                          onClick={() => { setOverlayImage(img.resultImageUrl || ''); setOverlayImageId(img.id); }}
-                          className="p-1.5 bg-white rounded-lg shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <Type className="w-3 h-3 text-blue-600" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {themes.length === 0 && generatedImages.length === 0 && (!myImages || myImages.length === 0) && (
-              <div className="bg-white rounded-2xl p-10 shadow-sm border border-gray-100 text-center">
+            <h2 className="text-lg font-bold text-gray-900 mb-3">My Saved Images</h2>
+            {userImages.length === 0 ? (
+              <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
                 <ImageIcon className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">
-                  Mag-enter ng product name at i-upload ang image para makakuha ng AI-generated ad images.
-                </p>
+                <p className="text-gray-500">No saved images yet.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {userImages.map((img) => (
+                  <div key={img.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 group">
+                    <div className="aspect-square bg-gray-100">
+                      {img.url ? (
+                        <img src={img.url} alt={img.prompt} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <ImageIcon className="w-12 h-12" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="text-xs text-gray-500 truncate">{img.prompt}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        {img.url && (
+                          <a
+                            href={img.url}
+                            download
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex-1 py-2 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold text-center hover:bg-blue-100 transition-colors flex items-center justify-center gap-1"
+                          >
+                            <Download className="w-3 h-3" />
+                            Download
+                          </a>
+                        )}
+                        <button
+                          onClick={() => deleteMutation.mutate({ imageId: img.id })}
+                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
         </div>
       </div>
-
-      {overlayImage && (
-        <TextOverlayModal
-          imageUrl={overlayImage}
-          onClose={() => { setOverlayImage(null); setOverlayImageId(null); }}
-          onSave={handleOverlaySave}
-        />
-      )}
     </div>
   );
 }
+
