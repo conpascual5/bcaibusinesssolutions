@@ -1,10 +1,10 @@
 // Synchronous env loader — no top-level await
 // On Vercel, env vars are already set by the platform
-// In development, we load .env file synchronously using dynamic import
-// (only happens in non-Vercel environments, so no cold start impact on Vercel)
+// In development, we load .env file synchronously
 
+// Only load .env in non-Vercel environments
 if (!process.env.VERCEL) {
-  // Use top-level await only when NOT on Vercel
+  // Use dynamic import only when NOT on Vercel
   // This means on Vercel, this module is completely synchronous
   const { readFileSync, existsSync } = await import("fs");
   const { resolve } = await import("path");
