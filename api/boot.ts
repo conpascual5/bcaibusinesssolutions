@@ -60,104 +60,104 @@ app.post("/api/setup", async (c) => {
   }
 });
 
-// Setup-tables endpoint - creates tables directly via DB connection (works on Vercel)
+// Setup-tables endpoint - creates tables directly via DB connection
 app.post("/api/setup-tables", async (c) => {
   try {
     const { getDb } = await import("./queries/connection.js");
     const db = getDb();
 
-    // Create tables using raw SQL
-    await db.execute(`
+    // Create tables using raw SQL (SQLite syntax)
+    db.run(`
       CREATE TABLE IF NOT EXISTS users (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
-        name VARCHAR(100) NOT NULL,
-        is_active BOOLEAN NOT NULL DEFAULT true,
-        is_admin BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        name TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1,
+        is_admin INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS searches (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT,
-        product_query VARCHAR(500) NOT NULL,
-        ip_address VARCHAR(100),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER,
+        product_query TEXT NOT NULL,
+        ip_address TEXT,
         user_agent TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS settings (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        \`key\` VARCHAR(100) NOT NULL UNIQUE,
-        \`value\` TEXT NOT NULL,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        key TEXT NOT NULL UNIQUE,
+        value TEXT NOT NULL,
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS images (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         url TEXT NOT NULL,
         prompt TEXT NOT NULL,
-        width INT NOT NULL DEFAULT 0,
-        height INT NOT NULL DEFAULT 0,
-        content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        width INTEGER NOT NULL DEFAULT 0,
+        height INTEGER NOT NULL DEFAULT 0,
+        content_type TEXT NOT NULL DEFAULT 'image/jpeg',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS chats (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        title TEXT NOT NULL DEFAULT 'New Chat',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS messages (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        chat_id INT NOT NULL,
-        role VARCHAR(20) NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chat_id INTEGER NOT NULL,
+        role TEXT NOT NULL,
         content TEXT NOT NULL,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS generated_images (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
         product_image_url TEXT NOT NULL,
-        theme_title VARCHAR(200) NOT NULL,
+        theme_title TEXT NOT NULL,
         prompt TEXT NOT NULL,
         result_image_url TEXT,
-        overlay_text VARCHAR(500),
-        overlay_settings JSON,
+        overlay_text TEXT,
+        overlay_settings TEXT,
         final_image_url TEXT,
-        status VARCHAR(50) NOT NULL DEFAULT 'pending',
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
-    await db.execute(`
+    db.run(`
       CREATE TABLE IF NOT EXISTS chat_messages (
-        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-        user_id INT NOT NULL,
-        user_name VARCHAR(100) NOT NULL,
-        user_email VARCHAR(255) NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        user_name TEXT NOT NULL,
+        user_email TEXT NOT NULL,
         message TEXT NOT NULL,
-        is_admin BOOLEAN NOT NULL DEFAULT false,
-        is_read BOOLEAN NOT NULL DEFAULT false,
-        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        is_admin INTEGER NOT NULL DEFAULT 0,
+        is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
 
