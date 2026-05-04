@@ -1,9 +1,8 @@
-import { handle } from "hono/vercel";
 import app from "./boot.js";
 
 export const config = {
   runtime: "nodejs",
 };
 
-// Wrap with handle() for proper Vercel integration
-export default handle(app);
+// Vercel expects the default export to be a request handler
+export default app.fetch;
