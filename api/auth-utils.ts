@@ -13,13 +13,13 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   const computed = await hashPassword(password);
   if (computed === hash) return true;
 
-  // Fallback: check if hash is in old hex format (salt:hash)
+  // Fallback: check if hash is in old hex format (salt:hash) using SHA-512
   if (hash.includes(":")) {
     const [saltHex, hashHex] = hash.split(":");
     if (saltHex && hashHex) {
       const encoder = new TextEncoder();
       const data = encoder.encode(password + saltHex);
-      const digest = await crypto.subtle.digest("SHA-256", data);
+      const digest = await crypto.subtle.digest("SHA-512", data);
       const computedHex = Array.from(new Uint8Array(digest))
         .map((b) => b.toString(16).padStart(2, "0"))
         .join("");
