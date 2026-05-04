@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Crosshair, Sparkles, Users, Target, BarChart3, Lightbulb, ImageIcon, MessageSquare, Film, Layers } from 'lucide-react';
+import { Crosshair, Sparkles, User, Users, Target, BarChart3, Lightbulb, ImageIcon, MessageSquare, Film, Layers } from 'lucide-react';
 import { generateTargeting } from '@/lib/targetingEngine';
 import type { TargetingResult } from '@/lib/targetingEngine';
 import { PersonaCard, KeywordsCard, DemographicsCard, BehavioralLayerCard, WhyCard, CaptionCard, VideoScriptCard } from '@/components/ResultCards';

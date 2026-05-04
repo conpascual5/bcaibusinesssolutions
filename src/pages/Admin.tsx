@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
-import { ArrowLeft, Sparkles, Users, Settings, MessageSquare, ImageIcon, Shield, Mail, Search, Send, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
+import { Users, Settings, MessageSquare, Shield, Mail, Send, CheckCircle, XCircle } from 'lucide-react';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -40,19 +40,6 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="bg-gray-900 text-white py-2 px-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-4 h-4 text-amber-400" />
-            <span className="text-sm font-semibold">BC AI Business Solutions</span>
-          </div>
-          <button onClick={() => navigate('/app')} className="text-xs text-gray-400 hover:text-white transition-colors flex items-center gap-1">
-            <ArrowLeft className="w-3 h-3" />
-            Back to App
-          </button>
-        </div>
-      </div>
-
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Panel</h1>
