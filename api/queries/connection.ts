@@ -11,14 +11,8 @@ let db: ReturnType<typeof drizzle> | null = null;
 let initPromise: Promise<void> | null = null;
 let sqlJsDb: SqlJsDatabase | null = null;
 
-async function ensureTables(d: ReturnType<typeof drizzle>) {
-  try {
-    await (d as any).run(`SELECT 1 FROM users LIMIT 1`);
-    return; // tables exist
-  } catch {
-    // tables don't exist — create them
-  }
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS users (
+const TABLE_CREATION_SQL = [
+  `CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
@@ -26,22 +20,22 @@ async function ensureTables(d: ReturnType<typeof drizzle>) {
     is_active INTEGER NOT NULL DEFAULT 1,
     is_admin INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS searches (
+  )`,
+  `CREATE TABLE IF NOT EXISTS searches (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER,
     product_query TEXT NOT NULL,
     ip_address TEXT,
     user_agent TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS settings (
+  )`,
+  `CREATE TABLE IF NOT EXISTS settings (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     key TEXT NOT NULL UNIQUE,
     value TEXT NOT NULL,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS images (
+  )`,
+  `CREATE TABLE IF NOT EXISTS images (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     url TEXT NOT NULL,
@@ -50,22 +44,22 @@ async function ensureTables(d: ReturnType<typeof drizzle>) {
     height INTEGER NOT NULL DEFAULT 0,
     content_type TEXT NOT NULL DEFAULT 'image/jpeg',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS chats (
+  )`,
+  `CREATE TABLE IF NOT EXISTS chats (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     title TEXT NOT NULL DEFAULT 'New Chat',
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS messages (
+  )`,
+  `CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     chat_id INTEGER NOT NULL,
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS generated_images (
+  )`,
+  `CREATE TABLE IF NOT EXISTS generated_images (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     product_image_url TEXT NOT NULL,
@@ -77,8 +71,8 @@ async function ensureTables(d: ReturnType<typeof drizzle>) {
     final_image_url TEXT,
     status TEXT NOT NULL DEFAULT 'pending',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
-  await (d as any).run(`CREATE TABLE IF NOT EXISTS chat_messages (
+  )`,
+  `CREATE TABLE IF NOT EXISTS chat_messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,
     user_name TEXT NOT NULL,
@@ -87,7 +81,19 @@ async function ensureTables(d: ReturnType<typeof drizzle>) {
     is_admin INTEGER NOT NULL DEFAULT 0,
     is_read INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  )`);
+  )`,
+];
+
+async function ensureTables(d: ReturnType<typeof drizzle>) {
+  try {
+    await (d as any).run(`SELECT 1 FROM users LIMIT 1`);
+    return; // tables exist
+  } catch {
+    // tables don't exist — create them
+  }
+  for (const sql of TABLE_CREATION_SQL) {
+    await (d as any).run(sql);
+  }
 }
 
 export async function getDb() {
@@ -104,10 +110,19 @@ export async function getDb() {
     } catch {}
 
     let buffer: Buffer | null = null;
+    // Try loading the writable DB first (has user data)
     try {
       buffer = fs.readFileSync(dbPath);
     } catch {
-      // File doesn't exist yet, will create new DB
+      // Fall back to the pre-seeded DB bundled with the deployment
+      try {
+        const seedPath = path.resolve(process.cwd(), "public", "seed.db");
+        buffer = fs.readFileSync(seedPath);
+        console.log("[DB] Loaded pre-seeded database from", seedPath);
+      } catch {
+        // No pre-seeded DB either — will create from scratch
+        console.log("[DB] No existing database found, creating new one");
+      }
     }
 
     sqlJsDb = new SQL.Database(buffer);
@@ -151,7 +166,13 @@ export async function getDb() {
 /** Wait for the database to be fully initialized (tables created) */
 export async function waitForDb() {
   await getDb();
-  if (initPromise) await initPromise;
+  if (initPromise) {
+    // Add a timeout so we don't hang forever on cold starts
+    const timeoutPromise = new Promise<void>((_, reject) =>
+      setTimeout(() => reject(new Error("Database initialization timed out after 25 seconds")), 25000)
+    );
+    await Promise.race([initPromise, timeoutPromise]);
+  }
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npm run build",
+  "buildCommand": "npx tsx scripts/init-db.ts && npm run build",
   "outputDirectory": "dist/public",
   "rewrites": [
     {
@@ -15,7 +15,7 @@
   "functions": {
     "api/index.ts": {
       "memory": 512,
-      "maxDuration": 30
+      "maxDuration": 60
     }
   }
 }
