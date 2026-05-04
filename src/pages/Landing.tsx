@@ -6,6 +6,7 @@ import {
   MessageCircle, Film, MessageSquare, ChevronRight,
   ArrowUpRight, Palette, Star, Camera
 } from 'lucide-react';
+import PortfolioGallery from '@/components/PortfolioGallery';
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -175,45 +176,17 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Portfolio / Showcase - Facebook Reels */}
+      {/* Portfolio / Showcase - Image Gallery */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-14">
             <span className="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider">
-              <Film className="w-3 h-3" /> Our Work
+              <Camera className="w-3 h-3" /> Our Work
             </span>
             <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Sample Ad Creatives</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Real Facebook Reel ads we've produced for our clients. Watch them play below!</p>
+            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Real ad creatives we've produced for our clients. Click any image to view full size!</p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4">
-            {[
-              '1087625110144232',
-              '1188006866703829',
-              '3884684911675100',
-              '2674574336223850',
-              '2003294173805933',
-              '1290479858733052',
-              '1286400282694511',
-              '2139295246876817',
-              '1925363451743818',
-              '1035184015492663',
-            ].map((id) => (
-              <div key={id} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-                <div className="aspect-[9/16] relative">
-                  <iframe
-                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${id}`)}&show_text=false&width=267`}
-                    className="absolute inset-0 w-full h-full"
-                    style={{ border: 'none', overflow: 'hidden' }}
-                    scrolling="no"
-                    frameBorder="0"
-                    allowFullScreen
-                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                    title="Facebook Reel"
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          <PortfolioGallery />
         </div>
       </section>
 
