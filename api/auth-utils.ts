@@ -22,23 +22,59 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
       const saltBytes = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(b => parseInt(b, 16)));
 
       // Try various combinations
-      const attempts: [string, Uint8Array][] = [
-        ["SHA-512 hex salt (pw+saltHex)", encoder.encode(password + saltHex)],
-        ["SHA-512 decoded salt (saltBytes+pw)", new Uint8Array([...saltBytes, ...pwBytes])],
-        ["SHA-512 decoded salt (pw+saltBytes)", new Uint8Array([...pwBytes, ...saltBytes])],
-        ["SHA-256 decoded salt (saltBytes+pw)", new Uint8Array([...saltBytes, ...pwBytes])],
-        ["SHA-256 decoded salt (pw+saltBytes)", new Uint8Array([...pwBytes, ...saltBytes])],
-        ["SHA-256 hex salt (pw+saltHex)", encoder.encode(password + saltHex)],
+      const attempts: [string, string, Uint8Array][] = [
+        ["SHA-512", "hex salt (pw+saltHex)", encoder.encode(password + saltHex)],
+        ["SHA-512", "decoded salt (saltBytes+pw)", new Uint8Array([...saltBytes, ...pwBytes])],
+        ["SHA-512", "decoded salt (pw+saltBytes)", new Uint8Array([...pwBytes, ...saltBytes])],
+        ["SHA-256", "decoded salt (saltBytes+pw)", new Uint8Array([...saltBytes, ...pwBytes])],
+        ["SHA-256", "decoded salt (pw+saltBytes)", new Uint8Array([...pwBytes, ...saltBytes])],
+        ["SHA-256", "hex salt (pw+saltHex)", encoder.encode(password + saltHex)],
       ];
 
-      for (const [label, data] of attempts) {
-        const algo = label.startsWith("SHA-512") ? "SHA-512" : "SHA-256";
+      for (const [algo, label, data] of attempts) {
         const digest = await crypto.subtle.digest(algo, data);
         const computedHex = Array.from(new Uint8Array(digest))
           .map((b) => b.toString(16).padStart(2, "0"))
           .join("");
-        console.log(`[verify] ${label}: ${computedHex}`);
+        console.log(`[verify] ${algo} ${label}: ${computedHex}`);
         if (computedHex === hashHex) return true;
+      }
+
+      // Try with Node.js crypto module (pbkdf2, scrypt)
+      try {
+        const { createHash, pbkdf2Sync, scryptSync } = await import("node:crypto");
+        
+        // Try SHA-512 with createHash
+        const sha512Hex = createHash("sha512").update(password + saltHex).digest("hex");
+        console.log(`[verify] node:sha512 hex salt: ${sha512Hex}`);
+        if (sha512Hex === hashHex) return true;
+
+        // Try SHA-512 with decoded salt bytes
+        const sha512BytesHex = createHash("sha512").update(Buffer.from(saltBytes)).update(password).digest("hex");
+        console.log(`[verify] node:sha512 decoded salt: ${sha512BytesHex}`);
+        if (sha512BytesHex === hashHex) return true;
+
+        // Try PBKDF2 with 1000 iterations
+        const pbkdf2Hex = pbkdf2Sync(password, saltHex, 1000, 64, "sha512").toString("hex");
+        console.log(`[verify] pbkdf2 1000: ${pbkdf2Hex}`);
+        if (pbkdf2Hex === hashHex) return true;
+
+        // Try PBKDF2 with 10000 iterations
+        const pbkdf2Hex2 = pbkdf2Sync(password, saltHex, 10000, 64, "sha512").toString("hex");
+        console.log(`[verify] pbkdf2 10000: ${pbkdf2Hex2}`);
+        if (pbkdf2Hex2 === hashHex) return true;
+
+        // Try PBKDF2 with decoded salt
+        const pbkdf2Hex3 = pbkdf2Sync(password, Buffer.from(saltBytes), 1000, 64, "sha512").toString("hex");
+        console.log(`[verify] pbkdf2 decoded salt 1000: ${pbkdf2Hex3}`);
+        if (pbkdf2Hex3 === hashHex) return true;
+
+        // Try scrypt
+        const scryptHex = scryptSync(password, saltHex, 64).toString("hex");
+        console.log(`[verify] scrypt: ${scryptHex}`);
+        if (scryptHex === hashHex) return true;
+      } catch (e) {
+        console.log("[verify] node:crypto not available:", e);
       }
 
       console.log("[verify] stored hashHex:", hashHex);
