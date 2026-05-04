@@ -1,46 +1,42 @@
 import { drizzle } from "drizzle-orm/mysql2";
 import mysql from "mysql2/promise";
-import { env } from "../lib/env";
-import * as schema from "../../db/schema";
-import * as relations from "../../db/relations";
+import { env } from "../lib/env.js";
+import * as schema from "../../db/schema.js";
+import * as relations from "../../db/relations.js";
 
-const fullSchema = { ...schema, ...relations };
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-let instance: any;
-let pool: mysql.Pool;
+let db: ReturnType<typeof drizzle> | null = null;
+let pool: mysql.Pool | null = null;
 
 export function getDb() {
-  if (!instance) {
+  if (!db) {
     pool = mysql.createPool({
       uri: env.databaseUrl,
-      connectTimeout: 10000,
+      waitForConnections: true,
       connectionLimit: 5,
+      queueLimit: 0,
       enableKeepAlive: true,
-      keepAliveInitialDelay: 10000,
-      ssl: {
-        rejectUnauthorized: true,
-      },
+      keepAliveInitialDelay: 0,
+      ssl: env.databaseUrl.includes("ssl=true") || env.databaseUrl.includes("sslmode=require")
+        ? { rejectUnauthorized: false }
+        : undefined,
     });
 
-    instance = drizzle(pool, {
-      schema: fullSchema,
+    db = drizzle(pool, {
+      schema: { ...schema, ...relations },
       mode: "default",
-    });
+      logger: false,
+    }) as any;
   }
-  return instance;
+  return db!;
 }
 
-/**
- * Test if the database connection is working.
- * Returns true if connected, false otherwise.
- */
 export async function testDbConnection(): Promise<boolean> {
   try {
-    const db = getDb();
-    await db.select().from(schema.users).limit(1);
+    const d = getDb();
+    await d.execute("SELECT 1");
     return true;
-  } catch {
+  } catch (err) {
+    console.error("DB connection test failed:", err);
     return false;
   }
 }

@@ -35,6 +35,33 @@ export const settings = mysqlTable("settings", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const images = mysqlTable("images", {
+  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  url: text("url").notNull(),
+  prompt: text("prompt").notNull(),
+  width: int("width").notNull().default(0),
+  height: int("height").notNull().default(0),
+  contentType: varchar("content_type", { length: 50 }).notNull().default("image/jpeg"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const chats = mysqlTable("chats", {
+  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  userId: int("user_id").notNull(),
+  title: varchar("title", { length: 200 }).notNull().default("New Chat"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const messages = mysqlTable("messages", {
+  id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
+  chatId: int("chat_id").notNull(),
+  role: varchar("role", { length: 20 }).notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const generatedImages = mysqlTable("generated_images", {
   id: bigint("id", { mode: "number", unsigned: true }).autoincrement().primaryKey(),
   userId: int("user_id").notNull(),

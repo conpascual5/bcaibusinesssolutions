@@ -14,4 +14,5 @@ export const env = {
   jwtSecret: required("APP_SECRET"),
   isProduction: process.env.NODE_ENV === "production",
   databaseUrl: required("DATABASE_URL"),
+  falApiKey: process.env.FAL_API_KEY ?? "",
 };

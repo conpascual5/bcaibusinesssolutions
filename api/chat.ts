@@ -1,118 +1,141 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, authedQuery, adminQuery } from "./middleware";
-import { getDb } from "./queries/connection";
-import { chatMessages, users } from "../db/schema";
-import { eq, desc, and } from "drizzle-orm";
+import { createRouter, authedQuery } from "./middleware.js";
+import { getDb } from "./queries/connection.js";
+import { chats, messages, settings } from "../db/schema.js";
+import { eq, desc, asc } from "drizzle-orm";
+import { env } from "./lib/env.js";
+
+async function getFalKey(): Promise<string> {
+  const db = getDb();
+  const [row] = await db.select().from(settings).where(eq(settings.key, "fal_api_key")).limit(1);
+  return row?.value ?? env.falApiKey ?? "";
+}
 
 export const chatRouter = createRouter({
-  // User sends a message
-  send: authedQuery
-    .input(z.object({ message: z.string().min(1).max(2000) }))
+  create: authedQuery
+    .input(z.object({ title: z.string().min(1).max(200).default("New Chat") }))
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
-      // Look up user name from DB
-      const [userRow] = await db.select().from(users).where(eq(users.id, ctx.user.userId)).limit(1);
-      const userName = userRow?.name ?? 'User';
-      await db.insert(chatMessages).values({
+      const [chat] = await db.insert(chats).values({
         userId: ctx.user.userId,
-        userName,
-        userEmail: ctx.user.email,
-        message: input.message,
-        isAdmin: false,
-        isRead: false,
-      });
-      return { success: true };
+        title: input.title,
+      }).$returningId();
+      return { id: chat.id, title: input.title };
     }),
 
-  // User gets their own chat history
-  myMessages: authedQuery.query(async ({ ctx }) => {
+  list: authedQuery.query(async ({ ctx }) => {
     const db = getDb();
     return db
       .select()
-      .from(chatMessages)
-      .where(eq(chatMessages.userId, ctx.user.userId))
-      .orderBy(desc(chatMessages.createdAt))
-      .limit(200);
+      .from(chats)
+      .where(eq(chats.userId, ctx.user.userId))
+      .orderBy(desc(chats.updatedAt));
   }),
 
-  // Admin: Get all unique chat conversations (latest message per user)
-  adminConversations: adminQuery.query(async () => {
-    const db = getDb();
-    const allMessages = await db
-      .select()
-      .from(chatMessages)
-      .orderBy(desc(chatMessages.createdAt))
-      .limit(1000);
-
-    // Group by userId, get latest message per user
-    const conversations = new Map();
-    for (const msg of allMessages) {
-      if (!conversations.has(msg.userId)) {
-        conversations.set(msg.userId, {
-          userId: msg.userId,
-          userName: msg.userName,
-          userEmail: msg.userEmail,
-          latestMessage: msg.message,
-          latestAt: msg.createdAt,
-          unreadCount: 0,
-        });
-      }
-      if (!msg.isRead && !msg.isAdmin) {
-        const conv = conversations.get(msg.userId);
-        conv.unreadCount++;
-      }
-    }
-    return Array.from(conversations.values());
-  }),
-
-  // Admin: Get all messages for a specific user
-  adminUserMessages: adminQuery
-    .input(z.object({ userId: z.number() }))
-    .query(async ({ input }) => {
+  getMessages: authedQuery
+    .input(z.object({ chatId: z.number() }))
+    .query(async ({ input, ctx }) => {
       const db = getDb();
+      const [chat] = await db.select().from(chats).where(eq(chats.id, input.chatId)).limit(1);
+      if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
+      if (chat.userId !== ctx.user.userId && !ctx.user.isAdmin) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
+      }
       return db
         .select()
-        .from(chatMessages)
-        .where(eq(chatMessages.userId, input.userId))
-        .orderBy(chatMessages.createdAt)
-        .limit(200);
+        .from(messages)
+        .where(eq(messages.chatId, input.chatId))
+        .orderBy(asc(messages.createdAt));
     }),
 
-  // Admin: Reply to a user
-  adminReply: adminQuery
-    .input(z.object({ userId: z.number(), message: z.string().min(1).max(2000) }))
+  sendMessage: authedQuery
+    .input(z.object({
+      chatId: z.number(),
+      content: z.string().min(1).max(10000),
+    }))
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
-      await db.insert(chatMessages).values({
-        userId: input.userId,
-        userName: "Admin",
-        userEmail: ctx.user.email,
-        message: input.message,
-        isAdmin: true,
-        isRead: true,
+      const [chat] = await db.select().from(chats).where(eq(chats.id, input.chatId)).limit(1);
+      if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
+      if (chat.userId !== ctx.user.userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
+      }
+
+      // Save user message
+      await db.insert(messages).values({
+        chatId: input.chatId,
+        role: "user",
+        content: input.content,
       });
-      return { success: true };
+
+      // Get conversation history
+      const history = await db
+        .select()
+        .from(messages)
+        .where(eq(messages.chatId, input.chatId))
+        .orderBy(asc(messages.createdAt));
+
+      // Build prompt for fal.ai
+      const conversation = history.map(m => `${m.role}: ${m.content}`).join("\n");
+      const systemPrompt = `You are a helpful AI assistant for a business. You help with marketing, ad copy, content creation, and business strategy. Keep responses concise and actionable.`;
+
+      const apiKey = await getFalKey();
+      if (!apiKey) {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "FAL_API_KEY not configured" });
+      }
+
+      const response = await fetch("https://fal.run/fal-ai/llm/chat", {
+        method: "POST",
+        headers: {
+          "Authorization": `Key ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...history.map(m => ({ role: m.role, content: m.content })),
+            { role: "user", content: input.content },
+          ],
+          max_tokens: 1024,
+        }),
+      });
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error("fal.ai chat error:", response.status, errBody);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Chat failed" });
+      }
+
+      const data: any = await response.json();
+      const reply = data.choices?.[0]?.message?.content ?? "No response";
+
+      // Save assistant message
+      const [savedMsg] = await db.insert(messages).values({
+        chatId: input.chatId,
+        role: "assistant",
+        content: reply,
+      }).$returningId();
+
+      // Update chat timestamp
+      await db.update(chats).set({ updatedAt: new Date() }).where(eq(chats.id, input.chatId));
+
+      return { id: savedMsg.id, role: "assistant", content: reply };
     }),
 
-  // Admin: Mark messages as read
-  markRead: adminQuery
-    .input(z.object({ userId: z.number() }))
-    .mutation(async ({ input }) => {
+  delete: authedQuery
+    .input(z.object({ chatId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
       const db = getDb();
-      await db.update(chatMessages)
-        .set({ isRead: true })
-        .where(and(eq(chatMessages.userId, input.userId), eq(chatMessages.isRead, false)));
+      const [chat] = await db.select().from(chats).where(eq(chats.id, input.chatId)).limit(1);
+      if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
+      if (chat.userId !== ctx.user.userId && !ctx.user.isAdmin) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
+      }
+      await db.delete(messages).where(eq(messages.chatId, input.chatId));
+      await db.delete(chats).where(eq(chats.id, input.chatId));
       return { success: true };
     }),
-
-  // Admin: Get unread count
-  unreadCount: adminQuery.query(async () => {
-    const db = getDb();
-    const result = await db
-      .select()
-      .from(chatMessages)
-      .where(and(eq(chatMessages.isRead, false), eq(chatMessages.isAdmin, false)));
-    return { count: result.length };
-  }),
 });
+

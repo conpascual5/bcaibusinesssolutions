@@ -1,71 +1,35 @@
-import { createHash, randomBytes, pbkdf2Sync } from "crypto";
-import { env } from "./lib/env";
+import { env } from "./lib/env.js";
 
-// --- Password Hashing ---
-const SALT_LEN = 16;
-const ITERATIONS = 100000;
-const KEYLEN = 64;
-const DIGEST = "sha256";
-
-export function hashPassword(password: string): string {
-  const salt = randomBytes(SALT_LEN).toString("hex");
-  const hash = pbkdf2Sync(password, salt, ITERATIONS, KEYLEN, DIGEST).toString("hex");
-  return `${salt}:${hash}`;
+// Simple password hashing using Web Crypto API
+export async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + env.jwtSecret);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return btoa(String.fromCharCode(...new Uint8Array(hash)));
 }
 
-export function verifyPassword(password: string, stored: string): boolean {
-  const [salt, hash] = stored.split(":");
-  if (!salt || !hash) return false;
-  const computed = pbkdf2Sync(password, salt, ITERATIONS, KEYLEN, DIGEST).toString("hex");
+export async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const computed = await hashPassword(password);
   return computed === hash;
 }
 
-// --- Simple JWT (HS256) ---
-function base64UrlEncode(data: string): string {
-  return Buffer.from(data)
-    .toString("base64")
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
-}
-
-function base64UrlDecode(data: string): string {
-  const padding = "=".repeat((4 - (data.length % 4)) % 4);
-  return Buffer.from(data.replace(/-/g, "+").replace(/_/g, "/") + padding, "base64").toString("utf8");
-}
-
-export type JWTPayload = {
-  userId: number;
-  email: string;
-  isAdmin: boolean;
-  iat: number;
-  exp: number;
-};
-
-export function signJWT(payload: Omit<JWTPayload, "iat" | "exp">, expiresInHours = 168): string {
-  const header = base64UrlEncode(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const now = Math.floor(Date.now() / 1000);
-  const body = base64UrlEncode(
-    JSON.stringify({ ...payload, iat: now, exp: now + expiresInHours * 3600 })
-  );
-  const signature = createHash("sha256")
-    .update(`${header}.${body}.${env.jwtSecret}`)
-    .digest("base64url");
+// JWT-like token using base64 encoding (simple, no external deps)
+export function signJWT(payload: { userId: number; email: string; isAdmin: boolean }): string {
+  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
+  const body = btoa(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 7 }));
+  const signature = btoa(env.jwtSecret);
   return `${header}.${body}.${signature}`;
 }
 
-export function verifyJWT(token: string): JWTPayload | null {
+export function verifyJWT(token: string): { userId: number; email: string; isAdmin: boolean } | null {
   try {
-    const [header, body, signature] = token.split(".");
-    if (!header || !body || !signature) return null;
-    const expected = createHash("sha256")
-      .update(`${header}.${body}.${env.jwtSecret}`)
-      .digest("base64url");
-    if (signature !== expected) return null;
-    const payload: JWTPayload = JSON.parse(base64UrlDecode(body));
-    if (payload.exp < Math.floor(Date.now() / 1000)) return null;
-    return payload;
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    const body = JSON.parse(atob(parts[1]));
+    if (body.exp && body.exp < Math.floor(Date.now() / 1000)) return null;
+    return { userId: body.userId, email: body.email, isAdmin: body.isAdmin };
   } catch {
     return null;
   }
 }
+
