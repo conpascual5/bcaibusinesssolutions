@@ -13,6 +13,7 @@ export default function Setup() {
   const [seedMessage, setSeedMessage] = useState("");
 
   const checkAdmin = trpc.setup.checkAdminExists.useQuery();
+  const createAdmin = trpc.setup.createAdmin.useMutation();
 
   const handlePush = async () => {
     setPushing(true);
@@ -60,7 +61,7 @@ export default function Setup() {
       } else {
         // Fallback: try creating admin via tRPC
         try {
-          const result = await trpc.setup.createAdmin.mutate({
+          const result = await createAdmin.mutateAsync({
             email: "conpascual5@gmail.com",
             password: "admin123",
             name: "BC AI Admin",
