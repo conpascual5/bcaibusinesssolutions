@@ -41,15 +41,31 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
+      console.log('[auth] Login attempt for:', input.email);
       const db = getDb();
-      const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
-      if (!user) throw new Error("Invalid credentials");
-      if (!user.isActive) throw new Error("Account deactivated");
-      const valid = await verifyPassword(input.password, user.passwordHash);
-      if (!valid) throw new Error("Invalid credentials");
-      
-      const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
-      return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin } };
+      try {
+        // First check if the users table exists
+        const tables = await db.execute("SHOW TABLES LIKE 'users'");
+        console.log('[auth] Tables check:', tables);
+        
+        const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+        console.log('[auth] User found:', !!user);
+        if (!user) {
+          console.log('[auth] No user found with email:', input.email);
+          throw new Error("Invalid credentials");
+        }
+        if (!user.isActive) throw new Error("Account deactivated");
+        console.log('[auth] Stored hash:', user.passwordHash);
+        const valid = await verifyPassword(input.password, user.passwordHash);
+        console.log('[auth] Password valid:', valid);
+        if (!valid) throw new Error("Invalid credentials");
+        
+        const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
+        return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin } };
+      } catch (err) {
+        console.error('[auth] Login error details:', err);
+        throw err;
+      }
     }),
 
   me: publicQuery.query(async ({ ctx }) => {
