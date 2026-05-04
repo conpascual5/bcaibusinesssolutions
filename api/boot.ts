@@ -103,6 +103,142 @@ ${text}`;
   }
 });
 
+// Auto-init endpoint — runs schema push and seed programmatically
+// Visit /api/init-db once to set up the database, then remove this route for security
+app.get("/api/init-db", async (c) => {
+  try {
+    const results: string[] = [];
+
+    // Step 1: Push schema
+    results.push("Running schema push...");
+    const { execSync } = await import("child_process");
+    const { resolve } = await import("path");
+    const root = resolve(process.cwd());
+
+    try {
+      execSync("node scripts/push-schema.mjs", { cwd: root, stdio: "pipe", timeout: 30000 });
+      results.push("✅ Schema pushed successfully");
+    } catch (pushErr: any) {
+      results.push(`❌ Schema push failed: ${pushErr.message}`);
+      // Try inline table creation as fallback
+      results.push("Trying inline table creation...");
+      const initSqlJs = (await import("sql.js")).default;
+      const path = await import("path");
+      const fs = await import("fs");
+
+      const dbDir = path.resolve(process.cwd(), "data");
+      const dbPath = path.resolve(dbDir, "app.db");
+      fs.mkdirSync(dbDir, { recursive: true });
+
+      let buffer = null;
+      try { buffer = fs.readFileSync(dbPath); } catch {}
+
+      const SQL = await initSqlJs();
+      const sqlJsDb = new SQL.Database(buffer);
+
+      const tables = [
+        "users", "searches", "settings", "images", "chats",
+        "messages", "generated_images", "chat_messages"
+      ];
+      for (const table of tables) {
+        sqlJsDb.run(`DROP TABLE IF EXISTS ${table}`);
+      }
+
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL, name TEXT NOT NULL,
+        is_active INTEGER NOT NULL DEFAULT 1, is_admin INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS searches (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER,
+        product_query TEXT NOT NULL, ip_address TEXT, user_agent TEXT,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS settings (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT NOT NULL UNIQUE,
+        value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        url TEXT NOT NULL, prompt TEXT NOT NULL, width INTEGER NOT NULL DEFAULT 0,
+        height INTEGER NOT NULL DEFAULT 0, content_type TEXT NOT NULL DEFAULT 'image/jpeg',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        title TEXT NOT NULL DEFAULT 'New Chat',
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, chat_id INTEGER NOT NULL,
+        role TEXT NOT NULL, content TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS generated_images (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        product_image_url TEXT NOT NULL, theme_title TEXT NOT NULL,
+        prompt TEXT NOT NULL, result_image_url TEXT, overlay_text TEXT,
+        overlay_settings TEXT, final_image_url TEXT, status TEXT NOT NULL DEFAULT 'pending',
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      sqlJsDb.run(`CREATE TABLE IF NOT EXISTS chat_messages (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL,
+        user_name TEXT NOT NULL, user_email TEXT NOT NULL, message TEXT NOT NULL,
+        is_admin INTEGER NOT NULL DEFAULT 0, is_read INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+
+      const data = sqlJsDb.export();
+      fs.writeFileSync(dbPath, Buffer.from(data));
+      sqlJsDb.close();
+      results.push("✅ Tables created inline successfully");
+    }
+
+    // Step 2: Seed admin user
+    results.push("Seeding admin user...");
+    try {
+      execSync("npx tsx db/seed.ts", { cwd: root, stdio: "pipe", timeout: 30000 });
+      results.push("✅ Admin user seeded successfully");
+    } catch (seedErr: any) {
+      results.push(`❌ Seed script failed: ${seedErr.message}`);
+      // Try inline seeding as fallback
+      results.push("Trying inline admin creation...");
+      try {
+        const initSqlJs = (await import("sql.js")).default;
+        const path = await import("path");
+        const fs = await import("fs");
+        const bcrypt = await import("bcryptjs");
+
+        const dbPath = path.resolve(process.cwd(), "data", "app.db");
+        const buffer = fs.readFileSync(dbPath);
+        const SQL = await initSqlJs();
+        const sqlJsDb = new SQL.Database(buffer);
+
+        const hash = bcrypt.hashSync("admin123", 10);
+        sqlJsDb.run(
+          `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
+           VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,
+          [hash]
+        );
+
+        const data = sqlJsDb.export();
+        fs.writeFileSync(dbPath, Buffer.from(data));
+        sqlJsDb.close();
+        results.push("✅ Admin user created inline (conpascual5@gmail.com / admin123)");
+      } catch (inlineErr: any) {
+        results.push(`❌ Inline seeding failed: ${inlineErr.message}`);
+      }
+    }
+
+    return c.json({ success: true, results });
+  } catch (err: any) {
+    console.error("Init DB failed:", err);
+    return c.json({ success: false, error: err.message }, 500);
+  }
+});
+
 // Health check endpoint - lets frontend verify API is reachable
 app.get("/api/health", async (c) => {
   const { testDbConnection } = await import("./queries/connection.js");
