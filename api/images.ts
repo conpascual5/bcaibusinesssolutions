@@ -7,7 +7,7 @@ import { eq, desc } from "drizzle-orm";
 import { env } from "./lib/env.js";
 
 async function getFalKey(): Promise<string> {
-  const db = await getDbReady();
+  const db = await getDbReady() as any;
   const [row] = await db.select().from(settings).where(eq(settings.key, "fal_api_key")).limit(1);
   return row?.value ?? env.falApiKey ?? "";
 }
@@ -52,7 +52,7 @@ export const imageRouter = createRouter({
       const data: any = await response.json();
 
       // Save images to DB
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const savedImages: any[] = [];
       if (data.images) {
         for (const img of data.images) {
@@ -77,7 +77,7 @@ export const imageRouter = createRouter({
     }),
 
   list: authedQuery.query(async ({ ctx }) => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     return db
       .select()
       .from(images)
@@ -89,7 +89,7 @@ export const imageRouter = createRouter({
   delete: authedQuery
     .input(z.object({ imageId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const [img] = await db.select().from(images).where(eq(images.id, input.imageId)).limit(1);
       if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
       if (img.userId !== ctx.user.userId && !ctx.user.isAdmin) {

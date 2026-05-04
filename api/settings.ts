@@ -9,7 +9,7 @@ const DEEPSEEK_KEY = "deepseek_api_key";
 
 export const settingsRouter = createRouter({
   getApiKey: adminQuery.query(async () => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     const [row] = await db.select().from(settings).where(eq(settings.key, FAL_KEY)).limit(1);
     return { apiKey: row?.value ?? "" };
   }),
@@ -17,7 +17,7 @@ export const settingsRouter = createRouter({
   setApiKey: adminQuery
     .input(z.object({ apiKey: z.string().min(1) }))
     .mutation(async ({ input }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const [existing] = await db.select().from(settings).where(eq(settings.key, FAL_KEY)).limit(1);
       if (existing) {
         await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, FAL_KEY));
@@ -28,13 +28,13 @@ export const settingsRouter = createRouter({
     }),
 
   hasApiKey: adminQuery.query(async () => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     const [row] = await db.select().from(settings).where(eq(settings.key, FAL_KEY)).limit(1);
     return { hasKey: !!row?.value && row.value.length > 0 };
   }),
 
   getDeepseekKey: adminQuery.query(async () => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     const [row] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
     return { apiKey: row?.value ?? "" };
   }),
@@ -42,7 +42,7 @@ export const settingsRouter = createRouter({
   setDeepseekKey: adminQuery
     .input(z.object({ apiKey: z.string().min(1) }))
     .mutation(async ({ input }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const [existing] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
       if (existing) {
         await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, DEEPSEEK_KEY));
@@ -53,7 +53,7 @@ export const settingsRouter = createRouter({
     }),
 
   hasDeepseekKey: adminQuery.query(async () => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     const [row] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
     return { hasKey: !!row?.value && row.value.length > 0 };
   }),

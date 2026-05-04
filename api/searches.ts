@@ -12,7 +12,7 @@ export const searchRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const forwarded = ctx.req.headers.get("x-forwarded-for");
       const realIp = ctx.req.headers.get("x-real-ip");
       const ipAddress = forwarded?.split(",")[0]?.trim() || realIp || "unknown";
@@ -28,7 +28,7 @@ export const searchRouter = createRouter({
     }),
 
   list: authedQuery.query(async () => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     const results = await db
       .select()
       .from(searches)

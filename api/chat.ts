@@ -7,7 +7,7 @@ import { eq, desc, asc } from "drizzle-orm";
 import { env } from "./lib/env.js";
 
 async function getFalKey(): Promise<string> {
-  const db = await getDbReady();
+  const db = await getDbReady() as any;
   const [row] = await db.select().from(settings).where(eq(settings.key, "fal_api_key")).limit(1);
   return row?.value ?? env.falApiKey ?? "";
 }
@@ -16,7 +16,7 @@ export const chatRouter = createRouter({
   create: authedQuery
     .input(z.object({ title: z.string().min(1).max(200).default("New Chat") }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const result = await db.insert(chats).values({
         userId: ctx.user.userId,
         title: input.title,
@@ -26,7 +26,7 @@ export const chatRouter = createRouter({
     }),
 
   list: authedQuery.query(async ({ ctx }) => {
-    const db = await getDbReady();
+    const db = await getDbReady() as any;
     return db
       .select()
       .from(chats)
@@ -37,7 +37,7 @@ export const chatRouter = createRouter({
   getMessages: authedQuery
     .input(z.object({ chatId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const [chat] = await db.select().from(chats).where(eq(chats.id, input.chatId)).limit(1);
       if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
       if (chat.userId !== ctx.user.userId && !ctx.user.isAdmin) {
@@ -56,7 +56,7 @@ export const chatRouter = createRouter({
       content: z.string().min(1).max(10000),
     }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const [chat] = await db.select().from(chats).where(eq(chats.id, input.chatId)).limit(1);
       if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
       if (chat.userId !== ctx.user.userId) {
@@ -129,7 +129,7 @@ export const chatRouter = createRouter({
   delete: authedQuery
     .input(z.object({ chatId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const [chat] = await db.select().from(chats).where(eq(chats.id, input.chatId)).limit(1);
       if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
       if (chat.userId !== ctx.user.userId && !ctx.user.isAdmin) {

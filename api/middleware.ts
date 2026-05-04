@@ -28,7 +28,7 @@ export const authedQuery = t.procedure.use(
 
     // Check DB connection with timeout protection
     try {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const rows = await db
         .select()
         .from(users)
@@ -80,7 +80,7 @@ export const adminQuery = t.procedure.use(
     }
 
     try {
-      const db = await getDbReady();
+      const db = await getDbReady() as any;
       const rows = await db
         .select()
         .from(users)
