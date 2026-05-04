@@ -13,5 +13,4 @@ export default defineConfig({
   dbCredentials: {
     url: connectionString,
   },
-  driver: "mysql2",
 });
