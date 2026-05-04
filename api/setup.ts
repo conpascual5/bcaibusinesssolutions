@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, publicQuery } from "./middleware.js";
-import { getDb } from "./queries/connection.js";
+import { getDbReady } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import { hashPassword } from "./auth-utils.js";
@@ -16,7 +16,7 @@ export const setupRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      const db = getDb();
+      const db = await getDbReady();
       const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (existing.length > 0) {
         throw new TRPCError({ code: "CONFLICT", message: "User already exists" });
@@ -34,7 +34,7 @@ export const setupRouter = createRouter({
     }),
 
   checkAdminExists: publicQuery.query(async () => {
-    const db = getDb();
+    const db = await getDbReady();
     const [admin] = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
     return { exists: !!admin };
   }),
@@ -42,7 +42,7 @@ export const setupRouter = createRouter({
   reactivateAdmin: publicQuery
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ input }) => {
-      const db = getDb();
+      const db = await getDbReady();
       const [admin] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
       if (!admin) {
         throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });

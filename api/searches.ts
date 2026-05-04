@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware.js";
-import { getDb } from "./queries/connection.js";
+import { getDbReady } from "./queries/connection.js";
 import { searches } from "../db/schema.js";
 import { desc } from "drizzle-orm";
 
@@ -12,7 +12,7 @@ export const searchRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = getDb();
+      const db = await getDbReady();
       const forwarded = ctx.req.headers.get("x-forwarded-for");
       const realIp = ctx.req.headers.get("x-real-ip");
       const ipAddress = forwarded?.split(",")[0]?.trim() || realIp || "unknown";
@@ -28,7 +28,7 @@ export const searchRouter = createRouter({
     }),
 
   list: authedQuery.query(async () => {
-    const db = getDb();
+    const db = await getDbReady();
     const results = await db
       .select()
       .from(searches)

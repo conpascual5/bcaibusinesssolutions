@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./context.js";
-import { getDb } from "./queries/connection.js";
+import { getDbReady } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 import superjson from "superjson";
@@ -28,7 +28,7 @@ export const authedQuery = t.procedure.use(
 
     // Check DB connection with timeout protection
     try {
-      const db = getDb();
+      const db = await getDbReady();
       const rows = await db
         .select()
         .from(users)
@@ -80,7 +80,7 @@ export const adminQuery = t.procedure.use(
     }
 
     try {
-      const db = getDb();
+      const db = await getDbReady();
       const rows = await db
         .select()
         .from(users)

@@ -89,7 +89,7 @@ export const imageRouter = createRouter({
   delete: authedQuery
     .input(z.object({ imageId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = getDb();
+      const db = await getDbReady();
       const [img] = await db.select().from(images).where(eq(images.id, input.imageId)).limit(1);
       if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
       if (img.userId !== ctx.user.userId && !ctx.user.isAdmin) {
