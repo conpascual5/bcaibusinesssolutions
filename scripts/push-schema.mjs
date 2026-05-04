@@ -9,6 +9,24 @@ if (!connectionString) {
 
 async function main() {
   console.log("Connecting to database...");
+
+  // First connect without database to create it if needed
+  const url = new URL(connectionString);
+  const dbName = url.pathname.replace("/", "");
+  url.pathname = ""; // Remove database name
+  const baseUrl = url.toString().replace(/\/$/, "");
+
+  const tempConn = await mysql.createConnection({
+    uri: baseUrl,
+    ssl: { rejectUnauthorized: true },
+  });
+
+  // Create database if it doesn't exist
+  await tempConn.execute(`CREATE DATABASE IF NOT EXISTS \`${dbName}\``);
+  console.log(`  ✓ Database '${dbName}' ensured`);
+  await tempConn.end();
+
+  // Now connect to the actual database
   const connection = await mysql.createConnection({
     uri: connectionString,
     ssl: { rejectUnauthorized: true },
