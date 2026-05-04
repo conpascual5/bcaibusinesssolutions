@@ -18,43 +18,30 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
     const [saltHex, hashHex] = hash.split(":");
     if (saltHex && hashHex) {
       const encoder = new TextEncoder();
-      // Try with salt as hex string directly
-      const data1 = encoder.encode(password + saltHex);
-      const digest1 = await crypto.subtle.digest("SHA-512", data1);
-      const computedHex1 = Array.from(new Uint8Array(digest1))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      if (computedHex1 === hashHex) return true;
-
-      // Try with salt decoded from hex
+      const pwBytes = encoder.encode(password);
       const saltBytes = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(b => parseInt(b, 16)));
-      const data2 = new Uint8Array([...saltBytes, ...encoder.encode(password)]);
-      const digest2 = await crypto.subtle.digest("SHA-512", data2);
-      const computedHex2 = Array.from(new Uint8Array(digest2))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      if (computedHex2 === hashHex) return true;
 
-      // Try with password + decoded salt bytes
-      const data3 = new Uint8Array([...encoder.encode(password), ...saltBytes]);
-      const digest3 = await crypto.subtle.digest("SHA-512", data3);
-      const computedHex3 = Array.from(new Uint8Array(digest3))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      if (computedHex3 === hashHex) return true;
+      // Try various combinations
+      const attempts: [string, Uint8Array][] = [
+        ["SHA-512 hex salt (pw+saltHex)", encoder.encode(password + saltHex)],
+        ["SHA-512 decoded salt (saltBytes+pw)", new Uint8Array([...saltBytes, ...pwBytes])],
+        ["SHA-512 decoded salt (pw+saltBytes)", new Uint8Array([...pwBytes, ...saltBytes])],
+        ["SHA-256 decoded salt (saltBytes+pw)", new Uint8Array([...saltBytes, ...pwBytes])],
+        ["SHA-256 decoded salt (pw+saltBytes)", new Uint8Array([...pwBytes, ...saltBytes])],
+        ["SHA-256 hex salt (pw+saltHex)", encoder.encode(password + saltHex)],
+      ];
 
-      // Try SHA-256 with decoded salt
-      const digest4 = await crypto.subtle.digest("SHA-256", data2);
-      const computedHex4 = Array.from(new Uint8Array(digest4))
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      if (computedHex4 === hashHex) return true;
+      for (const [label, data] of attempts) {
+        const algo = label.startsWith("SHA-512") ? "SHA-512" : "SHA-256";
+        const digest = await crypto.subtle.digest(algo, data);
+        const computedHex = Array.from(new Uint8Array(digest))
+          .map((b) => b.toString(16).padStart(2, "0"))
+          .join("");
+        console.log(`[verify] ${label}: ${computedHex}`);
+        if (computedHex === hashHex) return true;
+      }
 
-      console.log("[verify] All fallback attempts failed");
-      console.log("[verify] SHA-512 hex salt:", computedHex1);
-      console.log("[verify] SHA-512 decoded salt (pw+salt):", computedHex2);
-      console.log("[verify] SHA-512 decoded salt (salt+pw):", computedHex3);
-      console.log("[verify] SHA-256 decoded salt:", computedHex4);
+      console.log("[verify] stored hashHex:", hashHex);
     }
   }
 
