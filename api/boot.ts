@@ -7,6 +7,12 @@ import { env } from "./lib/env.js";
 
 const app = new Hono();
 
+// Global error handler — ensures all errors return JSON
+app.onError((err, c) => {
+  console.error("[Hono error]", err);
+  return c.json({ error: err.message || "Internal server error" }, 500);
+});
+
 // Competitor Ad Copy Analyzer endpoint using Deepseek
 app.post("/api/analyze-copy", async (c) => {
   try {
@@ -156,8 +162,8 @@ app.get("/api/samples", async (c) => {
       .filter((f) => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
       .map((f) => ({ url: `/samples/${f}`, name: f }));
     return c.json({ images });
-  } catch (err: any) {
-    return c.json({ error: err.message }, 500);
+  } catch {
+    return c.json({ images: [] });
   }
 });
 
@@ -175,12 +181,17 @@ app.delete("/api/samples/:filename", async (c) => {
 });
 
 app.use("/api/trpc/*", async (c) => {
-  return fetchRequestHandler({
-    endpoint: "/api/trpc",
-    req: c.req.raw,
-    router: appRouter,
-    createContext,
-  });
+  try {
+    return await fetchRequestHandler({
+      endpoint: "/api/trpc",
+      req: c.req.raw,
+      router: appRouter,
+      createContext,
+    });
+  } catch (err: any) {
+    console.error("[tRPC handler error]", err);
+    return c.json({ error: err?.message || "Internal server error" }, 500);
+  }
 });
 
 // Reactivate admin endpoint - no auth required (for recovery)
