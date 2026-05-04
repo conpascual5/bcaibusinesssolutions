@@ -72,11 +72,18 @@ export default function UploadPage() {
   };
 
   const deleteImage = async (name: string) => {
+    if (!confirm('Delete this image? It will be removed from the gallery.')) return;
     try {
-      await fetch(`/api/samples/${name}`, { method: 'DELETE' });
-      await fetchSamples();
-    } catch {
-      // ignore
+      const res = await fetch(`/api/samples/${encodeURIComponent(name)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        setMessage({ type: 'success', text: 'Image deleted successfully' });
+        await fetchSamples();
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Delete failed' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Delete failed' });
     }
   };
 
