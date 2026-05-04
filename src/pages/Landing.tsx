@@ -4,7 +4,8 @@ import {
   Sparkles, ArrowRight, Zap, Crosshair, Target, BarChart3,
   Lightbulb, Check, Menu, X, Layers,
   MessageCircle, Film, MessageSquare, ChevronRight,
-  ArrowUpRight, Palette, Star, Camera
+  ArrowUpRight, Palette, Star, Camera,
+  FileSearch, FileText, Receipt, Brain, ImageIcon,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -22,12 +23,16 @@ export default function Landing() {
   const features = [
     { icon: <Crosshair className="w-5 h-5" />, color: "bg-blue-500", title: "AI Audience Targeting", desc: "Generate 3 buyer personas with detailed descriptions and interest keywords for Facebook Ads." },
     { icon: <Target className="w-5 h-5" />, color: "bg-purple-500", title: "12-15 Targeting Keywords", desc: "Get specific Facebook Interests & Behaviors using lateral thinking beyond obvious keywords." },
-    { icon: <Layers className="w-5 h-5" />, color: "bg-emerald-500", title: "Behavioral Layer", desc: "Layer 'Engaged Shoppers' plus secondary behaviors for higher conversion rates." },
+    { icon: <Layers className="w-5 h-5" />, color: "bg-emerald-500", title: "Behavioral Layer", desc: "Product-aware behavioral targeting — matches the right audience segments to your product." },
     { icon: <MessageSquare className="w-5 h-5" />, color: "bg-green-500", title: "Ad Captions", desc: "8 ready-to-use captions with hashtags for Facebook, Instagram, and TikTok." },
     { icon: <Film className="w-5 h-5" />, color: "bg-pink-500", title: "Video Ad Scripts", desc: "3 complete ad scripts with hook, scenes, CTA, and AI image prompts." },
     { icon: <BarChart3 className="w-5 h-5" />, color: "bg-rose-500", title: "Demographics", desc: "Recommended age range, gender, and income levels for optimal ad performance." },
+    { icon: <FileSearch className="w-5 h-5" />, color: "bg-indigo-500", title: "Ad Copy Analyzer", desc: "Paste competitor ads and get AI-powered psychological trigger analysis & counter-positioning strategies." },
+    { icon: <Receipt className="w-5 h-5" />, color: "bg-teal-500", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF." },
+    { icon: <ImageIcon className="w-5 h-5" />, color: "bg-orange-500", title: "Caption Generator", desc: "Upload your ad image and get optimized captions with hashtags for all platforms." },
+    { icon: <Brain className="w-5 h-5" />, color: "bg-cyan-500", title: "AI-Powered Insights", desc: "Deepseek AI integration for deep ad copy analysis and competitive intelligence." },
     { icon: <Lightbulb className="w-5 h-5" />, color: "bg-amber-500", title: "The 'Why'", desc: "Clear logic behind each audience choice so you understand the strategy." },
-    { icon: <MessageCircle className="w-5 h-5" />, color: "bg-indigo-500", title: "Live Chat Support", desc: "Chat directly with us to order services or get help with your campaigns." },
+    { icon: <MessageCircle className="w-5 h-5" />, color: "bg-violet-500", title: "Live Chat Support", desc: "Chat directly with us to order services or get help with your campaigns." },
   ];
 
   const services = [
@@ -76,7 +81,6 @@ export default function Landing() {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-700 pt-28 pb-20">
-        {/* Colorful blobs */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-pink-500/30 rounded-full blur-[100px] translate-x-1/3 -translate-y-1/3" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-cyan-400/30 rounded-full blur-[100px] -translate-x-1/4 translate-y-1/4" />
         <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-amber-400/20 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
@@ -85,27 +89,27 @@ export default function Landing() {
           <AnimatedSection delay={100}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 border border-white/20 rounded-full mb-6 backdrop-blur">
               <Zap className="w-4 h-4 text-amber-300" />
-              <span className="text-sm text-white font-medium">AI-Powered Facebook Ads Targeting</span>
+              <span className="text-sm text-white font-medium">All-in-One AI Marketing Suite</span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={200}>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6">
-              Find Your Perfect{' '}
+              Your Complete{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300">
-                Audience
+                Ad Toolkit
               </span>
             </h1>
           </AnimatedSection>
           <AnimatedSection delay={300}>
-            <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-6 leading-relaxed">
-              Type your product name and get laser-focused buyer personas, targeting keywords,
-              demographics, ad captions, and video scripts — powered by lateral-thinking AI.
+            <p className="text-lg sm:text-xl text-blue-100 max-w-3xl mx-auto mb-6 leading-relaxed">
+              From audience targeting and competitor analysis to invoice generation and ad captions — 
+              everything you need to run smarter Facebook ad campaigns, all in one place.
             </p>
           </AnimatedSection>
           <AnimatedSection delay={400}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/30 rounded-full mb-8">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-sm text-green-100 font-semibold">100% FREE Access to All Features</span>
+              <span className="text-sm text-green-100 font-semibold">100% FREE Access to All Tools</span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={500}>
@@ -125,7 +129,7 @@ export default function Landing() {
       <section className="py-12 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { value: "3", label: "Buyer Personas", color: "text-blue-600" },
+            { value: "6", label: "AI Tools", color: "text-blue-600" },
             { value: "15+", label: "Targeting Keywords", color: "text-purple-600" },
             { value: "8", label: "Ad Captions", color: "text-green-600" },
             { value: "3", label: "Video Scripts", color: "text-pink-600" },
@@ -146,24 +150,55 @@ export default function Landing() {
           <AnimatedSection>
             <div className="text-center mb-14">
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
-                <Palette className="w-3 h-3" /> Free Features
+                <Palette className="w-3 h-3" /> Free Tools
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Everything You Need — Zero Cost</h2>
-              <p className="text-gray-500 mt-3 max-w-lg mx-auto">From audience research to ad creatives strategy — all free. Only pay if you want us to produce the actual images/videos.</p>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">From audience research to competitor analysis to invoicing — all free. Only pay if you want us to produce the actual images/videos.</p>
             </div>
           </AnimatedSection>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {features.map((f, i) => (
-              <AnimatedSection key={i} delay={i * 80} direction="up">
-                <div className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                  <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                    {f.icon}
+
+          {/* Tool Categories */}
+          <div className="mb-12">
+            <AnimatedSection delay={50}>
+              <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                <Target className="w-5 h-5 text-blue-500" /> Audience &amp; Ad Strategy
+              </h3>
+            </AnimatedSection>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+              {features.slice(0, 6).map((f, i) => (
+                <AnimatedSection key={i} delay={i * 60} direction="up">
+                  <div className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                      {f.icon}
+                    </div>
+                    <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
-                  <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-                </div>
-              </AnimatedSection>
-            ))}
+                </AnimatedSection>
+              ))}
+            </div>
+
+            <AnimatedSection delay={50}>
+              <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-500" /> New: AI Analysis &amp; Business Tools
+              </h3>
+            </AnimatedSection>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {features.slice(6).map((f, i) => (
+                <AnimatedSection key={i + 6} delay={i * 60} direction="up">
+                  <div className="group bg-white rounded-2xl p-6 border-2 border-purple-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
+                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full shadow-sm">
+                      NEW
+                    </div>
+                    <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                      {f.icon}
+                    </div>
+                    <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+                    <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+                  </div>
+                </AnimatedSection>
+              ))}
+            </div>
           </div>
         </div>
       </section>
@@ -181,9 +216,9 @@ export default function Landing() {
           </AnimatedSection>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
-              { num: "01", title: "Sign Up", desc: "Create your free account in seconds.", color: "bg-blue-500" },
-              { num: "02", title: "Enter Your Product", desc: "Type your product name and let AI find your hidden audiences.", color: "bg-purple-500" },
-              { num: "03", title: "Get Results", desc: "Personas, keywords, demographics, captions, video scripts, and more.", color: "bg-emerald-500" },
+              { num: "01", title: "Sign Up", desc: "Create your free account in seconds. No credit card needed.", color: "bg-blue-500" },
+              { num: "02", title: "Choose Your Tool", desc: "Pick from 6 AI tools — targeting, competitor analysis, captions, invoices, and more.", color: "bg-purple-500" },
+              { num: "03", title: "Get Results", desc: "Personas, keywords, ad analysis, invoices, captions, and video scripts — instantly.", color: "bg-emerald-500" },
             ].map((step, i) => (
               <AnimatedSection key={i} delay={i * 150} direction="up">
                 <div className="text-center">
@@ -271,7 +306,7 @@ export default function Landing() {
                 <Star className="w-3 h-3" /> Premium Add-Ons
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Done-For-You Ad Creatives</h2>
-              <p className="text-gray-500 mt-3 max-w-lg mx-auto">All our AI targeting and script tools are FREE. Need the actual visuals? Our design team delivers.</p>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">All our AI tools are FREE. Need the actual visuals? Our design team delivers.</p>
             </div>
           </AnimatedSection>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -318,8 +353,8 @@ export default function Landing() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/30 rounded-full blur-[80px]" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Find Your Audience?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and start generating AI-powered targeting strategies, captions, and scripts — no credit card needed.</p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Ads?</h2>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to all 6 AI tools — targeting, competitor analysis, captions, invoices, and more. No credit card needed.</p>
               <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                 Get Started Free <ChevronRight className="w-5 h-5" />
               </Link>
