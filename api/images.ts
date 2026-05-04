@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { generatedImages, searches, settings } from "@db/schema";
+import { generatedImages, searches, settings } from "../db/schema";
 import { eq, desc, lt, and } from "drizzle-orm";
 
 const FAL_KEY = "fal_api_key";

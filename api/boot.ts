@@ -1,12 +1,11 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
-import type { HttpBindings } from "@hono/node-server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router";
 import { createContext } from "./context";
 import { env } from "./lib/env";
 
-const app = new Hono<{ Bindings: HttpBindings }>();
+const app = new Hono();
 
 // Health check endpoint - lets frontend verify API is reachable
 import { testDbConnection } from "./queries/connection";
@@ -79,7 +78,8 @@ app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
 
-if (env.isProduction) {
+// Only start the Node server when NOT on Vercel
+if (env.isProduction && !process.env.VERCEL) {
   const { serve } = await import("@hono/node-server");
   const { serveStaticFiles } = await import("./lib/vite");
   serveStaticFiles(app);

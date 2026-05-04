@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, authedQuery, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { chatMessages, users } from "@db/schema";
+import { chatMessages, users } from "../db/schema";
 import { eq, desc, and } from "drizzle-orm";
 
 export const chatRouter = createRouter({

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createRouter, adminQuery } from "./middleware";
 import { getDb } from "./queries/connection";
-import { settings } from "@db/schema";
+import { settings } from "../db/schema";
 import { eq } from "drizzle-orm";
 
 const FAL_KEY = "fal_api_key";
