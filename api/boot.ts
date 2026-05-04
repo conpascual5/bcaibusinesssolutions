@@ -39,6 +39,42 @@ app.use("/api/trpc/*", async (c) => {
     createContext,
   });
 });
+// Setup endpoint - pushes Drizzle schema
+app.post("/api/setup", async (c) => {
+  try {
+    const { execSync } = await import("child_process");
+    const { resolve } = await import("path");
+    const root = resolve(process.cwd());
+
+    console.log("Running drizzle-kit push...");
+    execSync("npx drizzle-kit push", { cwd: root, stdio: "inherit", timeout: 60000 });
+    console.log("Schema pushed successfully!");
+
+    return c.json({ success: true, message: "Database tables created successfully" });
+  } catch (err) {
+    console.error("Setup failed:", err);
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
+// Seed endpoint - creates the admin user
+app.post("/api/seed", async (c) => {
+  try {
+    const { execSync } = await import("child_process");
+    const { resolve } = await import("path");
+    const root = resolve(process.cwd());
+
+    console.log("Running seed script...");
+    execSync("npx tsx db/seed.ts", { cwd: root, stdio: "inherit", timeout: 30000 });
+    console.log("Database seeded successfully!");
+
+    return c.json({ success: true, message: "Admin user created (conpascual5@gmail.com / admin123)" });
+  } catch (err) {
+    console.error("Seed failed:", err);
+    return c.json({ success: false, error: String(err) }, 500);
+  }
+});
+
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;
