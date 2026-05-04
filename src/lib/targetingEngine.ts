@@ -130,15 +130,32 @@ const personaTemplates = [
   },
 ];
 
-const behavioralOptions = [
-  { name: "Engaged Shoppers", description: "People who have clicked the 'Shop Now' button in the past week. Essential for e-commerce conversions." },
-  { name: "Facebook Payments Users", description: "People who have made purchases through Facebook/Instagram checkout." },
-  { name: "Expats", description: "People living abroad who shop online for familiar products. Great for global brands." },
-  { name: "Mobile Device Users", description: "People who primarily access Facebook on mobile — where most shopping happens." },
-  { name: "Small Business Owners", description: "Entrepreneurs who invest in tools and products for their business." },
-  { name: "Frequent Travelers", description: "People who travel often and buy products for convenience and portability." },
-  { name: "Technology Early Adopters", description: "First to try new tech — high engagement with innovative product ads." },
-  { name: "Online Buyers", description: "People who actively purchase products online. Broader but effective reach." },
+interface BehavioralOption {
+  name: string;
+  description: string;
+  category: string[];
+  relevance: string;
+}
+
+const behavioralOptions: BehavioralOption[] = [
+  { name: "Engaged Shoppers", description: "People who have clicked the 'Shop Now' button in the past week. Essential for e-commerce conversions.", category: ["all"], relevance: "Default layer for all e-commerce campaigns" },
+  { name: "Facebook Payments Users", description: "People who have made purchases through Facebook/Instagram checkout. Higher purchase intent.", category: ["all"], relevance: "Works across all product types" },
+  { name: "Frequent Travelers", description: "People who travel often and buy products for convenience and portability.", category: ["travel", "luggage", "bags", "backpack", "suitcase", "accessories", "skincare", "toiletries", "electronics", "gadget", "clothing", "apparel", "footwear", "shoes"], relevance: "High overlap with portable/on-the-go products" },
+  { name: "Small Business Owners", description: "Entrepreneurs who invest in tools and products for their business.", category: ["software", "saas", "tool", "office", "stationery", "printer", "laptop", "computer", "business", "consulting", "service", "marketing"], relevance: "Buy productivity and business-related products" },
+  { name: "Technology Early Adopters", description: "First to try new tech — high engagement with innovative product ads.", category: ["tech", "gadget", "electronics", "smartphone", "laptop", "tablet", "smartwatch", "earphone", "headphone", "speaker", "camera", "drone", "gaming", "console", "vr", "software", "app", "saas", "ai"], relevance: "High CTR on innovative/tech products" },
+  { name: "Mobile Device Users", description: "People who primarily access Facebook on mobile — where most shopping happens.", category: ["all"], relevance: "Broad reach, good for impulse-buy products" },
+  { name: "Fitness & Health Enthusiasts", description: "People who engage with fitness content, gym check-ins, and health-related pages.", category: ["fitness", "gym", "workout", "supplement", "protein", "health", "wellness", "vitamin", "sport", "athletic", "yoga", "running", "activewear", "sports"], relevance: "Directly targets health-conscious buyers" },
+  { name: "Frequent Online Buyers", description: "People who make online purchases at least once a month across categories.", category: ["all"], relevance: "High conversion rate for most products" },
+  { name: "New Parents", description: "People whose Facebook activity indicates recent parenthood (baby-related page likes, groups).", category: ["baby", "diaper", "milk", "stroller", "toy", "kids", "children", "parenting", "maternity", "nursery"], relevance: "Highly relevant for baby and family products" },
+  { name: "Home Improvers", description: "People who engage with home renovation, furniture, and decor content.", category: ["furniture", "home", "decor", "kitchen", "appliance", "renovation", "garden", "plant", "lighting", "bedding", "curtain"], relevance: "Targets people actively improving their living space" },
+  { name: "Beauty & Skincare Buyers", description: "People who regularly purchase beauty products and follow beauty brands.", category: ["beauty", "skincare", "makeup", "cosmetic", "fragrance", "hair", "nail", "sunscreen", "serum", "moisturizer", "lipstick", "foundation"], relevance: "High relevance for beauty and personal care products" },
+  { name: "Foodies & Home Cooks", description: "People who engage with food content, recipes, and cooking pages.", category: ["food", "snack", "beverage", "drink", "coffee", "tea", "cooking", "kitchen", "baking", "grocery", "meal", "organic", "gourmet"], relevance: "Targets people passionate about food and cooking" },
+  { name: "Pet Owners", description: "People who follow pet-related pages and engage with pet content.", category: ["pet", "dog", "cat", "aquarium", "bird", "pet food", "pet toy", "leash", "collar", "veterinary"], relevance: "Directly targets pet product buyers" },
+  { name: "Fashion Enthusiasts", description: "People who follow fashion brands, trends, and style influencers.", category: ["fashion", "clothing", "apparel", "shoes", "footwear", "bag", "accessory", "jewelry", "watch", "sunglasses", "dress", "shirt", "pants", "jeans"], relevance: "High engagement with style and apparel ads" },
+  { name: "Automotive Enthusiasts", description: "People who engage with car brands, automotive content, and vehicle-related pages.", category: ["car", "automotive", "vehicle", "tire", "motorcycle", "bike", "accessory", "dashboard", "seat cover", "car care"], relevance: "Targets vehicle owners and car enthusiasts" },
+  { name: "Gamers", description: "People who engage with gaming content, streamers, and gaming communities.", category: ["game", "gaming", "console", "pc", "gpu", "controller", "headset", "esports", "streaming", "keyboard", "mouse"], relevance: "High engagement with gaming and peripheral ads" },
+  { name: "Book Lovers & Readers", description: "People who follow book-related pages, authors, and literary content.", category: ["book", "novel", "magazine", "ebook", "audiobook", "reading", "literature", "journal", "planner", "stationery"], relevance: "Targets avid readers and stationery buyers" },
+  { name: "Outdoor & Adventure Seekers", description: "People who engage with hiking, camping, and outdoor adventure content.", category: ["outdoor", "camping", "hiking", "tent", "sleeping bag", "backpack", "trekking", "survival", "fishing", "climbing"], relevance: "High relevance for outdoor gear and equipment" },
 ];
 
 const whyTemplates = [
@@ -165,8 +182,8 @@ export interface Demographics {
 }
 
 export interface BehavioralLayer {
-  primary: { name: string; description: string };
-  secondary: { name: string; description: string };
+  primary: { name: string; description: string; relevance?: string };
+  secondary: { name: string; description: string; relevance?: string };
   proTip: string;
 }
 
@@ -389,15 +406,27 @@ export function generateTargeting(product: string): TargetingResult {
   keywords = [...new Set(keywords)].sort(() => rng() - 0.5);
 
   const demo = pick(demographicProfiles, rng);
-  const primaryBehavior = behavioralOptions[0];
-  const secondaryBehavior = pick(behavioralOptions.slice(1), rng);
+
+  // Product-aware behavioral layer matching
+  const productLower = product.toLowerCase();
+  const matchedBehaviors = behavioralOptions.filter(b =>
+    b.category.includes("all") || b.category.some(cat => productLower.includes(cat))
+  );
+
+  // Always include Engaged Shoppers as primary (it's the universal default)
+  const engagedShoppers = behavioralOptions[0];
+  // Pick the most specific matched behavior as secondary (skip "all" category ones for secondary)
+  const specificBehaviors = matchedBehaviors.filter(b => !b.category.includes("all") && b.name !== "Engaged Shoppers");
+  const secondaryBehavior = specificBehaviors.length > 0
+    ? pick(specificBehaviors, rng)
+    : pick(behavioralOptions.filter(b => b.name !== "Engaged Shoppers"), rng);
 
   const proTips = [
-    "Layer 'Engaged Shoppers' on top of Interests to only target people with a proven purchase history. This is the #1 conversion booster.",
-    "Combine 'Engaged Shoppers' + a secondary behavior to narrow your audience to high-intent buyers only.",
-    "Pro tip: Start with broad Interests + 'Engaged Shoppers', then narrow with Lookalike audiences once you have conversion data.",
-    "Adding 'Engaged Shoppers' behavior typically increases CTR by 2-3x compared to Interest-only targeting.",
-    "Test with and without the Behavioral layer. In most e-commerce cases, keeping it ON improves ROAS significantly.",
+    `Layer 'Engaged Shoppers' on top of Interests to only target people with a proven purchase history. This is the #1 conversion booster.`,
+    `Combine 'Engaged Shoppers' + '${secondaryBehavior.name}' to narrow your audience to high-intent ${productLower.includes("tech") || productLower.includes("gadget") ? "tech" : productLower.includes("beauty") || productLower.includes("skincare") ? "beauty" : productLower.includes("food") || productLower.includes("snack") ? "food" : "product"} buyers.`,
+    `Pro tip: Start with broad Interests + 'Engaged Shoppers', then narrow with Lookalike audiences once you have conversion data.`,
+    `Adding 'Engaged Shoppers' behavior typically increases CTR by 2-3x compared to Interest-only targeting.`,
+    `Test with and without the Behavioral layer. In most e-commerce cases, keeping it ON improves ROAS significantly.`,
   ];
 
   const whyTemplate = pick(whyTemplates, rng);
@@ -424,8 +453,8 @@ export function generateTargeting(product: string): TargetingResult {
     keywords,
     demographics: demo,
     behavioralLayer: {
-      primary: primaryBehavior,
-      secondary: secondaryBehavior,
+      primary: { ...engagedShoppers, relevance: "Universal default — proven to boost conversion rates across all product categories" },
+      secondary: { ...secondaryBehavior, relevance: secondaryBehavior.relevance || "Matched based on product category" },
       proTip: pick(proTips, rng),
     },
     captions,

@@ -102,7 +102,7 @@ export function DemographicsCard({ demographics }: { demographics: Demographics 
   );
 }
 
-export function BehavioralLayerCard({ behavioralLayer }: { behavioralLayer: { primary: { name: string; description: string }; secondary: { name: string; description: string }; proTip: string } }) {
+export function BehavioralLayerCard({ behavioralLayer }: { behavioralLayer: { primary: { name: string; description: string; relevance?: string }; secondary: { name: string; description: string; relevance?: string }; proTip: string } }) {
   return (
     <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-6 border-2 border-emerald-200">
       <div className="flex items-center gap-3 mb-4">
@@ -126,6 +126,9 @@ export function BehavioralLayerCard({ behavioralLayer }: { behavioralLayer: { pr
           </div>
           <p className="text-lg font-bold text-gray-900">{behavioralLayer.primary.name}</p>
           <p className="text-sm text-gray-600 mt-1">{behavioralLayer.primary.description}</p>
+          {behavioralLayer.primary.relevance && (
+            <p className="text-xs text-amber-600 mt-2 font-medium">{behavioralLayer.primary.relevance}</p>
+          )}
         </div>
 
         <div className="bg-white rounded-xl p-4 border border-emerald-100">
@@ -135,6 +138,9 @@ export function BehavioralLayerCard({ behavioralLayer }: { behavioralLayer: { pr
           </div>
           <p className="text-lg font-bold text-gray-900">{behavioralLayer.secondary.name}</p>
           <p className="text-sm text-gray-600 mt-1">{behavioralLayer.secondary.description}</p>
+          {behavioralLayer.secondary.relevance && (
+            <p className="text-xs text-emerald-600 mt-2 font-medium">{behavioralLayer.secondary.relevance}</p>
+          )}
         </div>
       </div>
 
