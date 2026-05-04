@@ -252,6 +252,61 @@ app.post("/api/seed", async (c) => {
   }
 });
 
+// Image upload endpoint - saves to public/samples
+import { writeFile, mkdir } from "fs/promises";
+import { join, extname } from "path";
+import { randomUUID } from "crypto";
+
+app.post("/api/upload", async (c) => {
+  try {
+    const formData = await c.req.formData();
+    const file = formData.get("file") as File | null;
+    if (!file) return c.json({ error: "No file provided" }, 400);
+
+    const ext = extname(file.name) || ".jpg";
+    const filename = `${randomUUID()}${ext}`;
+    const samplesDir = join(process.cwd(), "public", "samples");
+
+    await mkdir(samplesDir, { recursive: true });
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(join(samplesDir, filename), buffer);
+
+    return c.json({ success: true, url: `/samples/${filename}` });
+  } catch (err: any) {
+    console.error("Upload failed:", err);
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// List uploaded sample images
+app.get("/api/samples", async (c) => {
+  try {
+    const { readdir } = await import("fs/promises");
+    const samplesDir = join(process.cwd(), "public", "samples");
+    const files = await readdir(samplesDir).catch(() => []);
+    const images = files
+      .filter((f) => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
+      .map((f) => ({ url: `/samples/${f}`, name: f }));
+    return c.json({ images });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
+// Delete a sample image
+app.delete("/api/samples/:filename", async (c) => {
+  try {
+    const filename = c.req.param("filename");
+    const { unlink } = await import("fs/promises");
+    const filePath = join(process.cwd(), "public", "samples", filename);
+    await unlink(filePath);
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
 app.all("/api/*", (c) => c.json({ error: "Not Found" }, 404));
 
 export default app;

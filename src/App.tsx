@@ -7,6 +7,7 @@ import CaptionGenerator from './pages/CaptionGenerator'
 import Library from './pages/Library'
 import Admin from './pages/Admin'
 import Setup from './pages/Setup'
+import Upload from './pages/Upload'
 import ChatWidget from './components/ChatWidget'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/library" element={<ProtectedRoute><Library /></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
         <Route path="/setup" element={<Setup />} />
+        <Route path="/upload" element={<Upload />} />
       </Routes>
       <ChatWidget />
     </>

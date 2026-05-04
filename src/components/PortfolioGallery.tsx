@@ -1,45 +1,25 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, ChevronLeft, ChevronRight, Camera, ImageOff } from 'lucide-react';
 
-const images = [
-  {
-    id: '1axYdgO_t_GaHrQ50CDw1_KQjh2MrQkNh',
-    title: 'Ad Creative 1',
-  },
-  {
-    id: '125WxWquWkrqKo2_hszuzzbLhOfgJvYQa',
-    title: 'Ad Creative 2',
-  },
-  {
-    id: '1EsoKmhnEWWiEDx1XgsUexSjZqVLoaPuI',
-    title: 'Ad Creative 3',
-  },
-  {
-    id: '13fOuNkaoT1POrsjIUf0HbtZGSxmrKw7N',
-    title: 'Ad Creative 4',
-  },
-  {
-    id: '1sd55Ib-JmJ9l1VyTbTxz_l__up4osg6E',
-    title: 'Ad Creative 5',
-  },
-  {
-    id: '117w_EICNTKayshn-XBiz219oDkCxoXxW',
-    title: 'Ad Creative 6',
-  },
-];
-
-function getDirectUrl(fileId: string) {
-  // Use Google's image serving CDN for reliable embedding
-  return `https://lh3.googleusercontent.com/d/${fileId}`;
+interface SampleImage {
+  url: string;
+  name: string;
 }
 
 export default function PortfolioGallery() {
+  const [images, setImages] = useState<SampleImage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
-  const [failedImages, setFailedImages] = useState<Set<string>>(new Set());
+  const [loading, setLoading] = useState(true);
 
-  const handleImageError = (id: string) => {
-    setFailedImages((prev) => new Set(prev).add(id));
-  };
+  useEffect(() => {
+    fetch('/api/samples')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.images) setImages(data.images);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
   const openLightbox = (index: number) => setSelectedIndex(index);
   const closeLightbox = () => setSelectedIndex(null);
@@ -56,30 +36,44 @@ export default function PortfolioGallery() {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="aspect-[4/3] bg-gray-100 rounded-2xl animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <div className="text-center py-16 bg-gray-50 rounded-2xl border border-gray-200">
+        <Camera className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500 font-medium">No images uploaded yet</p>
+        <p className="text-sm text-gray-400 mt-1">
+          <a href="/upload" className="text-blue-600 hover:underline font-semibold">Upload your ad creatives</a> to showcase them here.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4">
         {images.map((img, index) => (
           <button
-            key={img.id}
+            key={img.name}
             onClick={() => openLightbox(index)}
             className="group relative overflow-hidden rounded-2xl bg-gray-100 border border-gray-200 shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             <div className="aspect-[4/3] relative">
-              {failedImages.has(img.id) ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-gray-100 text-gray-400">
-                  <ImageOff className="w-8 h-8 mb-2" />
-                  <span className="text-xs">Image unavailable</span>
-                </div>
-              ) : (
-                <img
-                  src={getDirectUrl(img.id)}
-                  alt={img.title}
-                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                  loading="lazy"
-                  onError={() => handleImageError(img.id)}
-                />
-              )}
+              <img
+                src={img.url}
+                alt={img.name}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                loading="lazy"
+              />
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="w-12 h-12 bg-white/90 rounded-full flex items-center justify-center backdrop-blur">
@@ -128,22 +122,14 @@ export default function PortfolioGallery() {
             className="max-w-4xl max-h-[85vh] w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            {failedImages.has(images[selectedIndex].id) ? (
-              <div className="w-full aspect-video flex flex-col items-center justify-center bg-gray-800 rounded-2xl text-gray-400">
-                <ImageOff className="w-12 h-12 mb-3" />
-                <span className="text-sm">Image failed to load</span>
-              </div>
-            ) : (
-              <img
-                src={getDirectUrl(images[selectedIndex].id)}
-                alt={images[selectedIndex].title}
-                className="w-full h-full object-contain rounded-2xl shadow-2xl"
-                onError={() => handleImageError(images[selectedIndex].id)}
-              />
-            )}
+            <img
+              src={images[selectedIndex].url}
+              alt={images[selectedIndex].name}
+              className="w-full h-full object-contain rounded-2xl shadow-2xl"
+            />
             <div className="flex items-center justify-between mt-4 px-2">
               <p className="text-white/70 text-sm">
-                {images[selectedIndex].title}
+                {images[selectedIndex].name.replace(/\.[^/.]+$/, '')}
               </p>
               <p className="text-white/50 text-sm">
                 {selectedIndex + 1} / {images.length}
