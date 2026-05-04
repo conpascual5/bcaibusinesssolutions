@@ -20,7 +20,7 @@ app.post("/api/analyze-copy", async (c) => {
     if (!text) return c.json({ error: "No text provided" }, 400);
 
     // Try env var first, then fall back to database setting
-    let apiKey = env.deepseekApiKey || process.env.DEEPSEEK_API_KEY;
+    let apiKey = env.deepseekApiKey;
     if (!apiKey) {
       try {
         const { getDbReady } = await import("./queries/connection.js");

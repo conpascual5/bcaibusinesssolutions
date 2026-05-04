@@ -6,8 +6,8 @@
 const DATABASE_URL = process.env.DATABASE_URL;
 
 // If using Neon/Postgres, skip SQLite pre-seeding
-if (DATABASE_URL && !DATABASE_URL.startsWith("./") && !DATABASE_URL.startsWith("/")) {
-  console.log("DATABASE_URL detected — skipping SQLite pre-seeding (using Neon/Postgres)");
+if (DATABASE_URL && (DATABASE_URL.startsWith("postgres://") || DATABASE_URL.startsWith("postgresql://"))) {
+  console.log("DATABASE_URL detected (Postgres/Neon) — skipping SQLite pre-seeding");
   process.exit(0);
 }
 

@@ -3,7 +3,7 @@ import { serveStatic } from "@hono/node-server/serve-static";
 import fs from "fs";
 import path from "path";
 
-export function serveStaticFiles(app: Hono) {
+export function serveStaticFiles<E extends Record<string, any> = {}>(app: Hono<E>) {
   const distPath = path.resolve(import.meta.dirname, "../dist/public");
 
   app.use("*", serveStatic({ root: "./dist/public" }));
