@@ -7,6 +7,7 @@ import {
   ArrowUpRight, Palette, Star, Camera
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
+import AnimatedSection from '@/components/AnimatedSection';
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -81,32 +82,42 @@ export default function Landing() {
         <div className="absolute top-1/2 left-1/2 w-[300px] h-[300px] bg-amber-400/20 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
 
         <div className="relative max-w-5xl mx-auto px-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 border border-white/20 rounded-full mb-6 backdrop-blur">
-            <Zap className="w-4 h-4 text-amber-300" />
-            <span className="text-sm text-white font-medium">AI-Powered Facebook Ads Targeting</span>
-          </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6">
-            Find Your Perfect{' '}
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300">
-              Audience
-            </span>
-          </h1>
-          <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-6 leading-relaxed">
-            Type your product name and get laser-focused buyer personas, targeting keywords,
-            demographics, ad captions, and video scripts — powered by lateral-thinking AI.
-          </p>
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/30 rounded-full mb-8">
-            <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-            <span className="text-sm text-green-100 font-semibold">100% FREE Access to All Features</span>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/auth" className="px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl flex items-center justify-center gap-2">
-              Start for Free <ArrowRight className="w-5 h-5" />
-            </Link>
-            <a href="#features" className="px-8 py-4 bg-white/10 border border-white/30 text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 backdrop-blur">
-              Explore Features
-            </a>
-          </div>
+          <AnimatedSection delay={100}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 border border-white/20 rounded-full mb-6 backdrop-blur">
+              <Zap className="w-4 h-4 text-amber-300" />
+              <span className="text-sm text-white font-medium">AI-Powered Facebook Ads Targeting</span>
+            </div>
+          </AnimatedSection>
+          <AnimatedSection delay={200}>
+            <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6">
+              Find Your Perfect{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300">
+                Audience
+              </span>
+            </h1>
+          </AnimatedSection>
+          <AnimatedSection delay={300}>
+            <p className="text-lg sm:text-xl text-blue-100 max-w-2xl mx-auto mb-6 leading-relaxed">
+              Type your product name and get laser-focused buyer personas, targeting keywords,
+              demographics, ad captions, and video scripts — powered by lateral-thinking AI.
+            </p>
+          </AnimatedSection>
+          <AnimatedSection delay={400}>
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/30 rounded-full mb-8">
+              <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+              <span className="text-sm text-green-100 font-semibold">100% FREE Access to All Features</span>
+            </div>
+          </AnimatedSection>
+          <AnimatedSection delay={500}>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link to="/auth" className="px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl flex items-center justify-center gap-2">
+                Start for Free <ArrowRight className="w-5 h-5" />
+              </Link>
+              <a href="#features" className="px-8 py-4 bg-white/10 border border-white/30 text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 backdrop-blur">
+                Explore Features
+              </a>
+            </div>
+          </AnimatedSection>
         </div>
       </section>
 
@@ -119,10 +130,12 @@ export default function Landing() {
             { value: "8", label: "Ad Captions", color: "text-green-600" },
             { value: "3", label: "Video Scripts", color: "text-pink-600" },
           ].map((s, i) => (
-            <div key={i}>
-              <p className={`text-4xl font-extrabold ${s.color}`}>{s.value}</p>
-              <p className="text-sm text-gray-500 mt-1 font-medium">{s.label}</p>
-            </div>
+            <AnimatedSection key={i} delay={i * 100} direction="down">
+              <div>
+                <p className={`text-4xl font-extrabold ${s.color}`}>{s.value}</p>
+                <p className="text-sm text-gray-500 mt-1 font-medium">{s.label}</p>
+              </div>
+            </AnimatedSection>
           ))}
         </div>
       </section>
@@ -130,22 +143,26 @@ export default function Landing() {
       {/* Features */}
       <section id="features" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
-              <Palette className="w-3 h-3" /> Free Features
-            </span>
-            <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Everything You Need — Zero Cost</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">From audience research to ad creatives strategy — all free. Only pay if you want us to produce the actual images/videos.</p>
-          </div>
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Palette className="w-3 h-3" /> Free Features
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Everything You Need — Zero Cost</h2>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">From audience research to ad creatives strategy — all free. Only pay if you want us to produce the actual images/videos.</p>
+            </div>
+          </AnimatedSection>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {features.map((f, i) => (
-              <div key={i} className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                  {f.icon}
+              <AnimatedSection key={i} delay={i * 80} direction="up">
+                <div className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
+                    {f.icon}
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
                 </div>
-                <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
-              </div>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -154,25 +171,29 @@ export default function Landing() {
       {/* How It Works */}
       <section id="how" className="py-24 px-4 bg-gradient-to-b from-purple-50 to-blue-50">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase tracking-wider">
-              <Zap className="w-3 h-3" /> How It Works
-            </span>
-            <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Three Simple Steps</h2>
-          </div>
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Zap className="w-3 h-3" /> How It Works
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Three Simple Steps</h2>
+            </div>
+          </AnimatedSection>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { num: "01", title: "Sign Up", desc: "Create your free account in seconds.", color: "bg-blue-500" },
               { num: "02", title: "Enter Your Product", desc: "Type your product name and let AI find your hidden audiences.", color: "bg-purple-500" },
               { num: "03", title: "Get Results", desc: "Personas, keywords, demographics, captions, video scripts, and more.", color: "bg-emerald-500" },
             ].map((step, i) => (
-              <div key={i} className="text-center">
-                <div className={`w-16 h-16 ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
-                  <span className="text-2xl font-extrabold text-white">{step.num}</span>
+              <AnimatedSection key={i} delay={i * 150} direction="up">
+                <div className="text-center">
+                  <div className={`w-16 h-16 ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                    <span className="text-2xl font-extrabold text-white">{step.num}</span>
+                  </div>
+                  <h3 className="font-bold text-xl text-gray-900 mb-2">{step.title}</h3>
+                  <p className="text-sm text-gray-500">{step.desc}</p>
                 </div>
-                <h3 className="font-bold text-xl text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-500">{step.desc}</p>
-              </div>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -181,18 +202,22 @@ export default function Landing() {
       {/* Portfolio / Showcase - Videos & Images */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider">
-              <Film className="w-3 h-3" /> Our Work
-            </span>
-            <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Sample Ad Creatives</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">Real Facebook Reel ads and static creatives we've produced for our clients.</p>
-          </div>
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-rose-100 text-rose-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Film className="w-3 h-3" /> Our Work
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Sample Ad Creatives</h2>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Real Facebook Reel ads and static creatives we've produced for our clients.</p>
+            </div>
+          </AnimatedSection>
 
           {/* Facebook Reels */}
-          <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-            <Film className="w-5 h-5 text-rose-500" /> Video Ads
-          </h3>
+          <AnimatedSection delay={100}>
+            <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+              <Film className="w-5 h-5 text-rose-500" /> Video Ads
+            </h3>
+          </AnimatedSection>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 md:gap-4 mb-16">
             {[
               '1087625110144232',
@@ -205,72 +230,82 @@ export default function Landing() {
               '2139295246876817',
               '1925363451743818',
               '1035184015492663',
-            ].map((id) => (
-              <div key={id} className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-sm hover:shadow-lg transition-shadow">
-                <div className="aspect-[9/16] relative">
-                  <iframe
-                    src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${id}`)}&show_text=false&width=267`}
-                    className="absolute inset-0 w-full h-full"
-                    style={{ border: 'none', overflow: 'hidden' }}
-                    scrolling="no"
-                    frameBorder="0"
-                    allowFullScreen
-                    allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                    title="Facebook Reel"
-                  />
+            ].map((id, i) => (
+              <AnimatedSection key={id} delay={150 + i * 60} direction="up">
+                <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-100 shadow-sm hover:shadow-lg transition-shadow">
+                  <div className="aspect-[9/16] relative">
+                    <iframe
+                      src={`https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(`https://www.facebook.com/reel/${id}`)}&show_text=false&width=267`}
+                      className="absolute inset-0 w-full h-full"
+                      style={{ border: 'none', overflow: 'hidden' }}
+                      scrolling="no"
+                      frameBorder="0"
+                      allowFullScreen
+                      allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                      title="Facebook Reel"
+                    />
+                  </div>
                 </div>
-              </div>
+              </AnimatedSection>
             ))}
           </div>
 
           {/* Static Image Ads */}
-          <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-            <Camera className="w-5 h-5 text-blue-500" /> Static Ad Creatives
-          </h3>
-          <PortfolioGallery />
+          <AnimatedSection delay={200}>
+            <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
+              <Camera className="w-5 h-5 text-blue-500" /> Static Ad Creatives
+            </h3>
+          </AnimatedSection>
+          <AnimatedSection delay={300}>
+            <PortfolioGallery />
+          </AnimatedSection>
         </div>
       </section>
 
       {/* Services */}
       <section id="services" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-14">
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
-              <Star className="w-3 h-3" /> Premium Add-Ons
-            </span>
-            <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Done-For-You Ad Creatives</h2>
-            <p className="text-gray-500 mt-3 max-w-lg mx-auto">All our AI targeting and script tools are FREE. Need the actual visuals? Our design team delivers.</p>
-          </div>
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Star className="w-3 h-3" /> Premium Add-Ons
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Done-For-You Ad Creatives</h2>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">All our AI targeting and script tools are FREE. Need the actual visuals? Our design team delivers.</p>
+            </div>
+          </AnimatedSection>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {services.map((s, i) => (
-              <div key={i} className={`relative bg-white rounded-3xl p-6 border-2 ${s.popular ? 'border-purple-300 shadow-xl shadow-purple-100' : 'border-gray-100 hover:border-gray-200'} transition-all hover:shadow-lg`}>
-                {s.popular && (
-                  <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r ${s.color} text-white rounded-full text-xs font-bold shadow-md`}>
-                    Most Popular
+              <AnimatedSection key={i} delay={i * 150} direction="up">
+                <div className={`relative bg-white rounded-3xl p-6 border-2 ${s.popular ? 'border-purple-300 shadow-xl shadow-purple-100' : 'border-gray-100 hover:border-gray-200'} transition-all hover:shadow-lg`}>
+                  {s.popular && (
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r ${s.color} text-white rounded-full text-xs font-bold shadow-md`}>
+                      Most Popular
+                    </div>
+                  )}
+                  <div className={`w-full h-2 bg-gradient-to-r ${s.color} rounded-full mb-5`} />
+                  <h3 className="text-xl font-bold text-gray-900 mb-1">{s.title}</h3>
+                  <div className="flex items-baseline gap-1 mb-4">
+                    <span className="text-sm text-gray-400">from</span>
+                    <span className="text-sm text-gray-400">PHP</span>
+                    <span className="text-4xl font-extrabold text-gray-900">{s.price}</span>
                   </div>
-                )}
-                <div className={`w-full h-2 bg-gradient-to-r ${s.color} rounded-full mb-5`} />
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{s.title}</h3>
-                <div className="flex items-baseline gap-1 mb-4">
-                  <span className="text-sm text-gray-400">from</span>
-                  <span className="text-sm text-gray-400">PHP</span>
-                  <span className="text-4xl font-extrabold text-gray-900">{s.price}</span>
+                  <p className="text-sm text-gray-500 mb-5">{s.desc}</p>
+                  <ul className="space-y-2.5 mb-6">
+                    {s.features.map((f, j) => (
+                      <li key={j} className="flex items-center gap-2 text-sm text-gray-700">
+                        <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${s.color} flex items-center justify-center flex-shrink-0`}>
+                          <Check className="w-3 h-3 text-white" />
+                        </div>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <Link to="/auth" className={`w-full py-3 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all bg-gradient-to-r ${s.color} text-white hover:opacity-90 shadow-md`}>
+                    Order via Chat <ArrowUpRight className="w-4 h-4" />
+                  </Link>
                 </div>
-                <p className="text-sm text-gray-500 mb-5">{s.desc}</p>
-                <ul className="space-y-2.5 mb-6">
-                  {s.features.map((f, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm text-gray-700">
-                      <div className={`w-5 h-5 rounded-full bg-gradient-to-r ${s.color} flex items-center justify-center flex-shrink-0`}>
-                        <Check className="w-3 h-3 text-white" />
-                      </div>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link to="/auth" className={`w-full py-3 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all bg-gradient-to-r ${s.color} text-white hover:opacity-90 shadow-md`}>
-                  Order via Chat <ArrowUpRight className="w-4 h-4" />
-                </Link>
-              </div>
+              </AnimatedSection>
             ))}
           </div>
         </div>
@@ -278,17 +313,19 @@ export default function Landing() {
 
       {/* CTA */}
       <section className="py-24 px-4">
-        <div className="max-w-4xl mx-auto text-center bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-12 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/30 rounded-full blur-[80px]" />
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
-          <div className="relative">
-            <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Find Your Audience?</h2>
-            <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and start generating AI-powered targeting strategies, captions, and scripts — no credit card needed.</p>
-            <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
-              Get Started Free <ChevronRight className="w-5 h-5" />
-            </Link>
+        <AnimatedSection direction="none">
+          <div className="max-w-4xl mx-auto text-center bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 rounded-3xl p-12 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/30 rounded-full blur-[80px]" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
+            <div className="relative">
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Find Your Audience?</h2>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and start generating AI-powered targeting strategies, captions, and scripts — no credit card needed.</p>
+              <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
+                Get Started Free <ChevronRight className="w-5 h-5" />
+              </Link>
+            </div>
           </div>
-        </div>
+        </AnimatedSection>
       </section>
 
       {/* Footer */}
