@@ -1,5 +1,5 @@
-// Push schema using better-sqlite3
-import Database from "better-sqlite3";
+// Push schema using @libsql/client
+import { createClient } from "@libsql/client";
 import path from "path";
 import { fileURLToPath } from "url";
 
@@ -8,13 +8,11 @@ const dbPath = process.env.DATABASE_URL || path.resolve(__dirname, "../data/app.
 
 console.log(`Connecting to SQLite database at: ${dbPath}`);
 
-const db = new Database(dbPath);
-db.pragma("journal_mode = WAL");
-db.pragma("foreign_keys = ON");
+const client = createClient({ url: `file:${dbPath}` });
 
 console.log("Creating tables...");
 
-db.exec(`CREATE TABLE IF NOT EXISTS users (
+await client.execute(`CREATE TABLE IF NOT EXISTS users (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT NOT NULL UNIQUE,
   password_hash TEXT NOT NULL,
@@ -25,7 +23,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS users (
 )`);
 console.log("  ✓ users table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS searches (
+await client.execute(`CREATE TABLE IF NOT EXISTS searches (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER,
   product_query TEXT NOT NULL,
@@ -35,7 +33,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS searches (
 )`);
 console.log("  ✓ searches table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS settings (
+await client.execute(`CREATE TABLE IF NOT EXISTS settings (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   key TEXT NOT NULL UNIQUE,
   value TEXT NOT NULL,
@@ -43,7 +41,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS settings (
 )`);
 console.log("  ✓ settings table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS images (
+await client.execute(`CREATE TABLE IF NOT EXISTS images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   url TEXT NOT NULL,
@@ -55,7 +53,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS images (
 )`);
 console.log("  ✓ images table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS chats (
+await client.execute(`CREATE TABLE IF NOT EXISTS chats (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   title TEXT NOT NULL DEFAULT 'New Chat',
@@ -64,7 +62,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS chats (
 )`);
 console.log("  ✓ chats table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS messages (
+await client.execute(`CREATE TABLE IF NOT EXISTS messages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   chat_id INTEGER NOT NULL,
   role TEXT NOT NULL,
@@ -73,7 +71,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS messages (
 )`);
 console.log("  ✓ messages table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS generated_images (
+await client.execute(`CREATE TABLE IF NOT EXISTS generated_images (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   product_image_url TEXT NOT NULL,
@@ -88,7 +86,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS generated_images (
 )`);
 console.log("  ✓ generated_images table created");
 
-db.exec(`CREATE TABLE IF NOT EXISTS chat_messages (
+await client.execute(`CREATE TABLE IF NOT EXISTS chat_messages (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL,
   user_name TEXT NOT NULL,
@@ -100,5 +98,5 @@ db.exec(`CREATE TABLE IF NOT EXISTS chat_messages (
 )`);
 console.log("  ✓ chat_messages table created");
 
-db.close();
+client.close();
 console.log("\n✅ All tables created successfully!");

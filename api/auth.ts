@@ -21,13 +21,13 @@ export const authRouter = createRouter({
         throw new Error("Email already registered");
       }
       const passwordHash = await hashPassword(input.password);
-      const result = db.insert(users).values({
+      const result = await db.insert(users).values({
         email: input.email,
         passwordHash,
         name: input.name,
         isActive: true,
         isAdmin: false,
-      }).returning({ id: users.id }).all();
+      }).returning({ id: users.id });
       const userId = result[0].id;
       
       const token = signJWT({ userId, email: input.email, isAdmin: false });

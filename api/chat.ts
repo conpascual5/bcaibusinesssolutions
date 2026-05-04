@@ -17,10 +17,10 @@ export const chatRouter = createRouter({
     .input(z.object({ title: z.string().min(1).max(200).default("New Chat") }))
     .mutation(async ({ input, ctx }) => {
       const db = getDb();
-      const result = db.insert(chats).values({
+      const result = await db.insert(chats).values({
         userId: ctx.user.userId,
         title: input.title,
-      }).returning({ id: chats.id }).all();
+      }).returning({ id: chats.id });
       const chat = result[0];
       return { id: chat.id, title: input.title };
     }),
@@ -113,11 +113,11 @@ export const chatRouter = createRouter({
       const reply = data.choices?.[0]?.message?.content ?? "No response";
 
       // Save assistant message
-      const msgResult = db.insert(messages).values({
+      const msgResult = await db.insert(messages).values({
         chatId: input.chatId,
         role: "assistant",
         content: reply,
-      }).returning({ id: messages.id }).all();
+      }).returning({ id: messages.id });
       const savedMsg = msgResult[0];
 
       // Update chat timestamp
