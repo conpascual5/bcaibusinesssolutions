@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, Phone, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
 
@@ -10,7 +10,6 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [error, setError] = useState('');
@@ -65,7 +64,7 @@ export default function Auth() {
         setError('Paki-enter ang iyong pangalan');
         return;
       }
-      registerMutation.mutate({ email, password, name, phone: phone.trim() || undefined });
+      registerMutation.mutate({ email, password, name });
     }
   };
 
@@ -195,21 +194,6 @@ export default function Auth() {
                     placeholder="Juan Dela Cruz"
                     className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                   />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone Number <span className="text-gray-400 font-normal">(optional)</span>
-                  </label>
-                  <div className="relative">
-                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0917 123 4567"
-                      className="w-full pl-11 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                    />
-                  </div>
                 </div>
               </>
             )}

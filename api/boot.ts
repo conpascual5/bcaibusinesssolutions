@@ -212,13 +212,10 @@ app.post("/api/setup", async (c) => {
       email TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
       name TEXT NOT NULL,
-      phone TEXT,
       is_active INTEGER NOT NULL DEFAULT 1,
       is_admin INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`);
-    // Add phone column if it doesn't exist (for existing databases)
-    try { await db.run(`ALTER TABLE users ADD COLUMN phone TEXT`); } catch {}
     await db.run(`CREATE TABLE IF NOT EXISTS searches (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER,
@@ -301,15 +298,11 @@ app.post("/api/setup-tables", async (c) => {
         email TEXT NOT NULL UNIQUE,
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
-        phone TEXT,
         is_active INTEGER NOT NULL DEFAULT 1,
         is_admin INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )
     `);
-
-    // Add phone column if it doesn't exist (for existing databases)
-    try { await db.run(`ALTER TABLE users ADD COLUMN phone TEXT`); } catch {}
 
     await db.run(`
       CREATE TABLE IF NOT EXISTS searches (

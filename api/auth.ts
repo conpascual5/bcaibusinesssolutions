@@ -12,7 +12,6 @@ export const authRouter = createRouter({
         email: z.string().email().max(255),
         password: z.string().min(6).max(100),
         name: z.string().min(1).max(100),
-        phone: z.string().max(20).optional(),
       })
     )
     .mutation(async ({ input }) => {
@@ -24,7 +23,6 @@ export const authRouter = createRouter({
       const passwordHash = await hashPassword(input.password);
       const result = await db.insert(users).values({
         email: input.email,
-        phone: input.phone || null,
         passwordHash,
         name: input.name,
         isActive: true,
