@@ -194,7 +194,7 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<string, string> = {
 
 app.post("/api/sales-wizard", async (c) => {
   try {
-    const { productName, targetAudience, contentType, framework } = await c.req.json();
+    const { productName, targetAudience, messageContext, contentType, framework } = await c.req.json();
 
     if (!productName || !targetAudience || !contentType || !framework) {
       return c.json({ error: "Missing required fields: productName, targetAudience, contentType, framework" }, 400);

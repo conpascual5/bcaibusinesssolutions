@@ -121,6 +121,7 @@ function OutputSkeleton() {
 export default function SalesWizard() {
   const [productName, setProductName] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
+  const [messageContext, setMessageContext] = useState("");
   const [contentType, setContentType] = useState<string>("");
   const [selectedFramework, setSelectedFramework] = useState<string>("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -152,6 +153,7 @@ export default function SalesWizard() {
         body: JSON.stringify({
           productName,
           targetAudience,
+          messageContext,
           contentType,
           framework: selectedFramework,
         }),
@@ -264,6 +266,17 @@ export default function SalesWizard() {
                     onChange={(e) => setTargetAudience(e.target.value)}
                     className="min-h-[100px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none"
                   />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="messageContext" className="text-xs font-medium text-muted-foreground">What's this about?</Label>
+                  <Textarea
+                    id="messageContext"
+                    placeholder="e.g., 50% off launch promo, new feature announcement, seasonal sale, brand awareness campaign..."
+                    value={messageContext}
+                    onChange={(e) => setMessageContext(e.target.value)}
+                    className="min-h-[80px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none"
+                  />
+                  <p className="text-[11px] text-muted-foreground/60">Describe the purpose — promo, announcement, launch, etc.</p>
                 </div>
               </div>
             </div>
