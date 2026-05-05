@@ -232,14 +232,9 @@ function createRestDb(client: any): DrizzleDb {
       };
     },
     execute: async (query: string) => {
-      try {
-        const { data, error } = await client.rpc('exec_sql', { query_text: query });
-        if (error) throw new Error(error.message);
-        return data;
-      } catch (err: any) {
-        console.error("[supabase-db] execute failed:", err?.message || err);
-        throw err;
-      }
+      // execute is not supported via REST API — tables must be created via SQL migration
+      console.warn("[supabase-db] execute() not supported via REST API. Tables should be pre-created.");
+      return [];
     },
   };
 }
@@ -247,6 +242,12 @@ function createRestDb(client: any): DrizzleDb {
 export async function waitForSupabaseDb() {
   try {
     await getSupabaseDb();
+    // Verify connection by listing users
+    const { data, error } = await supabase.from('users').select('id').limit(1);
+    if (error) {
+      console.error("[supabase-db] Connection test failed:", error.message);
+      throw error;
+    }
     console.log("[supabase-db] Database ready");
   } catch (err) {
     console.error("[supabase-db] Failed to connect:", err);
