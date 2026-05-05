@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
+import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2, UserPlus } from 'lucide-react';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
 
 export default function Auth() {
   const navigate = useNavigate();
   const { setAuth } = useAuth();
+  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -65,6 +67,22 @@ export default function Auth() {
     },
   });
 
+  const registerMutation = trpc.auth.register.useMutation({
+    onSuccess: (data) => {
+      console.log('[auth] Register success for:', data.user.email);
+      setIsSubmitting(false);
+      retryCountRef.current = 0;
+      setAuth(data.token, data.user);
+      navigate('/app');
+    },
+    onError: (err) => {
+      console.error('[auth] Register error:', err);
+      setIsSubmitting(false);
+      retryCountRef.current = 0;
+      setError(err.message || 'Registration failed. Please try again.');
+    },
+  });
+
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
     onSuccess: () => {
       retryCountRef.current = 0;
@@ -90,7 +108,11 @@ export default function Auth() {
     setError('');
     setIsSubmitting(true);
     retryCountRef.current = 0;
-    loginMutation.mutate({ email, password });
+    if (isLogin) {
+      loginMutation.mutate({ email, password });
+    } else {
+      registerMutation.mutate({ email, password, name });
+    }
   };
 
   const handleForgotSubmit = (e: React.FormEvent) => {
@@ -103,7 +125,7 @@ export default function Auth() {
     forgotPasswordMutation.mutate({ email: forgotEmail });
   };
 
-  const isLoading = isSubmitting || loginMutation.isPending;
+  const isLoading = isSubmitting || loginMutation.isPending || registerMutation.isPending;
 
   // Forgot Password View
   if (showForgotPassword) {
@@ -193,10 +215,10 @@ export default function Auth() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            Mag-Log In
+            {isLogin ? 'Mag-Log In' : 'Mag-Sign Up'}
           </h1>
           <p className="text-gray-500 mt-1">
-            Welcome back! I-login ang iyong account.
+            {isLogin ? 'Welcome back! I-login ang iyong account.' : 'Gumawa ng bagong account para magsimula.'}
           </p>
         </div>
 
@@ -208,6 +230,20 @@ export default function Auth() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            {!isLogin && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Juan Dela Cruz"
+                  required
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
@@ -242,15 +278,17 @@ export default function Auth() {
               </div>
             </div>
 
-            <div className="text-right">
-              <button
-                type="button"
-                onClick={() => { setShowForgotPassword(true); setError(''); }}
-                className="text-sm text-blue-600 font-medium hover:underline"
-              >
-                Forgot Password?
-              </button>
-            </div>
+            {isLogin && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => { setShowForgotPassword(true); setError(''); }}
+                  className="text-sm text-blue-600 font-medium hover:underline"
+                >
+                  Forgot Password?
+                </button>
+              </div>
+            )}
 
             <button
               type="submit"
@@ -258,9 +296,19 @@ export default function Auth() {
               className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              Mag-Log In
+              {isLogin ? 'Mag-Log In' : 'Mag-Sign Up'}
             </button>
           </form>
+
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => { setIsLogin(!isLogin); setError(''); setName(''); setEmail(''); setPassword(''); }}
+              className="text-sm text-blue-600 font-medium hover:underline"
+            >
+              {isLogin ? 'Wala pang account? Mag-Sign Up' : 'May account na? Mag-Log In'}
+            </button>
+          </div>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
