@@ -334,7 +334,7 @@ export default function Auth() {
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">
-          BC AI Business Solutions — Social Trend Analyzer
+          BC AI Business Solutions — Marketing Tool Kit
         </p>
       </div>
     </div>

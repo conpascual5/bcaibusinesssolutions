@@ -6,6 +6,7 @@ import {
   MessageCircle, Film, MessageSquare, ChevronRight,
   ArrowUpRight, Palette, Star, Camera,
   FileSearch, FileText, Receipt, Brain, ImageIcon,
+  Crown, Wand2, Eye, Shield, CheckCircle,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -35,6 +36,72 @@ export default function Landing() {
     { icon: <MessageCircle className="w-5 h-5" />, color: "bg-violet-500", title: "Live Chat Support", desc: "Chat directly with us to order services or get help with your campaigns." },
   ];
 
+  // All tools from the app
+  const allTools = [
+    { icon: <Wand2 className="w-5 h-5" />, color: "from-blue-500 to-cyan-400", title: "Sales Wizard", desc: "AI-powered sales message generator with multiple frameworks (AIDA, PAS, BAB, etc.) for any product or audience." },
+    { icon: <Crosshair className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Captions & Video Script", desc: "Generate 8 ready-to-use ad captions with hashtags and 3 complete video ad scripts with hooks and CTAs." },
+    { icon: <Target className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "FB Ads Targeting", desc: "Generate 3 detailed buyer personas with demographics, interests, behaviors, and exact Facebook targeting keywords." },
+    { icon: <Eye className="w-5 h-5" />, color: "from-orange-500 to-amber-400", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with 3 Taglish captions and Facebook Ads targeting strategy." },
+    { icon: <FileSearch className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Ad Analyzer", desc: "Paste competitor ad copy and get psychological trigger analysis, counter-positioning strategies, and improvement tips." },
+    { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF instantly." },
+  ];
+
+  const plans = [
+    {
+      name: "Free",
+      price: "0",
+      icon: Sparkles,
+      color: "text-gray-500",
+      badge: "bg-gray-100 text-gray-700 border-gray-200",
+      gradient: "from-gray-400 to-gray-500",
+      popular: false,
+      features: [
+        "Access to all 6 AI tools",
+        "3-5 uses per tool per month",
+        "Basic ad targeting personas",
+        "Invoice generation (3/month)",
+        "Ad copy analysis (3/month)",
+        "Live chat support",
+      ],
+    },
+    {
+      name: "Pro",
+      price: "499",
+      period: "/month",
+      icon: Crown,
+      color: "text-amber-500",
+      badge: "bg-amber-100 text-amber-700 border-amber-200",
+      gradient: "from-amber-400 to-orange-500",
+      popular: true,
+      features: [
+        "Unlimited access to all 6 tools",
+        "No usage limits on any feature",
+        "Full buyer personas with targeting",
+        "Unlimited invoice generation",
+        "Unlimited ad copy analysis",
+        "Priority live chat support",
+      ],
+    },
+    {
+      name: "VIP",
+      price: "999",
+      period: "/month",
+      icon: Star,
+      color: "text-purple-500",
+      badge: "bg-purple-100 text-purple-700 border-purple-200",
+      gradient: "from-purple-500 to-indigo-600",
+      popular: false,
+      features: [
+        "100 uses per month across all tools",
+        "VIP-only features and insights",
+        "Advanced buyer personas with deep targeting",
+        "Priority invoice generation",
+        "Priority ad analysis",
+        "Dedicated live chat support",
+      ],
+    },
+  ];
+
   const services = [
     { title: "30 Static Images", price: "499", color: "from-blue-500 to-cyan-400", desc: "30 custom static image ads for your campaigns", features: ["Custom branded designs", "Multiple sizes included", "3-day delivery", "2 revisions"], popular: false },
     { title: "UGC Ads", price: "999", color: "from-purple-500 to-pink-400", desc: "User-generated content style video ads", features: ["UGC-style video ads", "Script + filming guide", "5-day delivery", "3 revisions"], popular: true },
@@ -54,7 +121,8 @@ export default function Landing() {
               <span className="font-bold text-gray-900">BC AI</span>
             </div>
             <div className="hidden md:flex items-center gap-6">
-              <a href="#features" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Features</a>
+              <a href="#tools" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Tools</a>
+              <a href="#plans" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Plans</a>
               <a href="#services" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Services</a>
               <a href="#how" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
               <Link to="/auth" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Sign In</Link>
@@ -69,7 +137,8 @@ export default function Landing() {
         </div>
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t shadow-lg px-4 py-4 space-y-3">
-            <a href="#features" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Features</a>
+            <a href="#tools" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Tools</a>
+            <a href="#plans" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Plans</a>
             <a href="#services" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Services</a>
             <a href="#how" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
             <Link to="/auth" className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Get Started Free</Link>
@@ -87,14 +156,14 @@ export default function Landing() {
           <AnimatedSection delay={100}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 border border-white/20 rounded-full mb-6 backdrop-blur">
               <Zap className="w-4 h-4 text-amber-300" />
-              <span className="text-sm text-white font-medium">All-in-One AI Marketing Suite</span>
+              <span className="text-sm text-white font-medium">Marketing Tool Kit — All-in-One AI Suite</span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={200}>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6">
               Your Complete{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300">
-                Ad Toolkit
+                Marketing Tool Kit
               </span>
             </h1>
           </AnimatedSection>
@@ -115,8 +184,8 @@ export default function Landing() {
               <Link to="/auth" className="px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl flex items-center justify-center gap-2">
                 Start for Free <ArrowRight className="w-5 h-5" />
               </Link>
-              <a href="#features" className="px-8 py-4 bg-white/10 border border-white/30 text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 backdrop-blur">
-                Explore Features
+              <a href="#tools" className="px-8 py-4 bg-white/10 border border-white/30 text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 backdrop-blur">
+                Explore Tools
               </a>
             </div>
           </AnimatedSection>
@@ -130,7 +199,7 @@ export default function Landing() {
             { value: "6", label: "AI Tools", color: "text-blue-600" },
             { value: "15+", label: "Targeting Keywords", color: "text-purple-600" },
             { value: "8", label: "Ad Captions", color: "text-green-600" },
-            { value: "3", label: "Video Scripts", color: "text-pink-600" },
+            { value: "3", label: "Pricing Plans", color: "text-amber-600" },
           ].map((s, i) => (
             <AnimatedSection key={i} delay={i * 100} direction="down">
               <div>
@@ -142,61 +211,102 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-24 px-4">
+      {/* All Tools Section */}
+      <section id="tools" className="py-24 px-4">
         <div className="max-w-6xl mx-auto">
           <AnimatedSection>
             <div className="text-center mb-14">
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
-                <Palette className="w-3 h-3" /> Free Tools
+                <Palette className="w-3 h-3" /> All Tools
               </span>
-              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Everything You Need — Zero Cost</h2>
-              <p className="text-gray-500 mt-3 max-w-lg mx-auto">From audience research to competitor analysis to invoicing — all free. Only pay if you want us to produce the actual images/videos.</p>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">6 Powerful AI Tools — Zero Cost</h2>
+              <p className="text-gray-500 mt-3 max-w-xl mx-auto">From audience research to competitor analysis to invoicing — all free on the Free plan. Upgrade to unlock unlimited usage.</p>
             </div>
           </AnimatedSection>
 
-          {/* Tool Categories */}
-          <div className="mb-12">
-            <AnimatedSection delay={50}>
-              <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-                <Target className="w-5 h-5 text-blue-500" /> Audience &amp; Ad Strategy
-              </h3>
-            </AnimatedSection>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-              {features.slice(0, 6).map((f, i) => (
-                <AnimatedSection key={i} delay={i * 60} direction="up">
-                  <div className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-                    <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                      {f.icon}
-                    </div>
-                    <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {allTools.map((tool, i) => (
+              <AnimatedSection key={i} delay={i * 80} direction="up">
+                <div className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className={`w-12 h-12 bg-gradient-to-r ${tool.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-sm`}>
+                    {tool.icon}
                   </div>
-                </AnimatedSection>
-              ))}
-            </div>
+                  <h3 className="font-bold text-gray-900 mb-2">{tool.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{tool.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <AnimatedSection delay={50}>
-              <h3 className="text-xl font-bold text-gray-800 mb-5 flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-500" /> New: AI Analysis &amp; Business Tools
-              </h3>
-            </AnimatedSection>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {features.slice(6).map((f, i) => (
-                <AnimatedSection key={i + 6} delay={i * 60} direction="up">
-                  <div className="group bg-white rounded-2xl p-6 border-2 border-purple-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
-                    <div className="absolute -top-2 -right-2 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-[10px] font-bold rounded-full shadow-sm">
-                      NEW
+      {/* Plans Section */}
+      <section id="plans" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-6xl mx-auto">
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Crown className="w-3 h-3" /> Pricing Plans
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Choose Your Plan</h2>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Start free and upgrade when you need more. No credit card required for the Free plan.</p>
+            </div>
+          </AnimatedSection>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {plans.map((plan, i) => {
+              const PlanIcon = plan.icon;
+              return (
+                <AnimatedSection key={i} delay={i * 150} direction="up">
+                  <div className={`relative bg-white rounded-3xl p-6 border-2 transition-all hover:shadow-lg ${
+                    plan.popular ? 'border-amber-300 shadow-xl shadow-amber-100' : 'border-gray-100 hover:border-gray-200'
+                  }`}>
+                    {plan.popular && (
+                      <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r ${plan.gradient} text-white rounded-full text-xs font-bold shadow-md flex items-center gap-1`}>
+                        <Crown className="w-3 h-3" />
+                        Most Popular
+                      </div>
+                    )}
+                    
+                    {/* Plan Header */}
+                    <div className="text-center mb-6">
+                      <div className={`w-14 h-14 bg-gradient-to-br ${plan.gradient} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                        <PlanIcon className="w-7 h-7 text-white" />
+                      </div>
+                      <h3 className="text-2xl font-extrabold text-gray-900">{plan.name}</h3>
+                      <div className="flex items-baseline justify-center gap-1 mt-2">
+                        <span className="text-sm text-gray-400">PHP</span>
+                        <span className="text-5xl font-extrabold text-gray-900">{plan.price}</span>
+                        {plan.period && <span className="text-sm text-gray-400">{plan.period}</span>}
+                      </div>
                     </div>
-                    <div className={`w-12 h-12 ${f.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform`}>
-                      {f.icon}
-                    </div>
-                    <h3 className="font-bold text-gray-900 mb-2">{f.title}</h3>
-                    <p className="text-sm text-gray-500 leading-relaxed">{f.desc}</p>
+
+                    {/* Features */}
+                    <ul className="space-y-3 mb-6">
+                      {plan.features.map((f, j) => (
+                        <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
+                          <CheckCircle className="w-4 h-4 text-emerald-500 mt-0.5 flex-shrink-0" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    {/* CTA */}
+                    <Link
+                      to="/auth"
+                      className={`w-full py-3 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all ${
+                        plan.popular
+                          ? `bg-gradient-to-r ${plan.gradient} text-white hover:opacity-90 shadow-md`
+                          : 'bg-gray-900 text-white hover:bg-gray-800'
+                      }`}
+                    >
+                      {plan.price === "0" ? "Get Started Free" : "Upgrade Now"}
+                      <ArrowRight className="w-4 h-4" />
+                    </Link>
                   </div>
                 </AnimatedSection>
-              ))}
-            </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -372,7 +482,8 @@ export default function Landing() {
               <span className="font-bold">BC AI Business Solutions</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-400">
-              <a href="#features" className="hover:text-white transition-colors">Features</a>
+              <a href="#tools" className="hover:text-white transition-colors">Tools</a>
+              <a href="#plans" className="hover:text-white transition-colors">Plans</a>
               <a href="#services" className="hover:text-white transition-colors">Services</a>
               <Link to="/auth" className="hover:text-white transition-colors">Sign Up</Link>
             </div>
