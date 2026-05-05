@@ -20,7 +20,11 @@ export const userRouter = createRouter({
     .input(z.object({ userId: z.number(), isActive: z.boolean() }))
     .mutation(async ({ input }) => {
       const db = await getDbReady() as any;
-      await db.update(users).set({ isActive: input.isActive ? 1 : 0 }).where(eq(users.id, input.userId));
+      const now = new Date().toISOString();
+      await db.update(users).set({
+        isActive: input.isActive ? 1 : 0,
+        activatedAt: input.isActive ? now : undefined,
+      }).where(eq(users.id, input.userId));
       await saveDb();
       return { success: true };
     }),
@@ -29,7 +33,12 @@ export const userRouter = createRouter({
     .input(z.object({ userId: z.number(), plan: z.enum(["free", "pro", "vip"]) }))
     .mutation(async ({ input }) => {
       const db = await getDbReady() as any;
-      await db.update(users).set({ plan: input.plan }).where(eq(users.id, input.userId));
+      const now = new Date().toISOString();
+      await db.update(users).set({
+        plan: input.plan,
+        activatedAt: now,
+        isActive: 1,
+      }).where(eq(users.id, input.userId));
       await saveDb();
       return { success: true, plan: input.plan };
     }),

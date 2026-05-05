@@ -12,6 +12,7 @@ export const users = sqliteTable("users", {
   isActive: integer("is_active").notNull().default(1),
   isAdmin: integer("is_admin").notNull().default(0),
   plan: text("plan").notNull().default("free"),
+  activatedAt: text("activated_at"),
   createdAt: text("created_at").notNull().default("(datetime('now'))"),
 });
 

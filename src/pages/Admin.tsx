@@ -181,6 +181,7 @@ export default function Admin() {
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Activated</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
@@ -236,6 +237,11 @@ export default function Admin() {
                       </td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">
                         {new Date(u.createdAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-muted-foreground">
+                        {u.activatedAt
+                          ? new Date(u.activatedAt).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : <span className="text-muted-foreground/50 italic">Not yet</span>}
                       </td>
                       <td className="px-6 py-4">
                         <button
