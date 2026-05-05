@@ -27,7 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const meQuery = trpc.auth.me.useQuery(undefined, {
     enabled: !!token,
-    retry: false,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 8000),
   });
 
   useEffect(() => {
