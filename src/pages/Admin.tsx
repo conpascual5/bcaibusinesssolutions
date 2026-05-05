@@ -29,12 +29,14 @@ export default function Admin() {
   const [deepseekError, setDeepseekError] = useState('');
   const setDeepseekKeyMutation = trpc.settings.setDeepseekKey.useMutation({
     onSuccess: () => {
+      console.log('[Admin] Deepseek key saved successfully');
       refetchDeepseekKey();
       setDeepseekSaved(true);
       setDeepseekError('');
       setTimeout(() => setDeepseekSaved(false), 2000);
     },
     onError: (err) => {
+      console.error('[Admin] Deepseek key save error:', err.message);
       setDeepseekError(err.message);
     },
   });
@@ -42,12 +44,14 @@ export default function Admin() {
   const [openaiError, setOpenaiError] = useState('');
   const setOpenaiKeyMutation = trpc.settings.setOpenaiKey.useMutation({
     onSuccess: () => {
+      console.log('[Admin] OpenAI key saved successfully');
       refetchOpenaiKey();
       setOpenaiSaved(true);
       setOpenaiError('');
       setTimeout(() => setOpenaiSaved(false), 2000);
     },
     onError: (err) => {
+      console.error('[Admin] OpenAI key save error:', err.message);
       setOpenaiError(err.message);
     },
   });
