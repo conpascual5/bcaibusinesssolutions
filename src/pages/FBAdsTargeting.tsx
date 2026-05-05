@@ -36,7 +36,9 @@ import {
   Menu,
   Moon,
   Sun,
-  ArrowLeft,
+  FileSearch,
+  FileText,
+  Wand2,
 } from 'lucide-react';
 
 export default function FBAdsTargeting() {
@@ -130,8 +132,11 @@ export default function FBAdsTargeting() {
 
   const sidebarNavItems = [
     { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
+    { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
     { icon: Crosshair, label: 'Captions & Video Script', path: '/app/targeting' },
     { icon: Target, label: 'FB Ads Targeting', path: '/app/fb-ads-targeting' },
+    { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
+    { icon: FileText, label: 'Invoices', path: '/app/invoices' },
   ];
 
   return (
