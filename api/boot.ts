@@ -609,7 +609,7 @@ app.post("/api/reactivate-admin", async (c) => {
     const db = await getDbReady();
     const [admin] = await db.select().from(users).where(eq(users.email, email)).limit(1);
     if (!admin) return c.json({ error: "User not found" }, 404);
-    await db.update(users).set({ isActive: true }).where(eq(users.email, email));
+    await db.update(users).set({ isActive: 1 }).where(eq(users.email, email));
     return c.json({ success: true, message: "Admin account reactivated" });
   } catch (err: any) {
     return c.json({ error: err.message }, 500);

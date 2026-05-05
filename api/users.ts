@@ -15,7 +15,7 @@ export const userRouter = createRouter({
     .input(z.object({ userId: z.number(), isActive: z.boolean() }))
     .mutation(async ({ input }) => {
       const db = await getDbReady() as any;
-      await db.update(users).set({ isActive: input.isActive }).where(eq(users.id, input.userId));
+      await db.update(users).set({ isActive: input.isActive ? 1 : 0 }).where(eq(users.id, input.userId));
       return { success: true };
     }),
 

@@ -74,8 +74,8 @@ export const authRouter = createRouter({
           email: input.email,
           passwordHash,
           name: input.name,
-          isActive: true,
-          isAdmin: false,
+          isActive: 1,
+          isAdmin: 0,
         }).returning();
         
         const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
