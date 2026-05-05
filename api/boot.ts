@@ -103,25 +103,88 @@ ${text}`;
   }
 });
 
-// Auto-init endpoint — runs schema push and seed programmatically
-// Visit /api/init-db once to set up the database, then remove this route for security
+// Auto-init endpoint — creates tables and seeds admin directly (no shell commands)
+// Visit /api/init-db once to set up the database
 app.get("/api/init-db", async (c) => {
   try {
     const results: string[] = [];
+    const { env } = await import("./lib/env.js");
 
-    // Step 1: Push schema
-    results.push("Running schema push...");
-    const { execSync } = await import("child_process");
-    const { resolve } = await import("path");
-    const root = resolve(process.cwd());
+    if (!env.databaseUrl) {
+      return c.json({ success: false, error: "DATABASE_URL not configured" }, 400);
+    }
 
-    try {
-      execSync("node scripts/push-schema.mjs", { cwd: root, stdio: "pipe", timeout: 30000 });
-      results.push("✅ Schema pushed successfully");
-    } catch (pushErr: any) {
-      results.push(`❌ Schema push failed: ${pushErr.message}`);
-      // Try inline table creation as fallback
-      results.push("Trying inline table creation...");
+    const isNeon = env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://");
+
+    if (isNeon) {
+      results.push("Using Neon/Postgres database...");
+      const { neon } = await import("@neondatabase/serverless");
+      const sql = neon(env.databaseUrl);
+
+      // Create all tables
+      await sql(`CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL, name VARCHAR(100) NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true, is_admin BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS searches (
+        id SERIAL PRIMARY KEY, user_id INTEGER,
+        product_query VARCHAR(500) NOT NULL, ip_address VARCHAR(100),
+        user_agent TEXT, created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS settings (
+        id SERIAL PRIMARY KEY, key VARCHAR(100) NOT NULL UNIQUE,
+        value TEXT NOT NULL, updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS images (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        url TEXT NOT NULL, prompt TEXT NOT NULL,
+        width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0,
+        content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS chats (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY, chat_id INTEGER NOT NULL,
+        role VARCHAR(20) NOT NULL, content TEXT NOT NULL,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS generated_images (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        product_image_url TEXT NOT NULL, theme_title VARCHAR(200) NOT NULL,
+        prompt TEXT NOT NULL, result_image_url TEXT, overlay_text VARCHAR(500),
+        overlay_settings TEXT, final_image_url TEXT,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      await sql(`CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        user_name VARCHAR(100) NOT NULL, user_email VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT false,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+      )`);
+      results.push("✅ All tables created");
+
+      // Seed admin user
+      const bcrypt = await import("bcryptjs");
+      const hash = bcrypt.hashSync("admin123", 10);
+      await sql(
+        `INSERT INTO users (email, password_hash, name, is_active, is_admin)
+         VALUES ('conpascual5@gmail.com', $1, 'BC AI Admin', true, true)
+         ON CONFLICT (email) DO NOTHING`,
+        [hash]
+      );
+      results.push("✅ Admin user seeded (conpascual5@gmail.com / admin123)");
+    } else {
+      // Local SQLite
+      results.push("Using SQLite database...");
       const initSqlJs = (await import("sql.js")).default;
       const path = await import("path");
       const fs = await import("fs");
@@ -135,14 +198,6 @@ app.get("/api/init-db", async (c) => {
 
       const SQL = await initSqlJs();
       const sqlJsDb = new SQL.Database(buffer);
-
-      const tables = [
-        "users", "searches", "settings", "images", "chats",
-        "messages", "generated_images", "chat_messages"
-      ];
-      for (const table of tables) {
-        sqlJsDb.run(`DROP TABLE IF EXISTS ${table}`);
-      }
 
       sqlJsDb.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT, email TEXT NOT NULL UNIQUE,
@@ -189,53 +244,27 @@ app.get("/api/init-db", async (c) => {
         is_admin INTEGER NOT NULL DEFAULT 0, is_read INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL DEFAULT (datetime('now'))
       )`);
+      results.push("✅ All tables created");
+
+      // Seed admin
+      const bcrypt = await import("bcryptjs");
+      const hash = bcrypt.hashSync("admin123", 10);
+      sqlJsDb.run(
+        `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
+         VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,
+        [hash]
+      );
+      results.push("✅ Admin user seeded (conpascual5@gmail.com / admin123)");
 
       const data = sqlJsDb.export();
       fs.writeFileSync(dbPath, Buffer.from(data));
       sqlJsDb.close();
-      results.push("✅ Tables created inline successfully");
-    }
-
-    // Step 2: Seed admin user
-    results.push("Seeding admin user...");
-    try {
-      execSync("npx tsx db/seed.ts", { cwd: root, stdio: "pipe", timeout: 30000 });
-      results.push("✅ Admin user seeded successfully");
-    } catch (seedErr: any) {
-      results.push(`❌ Seed script failed: ${seedErr.message}`);
-      // Try inline seeding as fallback
-      results.push("Trying inline admin creation...");
-      try {
-        const initSqlJs = (await import("sql.js")).default;
-        const path = await import("path");
-        const fs = await import("fs");
-        const bcrypt = await import("bcryptjs");
-
-        const dbPath = path.resolve(process.cwd(), "data", "app.db");
-        const buffer = fs.readFileSync(dbPath);
-        const SQL = await initSqlJs();
-        const sqlJsDb = new SQL.Database(buffer);
-
-        const hash = bcrypt.hashSync("admin123", 10);
-        sqlJsDb.run(
-          `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
-           VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,
-          [hash]
-        );
-
-        const data = sqlJsDb.export();
-        fs.writeFileSync(dbPath, Buffer.from(data));
-        sqlJsDb.close();
-        results.push("✅ Admin user created inline (conpascual5@gmail.com / admin123)");
-      } catch (inlineErr: any) {
-        results.push(`❌ Inline seeding failed: ${inlineErr.message}`);
-      }
     }
 
     return c.json({ success: true, results });
   } catch (err: any) {
     console.error("Init DB failed:", err);
-    return c.json({ success: false, error: err.message }, 500);
+    return c.json({ success: false, error: err.message, stack: err.stack }, 500);
   }
 });
 
