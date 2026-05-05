@@ -28,6 +28,7 @@ import {
   FileSearch,
   LayoutDashboard,
   Menu,
+  Wand2,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -36,6 +37,7 @@ interface AppLayoutProps {
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
+  { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
   { icon: Crosshair, label: 'Targeting Generator', path: '/app/targeting' },
   { icon: ImageIcon, label: 'Caption Generator', path: '/captions' },
   { icon: FileSearch, label: 'Ad Copy Analyzer', path: '/app/competitor-analysis' },

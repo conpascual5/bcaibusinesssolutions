@@ -4,8 +4,12 @@ import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
 import { appRouter } from "./router.js";
 import { createContext } from "./context.js";
 import { env } from "./lib/env.js";
+import salesWizard from "./sales-wizard.js";
 
 const app = new Hono();
+
+// Mount sales wizard routes
+app.route("/", salesWizard);
 
 // Global error handler — ensures all errors return JSON
 app.onError((err, c) => {

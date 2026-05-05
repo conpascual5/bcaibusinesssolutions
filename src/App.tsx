@@ -11,6 +11,7 @@ import Setup from './pages/Setup'
 import Upload from './pages/Upload'
 import CompetitorAnalysis from './pages/CompetitorAnalysis'
 import Invoices from './pages/Invoices'
+import SalesWizard from './pages/SalesWizard'
 import AppLayout from './components/AppLayout'
 import ChatWidget from './components/ChatWidget'
 
@@ -52,6 +53,7 @@ export default function App() {
         <Route path="/auth" element={<Auth />} />
         <Route path="/app" element={<ProtectedRoute><AppLayoutRoute><Dashboard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/targeting" element={<ProtectedRoute><AppLayoutRoute><Home /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/invoices" element={<ProtectedRoute><AppLayoutRoute><Invoices /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/captions" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
