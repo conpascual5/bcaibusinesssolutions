@@ -92,8 +92,8 @@ export default function Landing() {
       gradient: "from-purple-500 to-indigo-600",
       popular: false,
       features: [
-        "100 uses per month across all tools",
-        "VIP-only features and insights",
+        "Exclusive for existing buyers of Static Images, Cinematic Ads & Website Creation",
+        "100 uses per month across all AI tools",
         "Advanced buyer personas with deep targeting",
         "Priority invoice generation",
         "Priority ad analysis",
@@ -249,7 +249,7 @@ export default function Landing() {
                 <Crown className="w-3 h-3" /> Pricing Plans
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Choose Your Plan</h2>
-              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Start free and upgrade when you need more. No credit card required for the Free plan.</p>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Start free and upgrade when you need more. No credit card required for the Free plan. VIP is exclusive for existing buyers of our ad creatives and website services.</p>
             </div>
           </AnimatedSection>
 
