@@ -1,8 +1,25 @@
 import { env } from "../lib/env.js";
 
-// Use Neon/Postgres when DATABASE_URL is set (works on both Vercel and local)
-// Falls back to SQLite only when no DATABASE_URL is configured (local dev only)
-const useNeon = !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
+// On Vercel, use Supabase (Postgres via JS client) for fast cold starts
+// Falls back to Neon when DATABASE_URL is set (local dev with Postgres)
+// Falls back to SQLite when nothing is configured (local dev only)
+const useSupabase = !!env.isVercel;
+const useNeon = !env.isVercel && !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
+
+async function getSupabaseDbReady() {
+  const { getSupabaseDb } = await import("./supabase-db.js");
+  return getSupabaseDb();
+}
+
+async function waitForSupabaseDb() {
+  const { waitForSupabaseDb: wait } = await import("./supabase-db.js");
+  return wait();
+}
+
+async function testSupabaseConnection() {
+  const { testSupabaseConnection: test } = await import("./supabase-db.js");
+  return test();
+}
 
 async function getNeonDbReady() {
   const { getNeonDbReady: neonGetReady } = await import("./neon-connection.js");
@@ -35,6 +52,9 @@ async function testSqliteConnection() {
 }
 
 export async function getDbReady() {
+  if (useSupabase) {
+    return getSupabaseDbReady();
+  }
   if (useNeon) {
     return getNeonDbReady();
   }
@@ -42,6 +62,9 @@ export async function getDbReady() {
 }
 
 export async function waitForDb() {
+  if (useSupabase) {
+    return waitForSupabaseDb();
+  }
   if (useNeon) {
     return waitForNeonDb();
   }
@@ -49,6 +72,9 @@ export async function waitForDb() {
 }
 
 export async function testDbConnection(): Promise<boolean> {
+  if (useSupabase) {
+    return testSupabaseConnection();
+  }
   if (useNeon) {
     return testNeonConnection();
   }

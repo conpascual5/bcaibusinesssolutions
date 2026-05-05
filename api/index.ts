@@ -6,31 +6,12 @@ export const config = {
 };
 
 let handler: ((req: Request) => Promise<Response>) | null = null;
-let initPromise: Promise<void> | null = null;
-
-// Start warming up the database immediately when the module loads
-// This runs in parallel with the request handling
-function startWarmup() {
-  if (!initPromise) {
-    initPromise = (async () => {
-      try {
-        const { default: app } = await import("./boot.js");
-        handler = app.fetch.bind(app);
-      } catch (err) {
-        console.error("[api/index] Warmup failed:", err);
-      }
-    })();
-  }
-  return initPromise;
-}
-
-// Start warmup immediately on module load (before any request)
-startWarmup();
 
 export default async function(req: Request): Promise<Response> {
-  // If handler isn't ready yet, wait for warmup
   if (!handler) {
-    await startWarmup();
+    // Lazy-load the app on first request
+    const { default: app } = await import("./boot.js");
+    handler = app.fetch.bind(app);
   }
-  return handler!(req);
+  return handler(req);
 }
