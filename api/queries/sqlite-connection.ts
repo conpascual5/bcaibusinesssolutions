@@ -191,6 +191,13 @@ export async function getDb() {
       try {
         createTablesSync(sqlJsDb);
 
+        // Migration: add plan column to users table if it doesn't exist
+        try {
+          sqlJsDb.run("ALTER TABLE users ADD COLUMN plan TEXT NOT NULL DEFAULT 'free'");
+        } catch {
+          // Column already exists — ignore
+        }
+
         // Seed admin user if not exists
         const { createHash } = await import("node:crypto");
         const adminHash = createHash("sha256").update("admin123" + env.jwtSecret).digest("base64");
