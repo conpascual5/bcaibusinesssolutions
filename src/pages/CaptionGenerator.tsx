@@ -241,6 +241,8 @@ export default function ImageAdAnalyzer() {
                 feature="image-ad-analyzer"
                 used={usage?.used ?? 0}
                 limit={usage?.limit ?? 5}
+                plan={usage?.plan}
+                isVip={usage?.isVip}
                 onClose={() => setShowUpgrade(false)}
               />
             )}

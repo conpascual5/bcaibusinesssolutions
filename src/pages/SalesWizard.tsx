@@ -377,6 +377,8 @@ export default function SalesWizard() {
                 feature="sales-wizard"
                 used={usage.used}
                 limit={usage.limit}
+                plan={usage.plan}
+                isVip={usage.isVip}
                 onClose={() => setShowUpgrade(false)}
               />
             )}

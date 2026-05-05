@@ -199,6 +199,8 @@ export default function Invoices() {
             feature="invoices"
             used={usage.used}
             limit={usage.limit}
+            plan={usage.plan}
+            isVip={usage.isVip}
             onClose={() => setShowUpgrade(false)}
           />
         </div>

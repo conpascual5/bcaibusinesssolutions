@@ -43,6 +43,7 @@ import {
   Crown,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UsageBadge from '@/components/UsageBadge';
 import UpgradePrompt from '@/components/UpgradePrompt';
 
 export default function FBAdsTargeting() {
@@ -328,6 +329,8 @@ export default function FBAdsTargeting() {
                       feature="fb-ads-targeting"
                       used={usage.used}
                       limit={usage.limit}
+                      plan={usage.plan}
+                      isVip={usage.isVip}
                       onClose={() => setShowUpgrade(false)}
                     />
                   )}

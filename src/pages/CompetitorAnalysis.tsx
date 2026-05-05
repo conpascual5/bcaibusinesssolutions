@@ -180,6 +180,8 @@ export default function CompetitorAnalysis() {
               feature="ad-analyzer"
               used={usage.used}
               limit={usage.limit}
+              plan={usage.plan}
+              isVip={usage.isVip}
               onClose={() => setShowUpgrade(false)}
             />
           </div>
