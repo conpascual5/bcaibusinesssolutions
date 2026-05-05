@@ -19,7 +19,6 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Crosshair,
@@ -41,6 +40,8 @@ import {
   Wand2,
   Eye,
   Crown,
+  Building2,
+  Package,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -66,9 +67,8 @@ export default function FBAdsTargeting() {
     }
   }, [darkMode]);
 
-  const [productName, setProductName] = useState('');
-  const [targetAudience, setTargetAudience] = useState('');
-  const [productDescription, setProductDescription] = useState('');
+  const [businessName, setBusinessName] = useState('');
+  const [product, setProduct] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
@@ -83,8 +83,8 @@ export default function FBAdsTargeting() {
   }, [output]);
 
   const handleGenerate = async () => {
-    if (!productName || !targetAudience) {
-      setError('Please fill in Product Name and Target Audience.');
+    if (!businessName || !product) {
+      setError('Please enter your Business Name and Product.');
       return;
     }
 
@@ -102,7 +102,7 @@ export default function FBAdsTargeting() {
       const response = await fetch('/api/fb-ads-targeting', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productName, targetAudience, productDescription }),
+        body: JSON.stringify({ businessName, product }),
       });
 
       if (!response.ok) {
@@ -279,7 +279,7 @@ export default function FBAdsTargeting() {
                   </div>
                   <div>
                     <h1 className="text-2xl font-bold text-foreground tracking-tight">FB Ads Targeting</h1>
-                    <p className="text-sm text-muted-foreground">Generate AI-powered Facebook Ads targeting strategies</p>
+                    <p className="text-sm text-muted-foreground">Enter your business name and product — get 3 ready-to-use buyer personas with full Facebook targeting details</p>
                   </div>
                 </div>
               </div>
@@ -293,28 +293,50 @@ export default function FBAdsTargeting() {
                         <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400 stroke-[1.5]" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-semibold text-foreground">Product Details</h3>
-                        <p className="text-xs text-muted-foreground">What are you advertising?</p>
+                        <h3 className="text-sm font-semibold text-foreground">Business Details</h3>
+                        <p className="text-xs text-muted-foreground">Tell us about your business</p>
                       </div>
                     </div>
                     <div className="space-y-4">
                       <div className="space-y-1.5">
-                        <Label htmlFor="fb-product" className="text-xs font-medium text-muted-foreground">Product Name *</Label>
-                        <Input id="fb-product" placeholder="e.g., Organic Face Serum" value={productName} onChange={(e) => setProductName(e.target.value)} className="bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10" />
+                        <Label htmlFor="fb-business" className="text-xs font-medium text-muted-foreground">Business Name *</Label>
+                        <div className="relative">
+                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                          <Input
+                            id="fb-business"
+                            placeholder="e.g., Glow & Co."
+                            value={businessName}
+                            onChange={(e) => setBusinessName(e.target.value)}
+                            className="pl-9 bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10"
+                          />
+                        </div>
                       </div>
                       <div className="space-y-1.5">
-                        <Label htmlFor="fb-audience" className="text-xs font-medium text-muted-foreground">Target Audience *</Label>
-                        <Textarea id="fb-audience" placeholder="e.g., Health-conscious women aged 25-45 interested in natural skincare..." value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="min-h-[100px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="fb-desc" className="text-xs font-medium text-muted-foreground">Product Description (optional)</Label>
-                        <Textarea id="fb-desc" placeholder="e.g., Organic serum with vitamin C and hyaluronic acid, P499..." value={productDescription} onChange={(e) => setProductDescription(e.target.value)} className="min-h-[80px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
+                        <Label htmlFor="fb-product" className="text-xs font-medium text-muted-foreground">Product *</Label>
+                        <div className="relative">
+                          <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
+                          <Input
+                            id="fb-product"
+                            placeholder="e.g., Organic Vitamin C Face Serum"
+                            value={product}
+                            onChange={(e) => setProduct(e.target.value)}
+                            className="pl-9 bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <Button onClick={handleGenerate} disabled={isGenerating || !productName || !targetAudience} className="w-full h-13 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-semibold shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
-                    {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generate FB Ads Targeting</>}
+                  <Button
+                    onClick={handleGenerate}
+                    disabled={isGenerating || !businessName || !product}
+                    className="w-full h-13 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-semibold shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
+                  >
+                    {isGenerating ? (
+                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating 3 Personas...</>
+                    ) : (
+                      <><Sparkles className="w-4 h-4 mr-2" /> Generate FB Ads Targeting</>
+                    )}
                   </Button>
 
                   {error && (
@@ -346,7 +368,7 @@ export default function FBAdsTargeting() {
                         </div>
                         <div>
                           <h3 className="text-sm font-semibold text-foreground">FB Ads Targeting Strategy</h3>
-                          <p className="text-xs text-muted-foreground">AI-powered audience insights</p>
+                          <p className="text-xs text-muted-foreground">3 buyer personas with full targeting details</p>
                         </div>
                       </div>
                       {output && (
@@ -359,8 +381,8 @@ export default function FBAdsTargeting() {
                       {isGenerating && !output ? (
                         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
                           <Loader2 className="w-8 h-8 animate-spin mb-4 text-indigo-500" />
-                          <p className="text-sm font-medium">Generating targeting strategy...</p>
-                          <p className="text-xs text-muted-foreground/70 mt-1">Using AI to analyze your product and audience</p>
+                          <p className="text-sm font-medium">Generating 3 buyer personas...</p>
+                          <p className="text-xs text-muted-foreground/70 mt-1">Creating detailed targeting strategy with demographics, interests, and behaviors</p>
                         </div>
                       ) : output ? (
                         <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-[450]">
@@ -372,8 +394,8 @@ export default function FBAdsTargeting() {
                           <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
                             <Target className="w-7 h-7 text-muted-foreground/50 stroke-[1]" />
                           </div>
-                          <p className="text-sm font-medium">Your FB Ads Targeting strategy will appear here</p>
-                          <p className="text-xs text-muted-foreground/70 mt-1">Fill in the details and click Generate</p>
+                          <p className="text-sm font-medium">Your 3 buyer personas will appear here</p>
+                          <p className="text-xs text-muted-foreground/70 mt-1">Enter your business name and product, then click Generate</p>
                         </div>
                       )}
                     </div>

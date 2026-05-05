@@ -6,10 +6,10 @@ const app = new Hono();
 
 app.post("/api/fb-ads-targeting", async (c) => {
   try {
-    const { productName, targetAudience, productDescription } = await c.req.json();
+    const { businessName, product } = await c.req.json();
 
-    if (!productName || !targetAudience) {
-      return c.json({ error: "Missing required fields: productName, targetAudience" }, 400);
+    if (!businessName || !product) {
+      return c.json({ error: "Missing required fields: businessName, product" }, 400);
     }
 
     // Try env var first, then fall back to database setting
@@ -31,39 +31,41 @@ app.post("/api/fb-ads-targeting", async (c) => {
       return c.json({ error: "Deepseek API key not configured. Ask an admin to set it in Settings." }, 500);
     }
 
-    const descSection = productDescription
-      ? `\nProduct Description: ${productDescription}`
-      : "";
+    const systemPrompt = `You are a Facebook Ads targeting expert. Generate a comprehensive Facebook Ads targeting strategy for the given business and product.
 
-    const systemPrompt = `You are a Facebook Ads targeting expert. Generate a comprehensive Facebook Ads targeting strategy for the given product and audience.
+Generate exactly 3 detailed buyer personas. For each persona, provide ALL of the following:
 
-Structure your response with these sections:
+## Persona [Number]: [Persona Name]
+- **Age Range**: [specific age range]
+- **Gender**: [male/female/all]
+- **Location**: [where they live]
+- **Education**: [education level]
+- **Income**: [income bracket]
+- **Relationship Status**: [single/married/parent/etc]
+- **Job Titles**: [relevant job titles]
+- **Interests**: [8-12 specific Facebook interests]
+- **Behaviors**: [5-8 specific Facebook behaviors including Engaged Shoppers]
+- **Demographics**: [specific demographic targeting options]
+- **Facebook Targeting Keywords**: [10-15 specific keywords for Facebook ad targeting]
+- **Age Targeting**: [exact age range for Facebook ads]
+- **Placements**: [recommended Facebook/Instagram placements]
+- **Why This Persona Works**: [explanation of why this persona is a good fit]
 
-## 🎯 Facebook Interests & Behaviors
-List 10-15 specific Facebook interest and behavior targeting options using lateral thinking. Go beyond obvious keywords to find hidden audience segments.
-
-## 👤 Detailed Demographics
-- Age Range: (specific range)
-- Gender: (recommendation)
-- Income Level: (target income bracket)
-- Education: (if relevant)
-- Relationship Status: (if relevant)
-
-## 🧠 Behavioral Layer
-- Primary Behavior: Engaged Shoppers (default — always include)
-- Secondary Behavior: (specific secondary behavior based on product category)
-- Pro Tip: (specific advice on layering these behaviors)
+After all 3 personas, add:
 
 ## 📊 Audience Size Estimate
-Give a rough estimate of audience size and explain why.
+Estimated total audience size and breakdown per persona.
 
-## 💡 Why This Targeting Works
-Explain the lateral thinking behind the targeting choices.
+## 🎯 Recommended Ad Strategy
+Brief recommendation on which persona to target first and why.
 
-Product: ${productName}
-Target Audience: ${targetAudience}${descSection}
+## 💡 Pro Tips
+3-5 actionable tips for running Facebook ads for this product.
 
-Write the targeting strategy now. Be specific, actionable, and use lateral thinking to find non-obvious audience segments.`;
+Business: ${businessName}
+Product: ${product}
+
+Generate the complete targeting strategy now. Be extremely specific and actionable — every detail must be ready to use in Facebook Ads Manager.`;
 
     return streamSSE(c, async (stream) => {
       const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -76,7 +78,7 @@ Write the targeting strategy now. Be specific, actionable, and use lateral think
           model: "deepseek-chat",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `Generate Facebook Ads targeting strategy for ${productName} targeting ${targetAudience}.` },
+            { role: "user", content: `Generate Facebook Ads targeting strategy for ${businessName} - ${product}` },
           ],
           temperature: 0.7,
           max_tokens: 4000,
