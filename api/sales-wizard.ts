@@ -222,12 +222,16 @@ app.post("/api/sales-wizard", async (c) => {
     const frameworkPrompt = FRAMEWORK_PROMPTS[framework] || FRAMEWORK_PROMPTS["pastor"];
     const contentTypeInstruction = CONTENT_TYPE_INSTRUCTIONS[contentType] || CONTENT_TYPE_INSTRUCTIONS["caption"];
 
+    const contextSection = messageContext
+      ? "\nContext / Purpose: " + messageContext + "\n\nThis is the specific message, offer, or announcement the copy should focus on. Make sure the copy revolves around this purpose."
+      : "";
+
     const systemPrompt = `${frameworkPrompt}
 
 ${contentTypeInstruction}
 
 Product/Service: ${productName}
-Target Audience: ${targetAudience}
+Target Audience: ${targetAudience}${contextSection}
 
 Write the copy now. Make it persuasive, engaging, and tailored specifically to the target audience. Use markdown formatting where appropriate.`;
 
