@@ -52,7 +52,7 @@ export default async function(req: Request): Promise<Response> {
           };
         }
         resolve();
-      }, 8000)), // Reduced from 20s to 8s to fit within Vercel's 10s limit
+      }, 9000)), // 9s to stay under Vercel's 10s limit
     ]);
   }
   

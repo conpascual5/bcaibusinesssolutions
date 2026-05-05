@@ -7,6 +7,7 @@
 // 2. No need for database password
 // 3. No TLS/certificate issues
 // 4. Built-in connection pooling
+// 5. Connects instantly (HTTP request, no TCP handshake delay)
 
 import { createClient } from "@supabase/supabase-js";
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -36,24 +37,22 @@ interface DrizzleDb {
 
 let db: ReturnType<typeof drizzle> | null = null;
 let restDb: DrizzleDb | null = null;
-let ready = false;
 
-// Try service role key from env first, then fall back to anon key
-const password = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
-
-// Connection string using Supabase's transaction pooler
-const connectionString = `postgresql://postgres.dkatgjtvhitknghvaxxn:${encodeURIComponent(password)}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`;
+// On Vercel, skip the Postgres driver entirely — it's too slow to connect
+// (TCP+TLS handshake to pooler.supabase.com can take 5-15s, exceeding Vercel's 10s limit)
+// The Supabase REST API connects instantly via HTTP and is sufficient for all queries.
+const isVercel = !!process.env.VERCEL;
 
 export async function getSupabaseDb() {
-  // Try Postgres driver first (faster for complex queries)
-  if (!db) {
+  // On Vercel, skip Postgres driver — use REST API directly
+  if (!isVercel && !db) {
     try {
       console.log("[supabase-db] Trying Postgres driver connection...");
       const client = postgres(connectionString, {
         prepare: false,
         max: 1,
         idle_timeout: 20,
-        connect_timeout: 15,
+        connect_timeout: 5, // Reduced from 15s to 5s to fail fast
       });
       db = drizzle(client, { schema });
       console.log("[supabase-db] Connected via Postgres driver");
@@ -65,14 +64,20 @@ export async function getSupabaseDb() {
   
   if (db) return db;
   
-  // Fall back to REST API via Supabase JS client
+  // Use REST API via Supabase JS client (fast on Vercel)
   if (!restDb) {
-    console.log("[supabase-db] Using Supabase REST API as fallback...");
+    console.log("[supabase-db] Using Supabase REST API...");
     restDb = createRestDb(supabase);
   }
   
   return restDb as any;
 }
+
+// Try service role key from env first, then fall back to anon key
+const password = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+
+// Connection string using Supabase's transaction pooler
+const connectionString = `postgresql://postgres.dkatgjtvhitknghvaxxn:${encodeURIComponent(password)}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`;
 
 function createRestDb(client: any): DrizzleDb {
   return {
@@ -209,7 +214,7 @@ function getTableName(table: any): string {
   if (table?.name) return table.name;
   // Try to extract from drizzle table object
   const str = String(table);
-  const match = str.match(/['"]([^'"]+)['"]/);
+  const match = str.match(/['\"]([^'\"]+)['\"]/);
   return match ? match[1] : 'unknown';
 }
 
