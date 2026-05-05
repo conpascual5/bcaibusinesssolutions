@@ -83,6 +83,19 @@ const TABLE_CREATION_SQL = [
     is_read INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
+  `CREATE TABLE IF NOT EXISTS sales_wizard_saves (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    product_name TEXT NOT NULL,
+    target_audience TEXT NOT NULL,
+    message_context TEXT,
+    content_type TEXT NOT NULL,
+    framework TEXT NOT NULL,
+    framework_name TEXT NOT NULL,
+    output TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
 ];
 
 /** Check if tables exist by trying a simple query */
