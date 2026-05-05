@@ -119,10 +119,10 @@ app.get("/api/init-db", async (c) => {
     if (isNeon) {
       results.push("Using Neon/Postgres database...");
       const { neon } = await import("@neondatabase/serverless");
-      const sql = neon(env.databaseUrl);
+      const sqlNeon = neon(env.databaseUrl);
 
       // Create all tables in a single batch
-      await sql(`CREATE TABLE IF NOT EXISTS users (
+      await sqlNeon(`CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL, name VARCHAR(100) NOT NULL,
         is_active BOOLEAN NOT NULL DEFAULT true, is_admin BOOLEAN NOT NULL DEFAULT false,
@@ -175,12 +175,9 @@ app.get("/api/init-db", async (c) => {
       // Seed admin user
       const bcrypt = await import("bcryptjs");
       const hash = bcrypt.hashSync("admin123", 10);
-      await sql(
-        `INSERT INTO users (email, password_hash, name, is_active, is_admin)
-         VALUES ('conpascual5@gmail.com', $1, 'BC AI Admin', true, true)
-         ON CONFLICT (email) DO NOTHING`,
-        [hash]
-      );
+      await sqlNeon`INSERT INTO users (email, password_hash, name, is_active, is_admin)
+         VALUES ('conpascual5@gmail.com', ${hash}, 'BC AI Admin', true, true)
+         ON CONFLICT (email) DO NOTHING`;
       results.push("✅ Admin user seeded (conpascual5@gmail.com / admin123)");
     } else {
       // Local SQLite
@@ -394,7 +391,7 @@ app.post("/api/setup", async (c) => {
       const { neon } = await import("@neondatabase/serverless");
       const sql = neon(env.databaseUrl);
 
-      await sql(`
+      await sql`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
           email VARCHAR(255) NOT NULL UNIQUE,
@@ -465,7 +462,7 @@ app.post("/api/setup", async (c) => {
           is_read BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
-      `);
+      `;
     } else {
       // Local SQLite — use sql.js directly (no dependency on connection module)
       const initSqlJs = (await import("sql.js")).default;
@@ -587,7 +584,7 @@ app.post("/api/setup-tables", async (c) => {
       const { neon } = await import("@neondatabase/serverless");
       const sql = neon(env.databaseUrl);
 
-      await sql(`
+      await sql`
         CREATE TABLE IF NOT EXISTS users (
           id SERIAL PRIMARY KEY,
           email VARCHAR(255) NOT NULL UNIQUE,
@@ -658,7 +655,7 @@ app.post("/api/setup-tables", async (c) => {
           is_read BOOLEAN NOT NULL DEFAULT false,
           created_at TIMESTAMP NOT NULL DEFAULT NOW()
         );
-      `);
+      `;
     } else {
       // Local SQLite — use sql.js directly (no dependency on connection module)
       const initSqlJs = (await import("sql.js")).default;
