@@ -220,7 +220,7 @@ export default function ImageAdAnalyzer() {
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  AI is Analyzing Image...
+                  Analyzing image with AI Vision...
                 </>
               ) : !isPro && remaining <= 0 ? (
                 <>

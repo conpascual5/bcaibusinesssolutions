@@ -4,41 +4,97 @@ import { streamSSE } from "hono/streaming";
 
 const app = new Hono();
 
+async function getApiKey(keyName: string): Promise<string> {
+  // Try env var first
+  if (keyName === "openai_api_key" && env.openaiApiKey) return env.openaiApiKey;
+  if (keyName === "deepseek_api_key" && env.deepseekApiKey) return env.deepseekApiKey;
+
+  // Fall back to database setting
+  try {
+    const { getDbReady } = await import("./queries/connection.js");
+    const { settings } = await import("../db/schema.js");
+    const { eq } = await import("drizzle-orm");
+    const db = await getDbReady();
+    const [row] = await db.select().from(settings).where(eq(settings.key, keyName)).limit(1);
+    return row?.value ?? "";
+  } catch {
+    return "";
+  }
+}
+
 app.post("/api/image-ad-analyzer", async (c) => {
   try {
     const { imageDescription, imageDataUrl } = await c.req.json();
 
-    if (!imageDescription && !imageDataUrl) {
+    if (!imageDataUrl) {
       return c.json({ error: "Missing image data" }, 400);
     }
 
-    // Try env var first, then fall back to database setting
-    let apiKey = env.deepseekApiKey;
-    if (!apiKey) {
-      try {
-        const { getDbReady } = await import("./queries/connection.js");
-        const { settings } = await import("../db/schema.js");
-        const { eq } = await import("drizzle-orm");
-        const db = await getDbReady();
-        const [row] = await db.select().from(settings).where(eq(settings.key, "deepseek_api_key")).limit(1);
-        apiKey = row?.value ?? "";
-      } catch {
-        // DB lookup failed
-      }
+    const openaiKey = await getApiKey("openai_api_key");
+    if (!openaiKey) {
+      return c.json({ error: "OpenAI API key not configured. Ask an admin to set it in Settings." }, 500);
     }
 
-    if (!apiKey) {
+    const deepseekKey = await getApiKey("deepseek_api_key");
+    if (!deepseekKey) {
       return c.json({ error: "Deepseek API key not configured. Ask an admin to set it in Settings." }, 500);
     }
 
     const desc = imageDescription?.trim() || "a product in an advertisement image";
 
+    // Step 1: Use GPT-4o-mini to analyze the actual image
+    console.log("[image-ad-analyzer] Analyzing image with GPT-4o-mini...");
+    const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${openaiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert product and advertisement image analyst. Describe the image in detail: what product is shown, the visual style, colors, composition, text/overlay elements, mood, and target audience cues. Be specific and thorough."
+          },
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: `Analyze this advertisement image. Product context: ${desc}. Describe everything you see in detail.`
+              },
+              {
+                type: "image_url",
+                image_url: {
+                  url: imageDataUrl,
+                  detail: "high"
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!visionResponse.ok) {
+      const errText = await visionResponse.text();
+      console.error("[image-ad-analyzer] OpenAI vision API error:", visionResponse.status, errText);
+      return c.json({ error: `Image analysis failed: OpenAI API error (${visionResponse.status})` }, 500);
+    }
+
+    const visionData = await visionResponse.json();
+    const imageAnalysis = visionData.choices?.[0]?.message?.content || "No analysis available.";
+    console.log("[image-ad-analyzer] Image analysis complete, length:", imageAnalysis.length);
+
+    // Step 2: Use Deepseek to generate Taglish captions and FB Ads targeting
     const systemPrompt = `You are an expert Filipino digital marketing AI. You analyze product images and generate marketing content in Taglish (Tagalog + English).
 
-Given a product description, generate the following:
+Given a product description and detailed image analysis, generate the following:
 
 ## SECTION 1: IMAGE ANALYSIS
-Briefly describe what the image likely shows and the visual marketing strategy used.
+Summarize the key visual elements and marketing strategy of the image.
 
 ## SECTION 2: TAGLISH CAPTIONS (3 captions)
 Generate 3 different ad captions in Taglish (mix of Tagalog and English). Each caption should:
@@ -70,6 +126,9 @@ Generate a Facebook Ads targeting strategy for this product:
 
 Product: ${desc}
 
+Image Analysis Results:
+${imageAnalysis}
+
 Write the complete analysis now. Be specific and actionable.`;
 
     return streamSSE(c, async (stream) => {
@@ -77,13 +136,13 @@ Write the complete analysis now. Be specific and actionable.`;
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
+          "Authorization": `Bearer ${deepseekKey}`,
         },
         body: JSON.stringify({
           model: "deepseek-chat",
           messages: [
             { role: "system", content: systemPrompt },
-            { role: "user", content: `Analyze this product image and generate Taglish captions and FB ads targeting: ${desc}` },
+            { role: "user", content: `Based on the image analysis above, generate Taglish captions and FB ads targeting for: ${desc}` },
           ],
           temperature: 0.7,
           max_tokens: 4000,

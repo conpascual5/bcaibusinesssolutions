@@ -19,4 +19,5 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL ?? "",
   falApiKey: process.env.FAL_API_KEY ?? "",
   deepseekApiKey: process.env.DEEPSEEK_API_KEY ?? "",
+  openaiApiKey: process.env.OPENAI_API_KEY ?? "",
 };

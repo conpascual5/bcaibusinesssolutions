@@ -16,10 +16,12 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState<'users' | 'settings'>('users');
   const [apiKey, setApiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
 
   const { data: usersList, refetch: refetchUsers } = trpc.user.list.useQuery();
   const { data: apiKeyData, refetch: refetchApiKey } = trpc.settings.getApiKey.useQuery();
   const { data: deepseekKeyData, refetch: refetchDeepseekKey } = trpc.settings.getDeepseekKey.useQuery();
+  const { data: openaiKeyData, refetch: refetchOpenaiKey } = trpc.settings.getOpenaiKey.useQuery();
   const setApiKeyMutation = trpc.settings.setApiKey.useMutation({
     onSuccess: () => refetchApiKey(),
   });
@@ -29,6 +31,14 @@ export default function Admin() {
       refetchDeepseekKey();
       setDeepseekSaved(true);
       setTimeout(() => setDeepseekSaved(false), 2000);
+    },
+  });
+  const [openaiSaved, setOpenaiSaved] = useState(false);
+  const setOpenaiKeyMutation = trpc.settings.setOpenaiKey.useMutation({
+    onSuccess: () => {
+      refetchOpenaiKey();
+      setOpenaiSaved(true);
+      setTimeout(() => setOpenaiSaved(false), 2000);
     },
   });
 
@@ -240,6 +250,34 @@ export default function Admin() {
                 >
                   {deepseekSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
                   {deepseekSaved ? 'Saved!' : 'Save Deepseek Key'}
+                </button>
+              </div>
+            </div>
+
+            {/* OpenAI API Key */}
+            <div className="bg-card rounded-2xl card-shadow border border-border p-6">
+              <h2 className="text-base font-semibold text-foreground mb-1 flex items-center gap-2.5">
+                <Key className="w-5 h-5 text-emerald-500 stroke-[1.5]" />
+                OpenAI API Key
+              </h2>
+              <p className="text-sm text-muted-foreground mb-5">
+                Used for AI image analysis (Image Ad Analyzer). GPT-4o-mini processes the actual image.
+              </p>
+              <div className="space-y-3">
+                <input
+                  type="password"
+                  value={openaiKey || openaiKeyData?.apiKey || ''}
+                  onChange={(e) => setOpenaiKey(e.target.value)}
+                  placeholder="Enter your OpenAI API key"
+                  className="w-full px-4 py-2.5 bg-background border border-input rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground/50"
+                />
+                <button
+                  onClick={() => setOpenaiKeyMutation.mutate({ apiKey: openaiKey })}
+                  disabled={!openaiKey}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
+                >
+                  {openaiSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
+                  {openaiSaved ? 'Saved!' : 'Save OpenAI Key'}
                 </button>
               </div>
             </div>

@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 
 const FAL_KEY = "fal_api_key";
 const DEEPSEEK_KEY = "deepseek_api_key";
+const OPENAI_KEY = "openai_api_key";
 
 export const settingsRouter = createRouter({
   getApiKey: adminQuery.query(async () => {
@@ -62,6 +63,31 @@ export const settingsRouter = createRouter({
   hasDeepseekKey: adminQuery.query(async () => {
     const db = await getDbReady() as any;
     const [row] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
+    return { hasKey: !!row?.value && row.value.length > 0 };
+  }),
+
+  getOpenaiKey: adminQuery.query(async () => {
+    const db = await getDbReady() as any;
+    const [row] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
+    return { apiKey: row?.value ?? "" };
+  }),
+
+  setOpenaiKey: adminQuery
+    .input(z.object({ apiKey: z.string().min(1) }))
+    .mutation(async ({ input }) => {
+      const db = await getDbReady() as any;
+      const [existing] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
+      if (existing) {
+        await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, OPENAI_KEY));
+      } else {
+        await db.insert(settings).values({ key: OPENAI_KEY, value: input.apiKey });
+      }
+      return { success: true };
+    }),
+
+  hasOpenaiKey: adminQuery.query(async () => {
+    const db = await getDbReady() as any;
+    const [row] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
     return { hasKey: !!row?.value && row.value.length > 0 };
   }),
 });
