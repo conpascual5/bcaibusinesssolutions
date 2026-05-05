@@ -12,13 +12,13 @@ export default function Admin() {
   const [deepseekKey, setDeepseekKey] = useState('');
 
   const { data: usersList, refetch: refetchUsers } = trpc.user.list.useQuery();
-  const { data: apiKeyData } = trpc.settings.getApiKey.useQuery();
-  const { data: deepseekKeyData } = trpc.settings.getDeepseekKey.useQuery();
+  const { data: apiKeyData, refetch: refetchApiKey } = trpc.settings.getApiKey.useQuery();
+  const { data: deepseekKeyData, refetch: refetchDeepseekKey } = trpc.settings.getDeepseekKey.useQuery();
   const setApiKeyMutation = trpc.settings.setApiKey.useMutation({
-    onSuccess: () => refetchUsers(),
+    onSuccess: () => refetchApiKey(),
   });
   const setDeepseekKeyMutation = trpc.settings.setDeepseekKey.useMutation({
-    onSuccess: () => refetchUsers(),
+    onSuccess: () => refetchDeepseekKey(),
   });
 
   const toggleActiveMutation = trpc.user.toggleActive.useMutation({

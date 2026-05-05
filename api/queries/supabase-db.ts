@@ -42,15 +42,12 @@ export async function getSupabaseDb() {
 
 function getTableName(table: any): string {
   if (typeof table === 'string') return table;
-  const drizzleName = table?.[Symbol.for('drizzle:name')];
-  if (drizzleName) {
-    console.log("[supabase-db] getTableName via drizzle:name:", drizzleName);
-    return drizzleName;
-  }
+  // Drizzle SQLite tables store their name directly on the object
   if (table?.name) {
     console.log("[supabase-db] getTableName via .name:", table.name);
     return table.name;
   }
+  // Fallback: try to extract from string representation
   const str = String(table);
   const match = str.match(/['\"]([^'\"]+)['\"]/);
   const result = match ? match[1] : 'unknown';
