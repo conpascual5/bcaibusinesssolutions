@@ -342,6 +342,17 @@ app.get("/api/init-db", async (c) => {
   }
 });
 
+// Ultra-light warm-up endpoint — just triggers module loading (cold start)
+// Returns immediately without waiting for DB. The client calls this on page load
+// so the serverless function is warm before the user clicks login.
+app.get("/api/warmup", async (c) => {
+  // Trigger DB module loading in background (this is the slow part)
+  import("./queries/connection.js").then(({ waitForDb }) => {
+    waitForDb().catch(() => {});
+  });
+  return c.json({ status: "warming", time: Date.now() });
+});
+
 // Health check endpoint - lets frontend verify API is reachable
 // Quick health check — responds immediately without waiting for DB
 // The client uses this to verify the server is reachable before attempting login

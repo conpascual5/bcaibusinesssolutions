@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { trpc } from '@/providers/trpc';
@@ -14,11 +14,26 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const retryCountRef = useRef(0);
+  const warmedUpRef = useRef(false);
+
+  // Warm up the server immediately when the page loads
+  // This triggers the cold start in the background so login is instant
+  useEffect(() => {
+    if (warmedUpRef.current) return;
+    warmedUpRef.current = true;
+    // Use the lightweight warmup endpoint that returns immediately
+    // and triggers DB module loading in the background
+    fetch('/api/warmup', { signal: AbortSignal.timeout(8000) }).catch(() => {
+      // Silent — warm-up is best-effort
+    });
+  }, []);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       console.log('[auth] Login success for:', data.user.email);
+      setIsSubmitting(false);
       retryCountRef.current = 0;
       setAuth(data.token, data.user);
       if (data.user.isAdmin) {
@@ -40,6 +55,7 @@ export default function Auth() {
         }, delay);
         return;
       }
+      setIsSubmitting(false);
       retryCountRef.current = 0;
       if (msg.includes('Database connection failed') || msg.includes('timed out') || msg.includes('504') || msg.includes('Unexpected token')) {
         setError('The server is still starting up. Please wait a moment and try again.');
@@ -69,19 +85,10 @@ export default function Auth() {
     },
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    // Quick health check before attempting login
-    try {
-      const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
-      if (!res.ok) {
-        setError('Server is not ready yet. Please wait a moment and try again.');
-        return;
-      }
-    } catch {
-      // Health check failed — still try the login, it might work
-    }
+    setIsSubmitting(true);
     retryCountRef.current = 0;
     loginMutation.mutate({ email, password });
   };
@@ -96,7 +103,7 @@ export default function Auth() {
     forgotPasswordMutation.mutate({ email: forgotEmail });
   };
 
-  const isLoading = loginMutation.isPending;
+  const isLoading = isSubmitting || loginMutation.isPending;
 
   // Forgot Password View
   if (showForgotPassword) {
