@@ -67,20 +67,27 @@ export const settingsRouter = createRouter({
   }),
 
   getOpenaiKey: adminQuery.query(async () => {
+    console.log("[settings] getOpenaiKey called");
     const db = await getDbReady() as any;
     const [row] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
+    console.log("[settings] getOpenaiKey result:", row ? `found (value length: ${row.value?.length})` : "not found");
     return { apiKey: row?.value ?? "" };
   }),
 
   setOpenaiKey: adminQuery
     .input(z.object({ apiKey: z.string().min(1) }))
     .mutation(async ({ input }) => {
+      console.log("[settings] setOpenaiKey called with key length:", input.apiKey.length);
       const db = await getDbReady() as any;
+      console.log("[settings] db ready, querying existing...");
       const [existing] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
+      console.log("[settings] existing row:", existing ? JSON.stringify({ key: existing.key, valueLength: existing.value?.length }) : "none");
       if (existing) {
         await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, OPENAI_KEY));
+        console.log("[settings] updated existing row");
       } else {
         await db.insert(settings).values({ key: OPENAI_KEY, value: input.apiKey });
+        console.log("[settings] inserted new row");
       }
       return { success: true };
     }),
