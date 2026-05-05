@@ -28,8 +28,12 @@ import {
   Heart,
   Save,
   X,
+  Crown,
 } from "lucide-react";
 import AdAnalyzer from "@/components/AdAnalyzer";
+import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import UsageBadge from '@/components/UsageBadge';
 
 const FRAMEWORK_CATEGORIES: Record<string, { category: string; color: string }> = {
   "6-ws": { category: "Conversion", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
@@ -131,7 +135,10 @@ export default function SalesWizard() {
   const [isSaving, setIsSaving] = useState(false);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saveTitle, setSaveTitle] = useState("");
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
+
+  const { usage, loading: usageLoading, increment } = useUsageLimit('sales-wizard');
 
   const saveMutation = trpc.salesWizardSaves.save.useMutation({
     onSuccess: () => {
@@ -155,6 +162,13 @@ export default function SalesWizard() {
       setError("Please fill in all fields and select a framework.");
       return;
     }
+
+    // Check usage limit
+    if (usage && !usage.isPro && usage.remaining <= 0) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setIsGenerating(true);
     setOutput("");
     setError("");
@@ -189,6 +203,9 @@ export default function SalesWizard() {
           } catch { /* skip */ }
         }
       }
+
+      // Increment usage after successful generation
+      await increment();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -350,6 +367,15 @@ export default function SalesWizard() {
                 <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                 <span>{error}</span>
               </div>
+            )}
+
+            {showUpgrade && usage && (
+              <UpgradePrompt
+                feature="sales-wizard"
+                used={usage.used}
+                limit={usage.limit}
+                onClose={() => setShowUpgrade(false)}
+              />
             )}
           </div>
 

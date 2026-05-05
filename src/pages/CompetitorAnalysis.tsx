@@ -17,7 +17,10 @@ import {
   Zap,
   Shield,
   TrendingUp,
+  Crown,
 } from 'lucide-react';
+import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 interface AnalysisResult {
   psychologicalTriggers: {
@@ -43,6 +46,9 @@ export default function CompetitorAnalysis() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [error, setError] = useState('');
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const { usage, loading: usageLoading, increment } = useUsageLimit('ad-analyzer');
 
   const triggerCategories = [
     { name: 'Scarcity', icon: AlertTriangle, color: 'text-red-500', bg: 'bg-red-50' },

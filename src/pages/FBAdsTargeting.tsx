@@ -86,6 +86,13 @@ export default function FBAdsTargeting() {
       setError('Please fill in Product Name and Target Audience.');
       return;
     }
+
+    // Check usage limit first
+    if (usage && !usage.isPro && usage.remaining <= 0) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setIsGenerating(true);
     setOutput('');
     setError('');
@@ -124,6 +131,9 @@ export default function FBAdsTargeting() {
           } catch { /* skip */ }
         }
       }
+
+      // Increment usage after successful generation
+      await increment();
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -159,6 +169,7 @@ export default function FBAdsTargeting() {
               <span className="font-semibold text-[15px] tracking-tight text-sidebar-foreground truncate group-data-[collapsible=icon]:hidden">
                 BC AI
               </span>
+              {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} className="group-data-[collapsible=icon]:hidden" />}
             </div>
           </SidebarHeader>
 
@@ -246,11 +257,12 @@ export default function FBAdsTargeting() {
               </div>
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                  <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                    </div>
+                    <span className="hidden sm:inline font-medium">{user?.name}</span>
+                    {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
                   </div>
-                  <span className="hidden sm:inline font-medium">{user?.name}</span>
-                </div>
               </div>
             </div>
           </header>
@@ -309,6 +321,15 @@ export default function FBAdsTargeting() {
                       <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
                       <span>{error}</span>
                     </div>
+                  )}
+
+                  {showUpgrade && usage && (
+                    <UpgradePrompt
+                      feature="fb-ads-targeting"
+                      used={usage.used}
+                      limit={usage.limit}
+                      onClose={() => setShowUpgrade(false)}
+                    />
                   )}
                 </div>
 

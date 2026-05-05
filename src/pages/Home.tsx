@@ -1,10 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
-import { Crosshair, Sparkles, User, MessageSquare, Film, Loader2 } from 'lucide-react';
+import { Crosshair, Sparkles, User, MessageSquare, Film, Loader2, Crown } from 'lucide-react';
 import { generateTargeting } from '@/lib/targetingEngine';
 import type { TargetingResult } from '@/lib/targetingEngine';
 import { CaptionCard, VideoScriptCard } from '@/components/ResultCards';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
+import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import UsageBadge from '@/components/UsageBadge';
 
 export default function Home() {
   return (
@@ -34,7 +37,10 @@ function CaptionsAndScripts() {
   const [query, setQuery] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<TargetingResult | null>(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const resultsRef = useRef<HTMLDivElement>(null);
+
+  const { usage, loading: usageLoading, increment } = useUsageLimit('captions-video-script');
 
   const saveSearch = trpc.search.save.useMutation();
   const { data: searches } = trpc.search.list.useQuery();
@@ -49,6 +55,13 @@ function CaptionsAndScripts() {
 
   const handleAnalyze = () => {
     if (!query.trim()) return;
+
+    // Check usage limit
+    if (usage && !usage.isPro && usage.remaining <= 0) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setIsAnalyzing(true);
     setResult(null);
 
@@ -56,6 +69,9 @@ function CaptionsAndScripts() {
       const targeting = generateTargeting(query.trim());
       setResult(targeting);
       setIsAnalyzing(false);
+
+      // Increment usage after successful generation
+      increment();
 
       try {
         saveSearch.mutate({ productQuery: query.trim() });
@@ -166,6 +182,18 @@ function CaptionsAndScripts() {
               Generate Another Product
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Upgrade Prompt */}
+      {showUpgrade && usage && (
+        <div className="max-w-md mx-auto mb-8">
+          <UpgradePrompt
+            feature="captions-video-script"
+            used={usage.used}
+            limit={usage.limit}
+            onClose={() => setShowUpgrade(false)}
+          />
         </div>
       )}
 
