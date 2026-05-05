@@ -20,6 +20,7 @@ const TABLE_CREATION_SQL = [
     name TEXT NOT NULL,
     is_active INTEGER NOT NULL DEFAULT 1,
     is_admin INTEGER NOT NULL DEFAULT 0,
+    plan TEXT NOT NULL DEFAULT 'free',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS searches (
@@ -95,6 +96,14 @@ const TABLE_CREATION_SQL = [
     framework_name TEXT NOT NULL,
     output TEXT NOT NULL,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS user_usage (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    feature TEXT NOT NULL,
+    month TEXT NOT NULL,
+    count INTEGER NOT NULL DEFAULT 0,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
 ];
 

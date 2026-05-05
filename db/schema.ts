@@ -11,6 +11,7 @@ export const users = sqliteTable("users", {
   name: text("name").notNull(),
   isActive: integer("is_active").notNull().default(1),
   isAdmin: integer("is_admin").notNull().default(0),
+  plan: text("plan").notNull().default("free"),
   createdAt: text("created_at").notNull().default("(datetime('now'))"),
 });
 
@@ -83,6 +84,15 @@ export const salesWizardSaves = sqliteTable("sales_wizard_saves", {
   frameworkName: text("framework_name").notNull(),
   output: text("output").notNull(),
   createdAt: text("created_at").notNull().default("(datetime('now'))"),
+});
+
+export const userUsage = sqliteTable("user_usage", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  feature: text("feature").notNull(),
+  month: text("month").notNull(),
+  count: integer("count").notNull().default(0),
+  updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
 });
 
 export const chatMessages = sqliteTable("chat_messages", {
