@@ -31,6 +31,7 @@ import {
   Wand2,
   Moon,
   Sun,
+  Target,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -41,6 +42,7 @@ const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
   { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
   { icon: Crosshair, label: 'Captions and Video Script', path: '/app/targeting' },
+  { icon: Target, label: 'FB Ads Targeting', path: '/app/fb-ads-targeting' },
   { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
   { icon: FileText, label: 'Invoices', path: '/app/invoices' },
   { icon: Library, label: 'Library', path: '/library' },
