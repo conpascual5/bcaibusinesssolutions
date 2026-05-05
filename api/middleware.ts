@@ -75,26 +75,33 @@ export const authedQuery = t.procedure.use(
 // Admin queries - must be authenticated AND admin
 export const adminQuery = t.procedure.use(
   t.middleware(async ({ ctx, next }) => {
+    console.log("[middleware] adminQuery check for user:", ctx.user?.userId, ctx.user?.email);
     if (!ctx.user) {
+      console.log("[middleware] adminQuery: no user in context");
       throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated" });
     }
 
     try {
       const db = await getDbReady() as any;
+      console.log("[middleware] adminQuery: db ready, querying user", ctx.user.userId);
       const rows = await db
         .select()
         .from(users)
         .where(eq(users.id, ctx.user.userId))
         .limit(1);
 
+      console.log("[middleware] adminQuery: user rows:", rows?.length);
       if (!rows[0]?.isAdmin) {
+        console.log("[middleware] adminQuery: user is not admin");
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
 
       if (!rows[0].isActive) {
+        console.log("[middleware] adminQuery: user is inactive");
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Account deactivated" });
       }
 
+      console.log("[middleware] adminQuery: admin verified, proceeding");
       return next({
         ctx: {
           ...ctx,
@@ -105,6 +112,7 @@ export const adminQuery = t.procedure.use(
         },
       });
     } catch (err: any) {
+      console.log("[middleware] adminQuery error:", err?.message);
       if (err instanceof TRPCError) throw err;
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",

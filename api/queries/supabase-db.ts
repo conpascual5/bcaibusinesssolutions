@@ -42,18 +42,32 @@ export async function getSupabaseDb() {
 
 function getTableName(table: any): string {
   if (typeof table === 'string') return table;
-  if (table?.[Symbol.for('drizzle:name')]) return table[Symbol.for('drizzle:name')];
-  if (table?.name) return table.name;
+  const drizzleName = table?.[Symbol.for('drizzle:name')];
+  if (drizzleName) {
+    console.log("[supabase-db] getTableName via drizzle:name:", drizzleName);
+    return drizzleName;
+  }
+  if (table?.name) {
+    console.log("[supabase-db] getTableName via .name:", table.name);
+    return table.name;
+  }
   const str = String(table);
   const match = str.match(/['\"]([^'\"]+)['\"]/);
-  return match ? match[1] : 'unknown';
+  const result = match ? match[1] : 'unknown';
+  console.log("[supabase-db] getTableName via regex:", result);
+  return result;
 }
 
 // Extract column name and value from a drizzle eq() condition
 // Drizzle eq() creates an object like: { column: ..., value: ..., table: ... }
 // or it could be a raw comparison object
 function extractCondition(condition: any): { column: string; value: any } | null {
-  if (!condition) return null;
+  if (!condition) {
+    console.log("[supabase-db] extractCondition: null condition");
+    return null;
+  }
+  
+  console.log("[supabase-db] extractCondition keys:", Object.keys(condition), "has column?", condition.column !== undefined, "has value?", condition.value !== undefined);
   
   // Drizzle's eq() creates an object with column and value properties
   if (condition.column !== undefined && condition.value !== undefined) {
@@ -69,14 +83,17 @@ function extractCondition(condition: any): { column: string; value: any } | null
       // Try to stringify
       columnName = String(condition.column);
     }
+    console.log("[supabase-db] extractCondition result:", { column: columnName, value: condition.value });
     return { column: columnName, value: condition.value };
   }
   
   // Handle raw comparison objects like { column: 'id', value: 1 }
   if (condition.column && condition.value !== undefined) {
+    console.log("[supabase-db] extractCondition raw result:", { column: condition.column, value: condition.value });
     return { column: condition.column, value: condition.value };
   }
   
+  console.log("[supabase-db] extractCondition: could not extract");
   return null;
 }
 
@@ -111,13 +128,17 @@ function createRestDb(client: any): DrizzleDb {
       return {
         from: (table: any) => {
           const tableName = getTableName(table);
+          console.log("[supabase-db] select.from:", tableName);
           let query: any = client.from(tableName).select('*');
           
           const chain: any = {
             where: (condition: any) => {
               const extracted = extractCondition(condition);
               if (extracted) {
+                console.log("[supabase-db] select.where:", extracted.column, "=", extracted.value);
                 query = query.eq(extracted.column, extracted.value);
+              } else {
+                console.log("[supabase-db] select.where: could not extract condition");
               }
               return chain;
             },
@@ -133,8 +154,13 @@ function createRestDb(client: any): DrizzleDb {
               return chain;
             },
             then: async (resolve: any) => {
+              console.log("[supabase-db] select executing...");
               const { data, error } = await query;
-              if (error) throw new Error(error.message);
+              if (error) {
+                console.log("[supabase-db] select error:", error.message);
+                throw new Error(error.message);
+              }
+              console.log("[supabase-db] select result:", data?.length, "rows");
               resolve(data || []);
             },
           };
@@ -145,27 +171,39 @@ function createRestDb(client: any): DrizzleDb {
     },
     insert: (table: any) => {
       const tableName = getTableName(table);
+      console.log("[supabase-db] insert into:", tableName);
       return {
         values: (vals: any) => {
+          console.log("[supabase-db] insert values:", JSON.stringify(vals));
           return {
             returning: (fields?: any) => {
               return {
                 then: async (resolve: any) => {
+                  console.log("[supabase-db] insert executing...");
                   const { data, error } = await client
                     .from(tableName)
                     .insert(vals)
                     .select();
-                  if (error) throw new Error(error.message);
+                  if (error) {
+                    console.log("[supabase-db] insert error:", error.message);
+                    throw new Error(error.message);
+                  }
+                  console.log("[supabase-db] insert result:", data?.length, "rows");
                   resolve(data || []);
                 },
               };
             },
             then: async (resolve: any) => {
+              console.log("[supabase-db] insert executing...");
               const { data, error } = await client
                 .from(tableName)
                 .insert(vals)
                 .select();
-              if (error) throw new Error(error.message);
+              if (error) {
+                console.log("[supabase-db] insert error:", error.message);
+                throw new Error(error.message);
+              }
+              console.log("[supabase-db] insert result:", data?.length, "rows");
               resolve(data || []);
             },
           };
@@ -174,28 +212,41 @@ function createRestDb(client: any): DrizzleDb {
     },
     update: (table: any) => {
       const tableName = getTableName(table);
+      console.log("[supabase-db] update table:", tableName);
       return {
         set: (vals: any) => {
+          console.log("[supabase-db] update set:", JSON.stringify(vals));
           return {
             where: (condition: any) => {
               const extracted = extractCondition(condition);
               let query = client.from(tableName).update(vals).select();
               if (extracted) {
+                console.log("[supabase-db] update where:", extracted.column, "=", extracted.value);
                 query = query.eq(extracted.column, extracted.value);
               }
               return {
                 returning: (fields?: any) => {
                   return {
                     then: async (resolve: any) => {
+                      console.log("[supabase-db] update executing...");
                       const { data, error } = await query;
-                      if (error) throw new Error(error.message);
+                      if (error) {
+                        console.log("[supabase-db] update error:", error.message);
+                        throw new Error(error.message);
+                      }
+                      console.log("[supabase-db] update result:", data?.length, "rows");
                       resolve(data || []);
                     },
                   };
                 },
                 then: async (resolve: any) => {
+                  console.log("[supabase-db] update executing...");
                   const { data, error } = await query;
-                  if (error) throw new Error(error.message);
+                  if (error) {
+                    console.log("[supabase-db] update error:", error.message);
+                    throw new Error(error.message);
+                  }
+                  console.log("[supabase-db] update result:", data?.length, "rows");
                   resolve(data || []);
                 },
               };
