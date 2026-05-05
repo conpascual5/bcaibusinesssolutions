@@ -122,7 +122,7 @@ app.get("/api/init-db", async (c) => {
       const sqlNeon = neon(env.databaseUrl);
 
       // Create all tables in a single batch
-      await sqlNeon(`CREATE TABLE IF NOT EXISTS users (
+      await sqlNeon`CREATE TABLE IF NOT EXISTS users (
         id SERIAL PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL, name VARCHAR(100) NOT NULL,
         is_active BOOLEAN NOT NULL DEFAULT true, is_admin BOOLEAN NOT NULL DEFAULT false,
@@ -169,7 +169,7 @@ app.get("/api/init-db", async (c) => {
         message TEXT NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT false,
         is_read BOOLEAN NOT NULL DEFAULT false,
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
-      );`);
+      );`;
       results.push("✅ All tables created");
 
       // Seed admin user
