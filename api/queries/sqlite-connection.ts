@@ -21,6 +21,7 @@ const TABLE_CREATION_SQL = [
     is_active INTEGER NOT NULL DEFAULT 1,
     is_admin INTEGER NOT NULL DEFAULT 0,
     plan TEXT NOT NULL DEFAULT 'free',
+    activated_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE TABLE IF NOT EXISTS searches (
@@ -104,6 +105,15 @@ const TABLE_CREATION_SQL = [
     month TEXT NOT NULL,
     count INTEGER NOT NULL DEFAULT 0,
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS plan_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    plan TEXT NOT NULL,
+    previous_plan TEXT,
+    set_by TEXT,
+    notes TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
 ];
 

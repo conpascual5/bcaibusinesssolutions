@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery, authedQuery } from "./middleware.js";
 import { getDbReady, saveDb } from "./queries/connection.js";
-import { users } from "../db/schema.js";
+import { users, planHistory } from "../db/schema.js";
 import { desc, eq } from "drizzle-orm";
 
 export const userRouter = createRouter({
@@ -31,16 +31,44 @@ export const userRouter = createRouter({
 
   setPlan: adminQuery
     .input(z.object({ userId: z.number(), plan: z.enum(["free", "pro", "vip"]) }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const db = await getDbReady() as any;
       const now = new Date().toISOString();
+
+      // Get current plan before updating
+      const [currentUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
+      const previousPlan = currentUser?.plan || "free";
+
+      // Update user plan
       await db.update(users).set({
         plan: input.plan,
         activatedAt: now,
         isActive: 1,
       }).where(eq(users.id, input.userId));
+
+      // Log plan change to history
+      await db.insert(planHistory).values({
+        userId: input.userId,
+        plan: input.plan,
+        previousPlan: previousPlan,
+        setBy: ctx.user?.email || "Admin",
+        notes: "",
+        createdAt: now,
+      });
+
       await saveDb();
       return { success: true, plan: input.plan };
+    }),
+
+  planHistory: adminQuery
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDbReady() as any;
+      const history = await db.select()
+        .from(planHistory)
+        .where(eq(planHistory.userId, input.userId))
+        .orderBy(desc(planHistory.createdAt));
+      return history;
     }),
 
   profile: authedQuery.query(async ({ ctx }) => {

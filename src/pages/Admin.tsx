@@ -2,13 +2,22 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
-import { Users, Settings, Shield, CheckCircle, XCircle, Key, Save, Check, Star, Crown, Sparkles } from 'lucide-react';
+import {
+  Users, Settings, Shield, CheckCircle, XCircle, Key, Save, Check,
+  Star, Crown, Sparkles, X, Clock, History, ArrowRight,
+} from 'lucide-react';
 
 const PLAN_OPTIONS = [
   { value: 'free', label: 'Free', icon: Sparkles, color: 'text-gray-500' },
   { value: 'pro', label: 'Pro', icon: Crown, color: 'text-amber-500' },
   { value: 'vip', label: 'VIP', icon: Star, color: 'text-purple-500' },
 ] as const;
+
+const PLAN_BADGES: Record<string, { bg: string; text: string; border: string }> = {
+  free: { bg: 'bg-gray-100', text: 'text-gray-600', border: 'border-gray-200' },
+  pro: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+  vip: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+};
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -17,52 +26,43 @@ export default function Admin() {
   const [apiKey, setApiKey] = useState('');
   const [deepseekKey, setDeepseekKey] = useState('');
   const [openaiKey, setOpenaiKey] = useState('');
+  const [historyUserId, setHistoryUserId] = useState<number | null>(null);
 
   const { data: usersList, refetch: refetchUsers } = trpc.user.list.useQuery();
   const { data: apiKeyData, refetch: refetchApiKey } = trpc.settings.getApiKey.useQuery();
   const { data: deepseekKeyData, refetch: refetchDeepseekKey } = trpc.settings.getDeepseekKey.useQuery();
   const { data: openaiKeyData, refetch: refetchOpenaiKey } = trpc.settings.getOpenaiKey.useQuery();
-  const setApiKeyMutation = trpc.settings.setApiKey.useMutation({
-    onSuccess: () => refetchApiKey(),
-  });
+  const { data: planHistoryData, refetch: refetchPlanHistory } = trpc.user.planHistory.useQuery(
+    { userId: historyUserId ?? 0 },
+    { enabled: historyUserId !== null },
+  );
+
+  const setApiKeyMutation = trpc.settings.setApiKey.useMutation({ onSuccess: () => refetchApiKey() });
   const [deepseekSaved, setDeepseekSaved] = useState(false);
   const [deepseekError, setDeepseekError] = useState('');
   const setDeepseekKeyMutation = trpc.settings.setDeepseekKey.useMutation({
     onSuccess: () => {
-      console.log('[Admin] Deepseek key saved successfully');
       refetchDeepseekKey();
       setDeepseekSaved(true);
       setDeepseekError('');
       setTimeout(() => setDeepseekSaved(false), 2000);
     },
-    onError: (err) => {
-      console.error('[Admin] Deepseek key save error:', err.message);
-      setDeepseekError(err.message);
-    },
+    onError: (err) => setDeepseekError(err.message),
   });
   const [openaiSaved, setOpenaiSaved] = useState(false);
   const [openaiError, setOpenaiError] = useState('');
   const setOpenaiKeyMutation = trpc.settings.setOpenaiKey.useMutation({
     onSuccess: () => {
-      console.log('[Admin] OpenAI key saved successfully');
       refetchOpenaiKey();
       setOpenaiSaved(true);
       setOpenaiError('');
       setTimeout(() => setOpenaiSaved(false), 2000);
     },
-    onError: (err) => {
-      console.error('[Admin] OpenAI key save error:', err.message);
-      setOpenaiError(err.message);
-    },
+    onError: (err) => setOpenaiError(err.message),
   });
 
-  const toggleActiveMutation = trpc.user.toggleActive.useMutation({
-    onSuccess: () => refetchUsers(),
-  });
-
-  const setPlanMutation = trpc.user.setPlan.useMutation({
-    onSuccess: () => refetchUsers(),
-  });
+  const toggleActiveMutation = trpc.user.toggleActive.useMutation({ onSuccess: () => refetchUsers() });
+  const setPlanMutation = trpc.user.setPlan.useMutation({ onSuccess: () => refetchUsers() });
 
   const [promoting, setPromoting] = useState(false);
   const [promoteMsg, setPromoteMsg] = useState('');
@@ -90,6 +90,11 @@ export default function Admin() {
     } finally {
       setPromoting(false);
     }
+  };
+
+  const openHistory = (userId: number) => {
+    setHistoryUserId(userId);
+    refetchPlanHistory();
   };
 
   if (!user?.isAdmin) {
@@ -244,16 +249,25 @@ export default function Admin() {
                           : <span className="text-muted-foreground/50 italic">Not yet</span>}
                       </td>
                       <td className="px-6 py-4">
-                        <button
-                          onClick={() => toggleActiveMutation.mutate({ userId: u.id, isActive: !u.isActive })}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                            u.isActive
-                              ? 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30'
-                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
-                          }`}
-                        >
-                          {u.isActive ? 'Deactivate' : 'Activate'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => toggleActiveMutation.mutate({ userId: u.id, isActive: !u.isActive })}
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                              u.isActive
+                                ? 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/30'
+                                : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-900/20 dark:text-emerald-400 dark:hover:bg-emerald-900/30'
+                            }`}
+                          >
+                            {u.isActive ? 'Deactivate' : 'Activate'}
+                          </button>
+                          <button
+                            onClick={() => openHistory(u.id)}
+                            className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:text-indigo-400 dark:hover:bg-indigo-900/30 transition-colors flex items-center gap-1"
+                          >
+                            <History className="w-3 h-3" />
+                            History
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -271,9 +285,7 @@ export default function Admin() {
                 <Key className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
                 FAL API Key
               </h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Used for AI image generation and chat.
-              </p>
+              <p className="text-sm text-muted-foreground mb-5">Used for AI image generation and chat.</p>
               <div className="space-y-3">
                 <input
                   type="password"
@@ -299,9 +311,7 @@ export default function Admin() {
                 <Key className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
                 Deepseek API Key
               </h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Used for AI ad copy analysis, sales wizard, and FB Ads Targeting.
-              </p>
+              <p className="text-sm text-muted-foreground mb-5">Used for AI ad copy analysis, sales wizard, and FB Ads Targeting.</p>
               <div className="space-y-3">
                 <input
                   type="password"
@@ -318,9 +328,7 @@ export default function Admin() {
                   {deepseekSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
                   {deepseekSaved ? 'Saved!' : 'Save Deepseek Key'}
                 </button>
-                {deepseekError && (
-                  <p className="text-sm text-red-500 mt-2">{deepseekError}</p>
-                )}
+                {deepseekError && <p className="text-sm text-red-500 mt-2">{deepseekError}</p>}
               </div>
             </div>
 
@@ -330,9 +338,7 @@ export default function Admin() {
                 <Key className="w-5 h-5 text-emerald-500 stroke-[1.5]" />
                 OpenAI API Key
               </h2>
-              <p className="text-sm text-muted-foreground mb-5">
-                Used for AI image analysis (Image Ad Analyzer). GPT-4o-mini processes the actual image.
-              </p>
+              <p className="text-sm text-muted-foreground mb-5">Used for AI image analysis (Image Ad Analyzer). GPT-4o-mini processes the actual image.</p>
               <div className="space-y-3">
                 <input
                   type="password"
@@ -349,14 +355,92 @@ export default function Admin() {
                   {openaiSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
                   {openaiSaved ? 'Saved!' : 'Save OpenAI Key'}
                 </button>
-                {openaiError && (
-                  <p className="text-sm text-red-500 mt-2">{openaiError}</p>
-                )}
+                {openaiError && <p className="text-sm text-red-500 mt-2">{openaiError}</p>}
               </div>
             </div>
           </div>
         )}
       </div>
+
+      {/* Plan History Modal */}
+      {historyUserId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setHistoryUserId(null)} />
+          <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-lg max-h-[80vh] overflow-hidden animate-fade-in-up">
+            {/* Modal header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-800">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 bg-indigo-100 dark:bg-indigo-900/30 rounded-xl flex items-center justify-center">
+                  <History className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-gray-900 dark:text-gray-100 text-sm">Plan History</h3>
+                  <p className="text-xs text-gray-500">
+                    {usersList?.find((u: any) => u.id === historyUserId)?.name || `User #${historyUserId}`}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setHistoryUserId(null)}
+                className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              >
+                <X className="w-4 h-4 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              {!planHistoryData || planHistoryData.length === 0 ? (
+                <div className="text-center py-10">
+                  <Clock className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                  <p className="text-sm text-gray-500 dark:text-gray-400">No plan changes recorded yet.</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                    Plan changes will appear here once you set a plan for this user.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {planHistoryData.map((entry: any) => {
+                    const currentBadge = PLAN_BADGES[entry.plan] || PLAN_BADGES.free;
+                    const prevBadge = PLAN_BADGES[entry.previousPlan] || PLAN_BADGES.free;
+                    return (
+                      <div
+                        key={entry.id}
+                        className="flex items-start gap-4 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700"
+                      >
+                        <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${prevBadge.bg} ${prevBadge.text} ${prevBadge.border} border`}>
+                              {entry.previousPlan || 'None'}
+                            </span>
+                            <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold ${currentBadge.bg} ${currentBadge.text} ${currentBadge.border} border`}>
+                              {entry.plan}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(entry.createdAt).toLocaleDateString('en-PH', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                            {entry.setBy && <span> &middot; by {entry.setBy}</span>}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -96,6 +96,16 @@ export const userUsage = sqliteTable("user_usage", {
   updatedAt: text("updated_at").notNull().default("(datetime('now'))"),
 });
 
+export const planHistory = sqliteTable("plan_history", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id").notNull(),
+  plan: text("plan").notNull(),
+  previousPlan: text("previous_plan"),
+  setBy: text("set_by"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull().default("(datetime('now'))"),
+});
+
 export const chatMessages = sqliteTable("chat_messages", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   userId: integer("user_id").notNull(),
