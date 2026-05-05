@@ -305,8 +305,8 @@ export default function Admin() {
                   className="w-full px-4 py-2.5 bg-background border border-input rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground/50"
                 />
                 <button
-                  onClick={() => setDeepseekKeyMutation.mutate({ apiKey: deepseekKey })}
-                  disabled={!deepseekKey}
+                  onClick={() => setDeepseekKeyMutation.mutate({ apiKey: deepseekKey || deepseekKeyData?.apiKey || '' })}
+                  disabled={!deepseekKey && !deepseekKeyData?.apiKey}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
                 >
                   {deepseekSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
@@ -336,8 +336,8 @@ export default function Admin() {
                   className="w-full px-4 py-2.5 bg-background border border-input rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent placeholder:text-muted-foreground/50"
                 />
                 <button
-                  onClick={() => setOpenaiKeyMutation.mutate({ apiKey: openaiKey })}
-                  disabled={!openaiKey}
+                  onClick={() => setOpenaiKeyMutation.mutate({ apiKey: openaiKey || openaiKeyData?.apiKey || '' })}
+                  disabled={!openaiKey && !openaiKeyData?.apiKey}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
                 >
                   {openaiSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
