@@ -8,6 +8,18 @@ import salesWizard from "./sales-wizard.js";
 
 const app = new Hono();
 
+// Warm up the database connection on boot so first request doesn't timeout
+// This starts SQL.js WASM loading + table creation in the background
+if (env.databaseUrl) {
+  import("./queries/connection.js").then(({ waitForDb }) => {
+    waitForDb().then(() => {
+      console.log("[DB] Database warmed up successfully on boot");
+    }).catch((err) => {
+      console.error("[DB] Database warm-up failed (will retry on first request):", err?.message ?? err);
+    });
+  });
+}
+
 // Mount sales wizard routes
 app.route("/", salesWizard);
 
@@ -318,15 +330,23 @@ app.post("/api/upload", bodyLimit({ maxSize: 50 * 1024 * 1024 }), async (c) => {
   }
 });
 
-// List uploaded sample images
+// List uploaded sample images (cached for 30s to avoid repeated filesystem reads)
+let samplesCache: { images: { url: string; name: string }[]; ts: number } | null = null;
+const SAMPLES_CACHE_TTL = 30_000;
+
 app.get("/api/samples", async (c) => {
   try {
+    const now = Date.now();
+    if (samplesCache && (now - samplesCache.ts) < SAMPLES_CACHE_TTL) {
+      return c.json({ images: samplesCache.images });
+    }
     const { readdir } = await import("fs/promises");
     const samplesDir = join(process.cwd(), "public", "samples");
     const files = await readdir(samplesDir).catch(() => []);
     const images = files
       .filter((f) => /\.(jpg|jpeg|png|gif|webp)$/i.test(f))
       .map((f) => ({ url: `/samples/${f}`, name: f }));
+    samplesCache = { images, ts: now };
     return c.json({ images });
   } catch {
     return c.json({ images: [] });
