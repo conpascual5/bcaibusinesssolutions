@@ -17,7 +17,11 @@ import {
   CheckCircle2,
   ToggleLeft,
   ToggleRight,
+  Crown,
 } from 'lucide-react';
+import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UpgradePrompt from '@/components/UpgradePrompt';
+import UsageBadge from '@/components/UsageBadge';
 
 type InvoiceType = 'sales' | 'cash' | 'charge';
 type VatType = 'vatable' | 'vat-exempt' | 'zero-rated';
@@ -73,6 +77,9 @@ export default function Invoices() {
   const { user } = useAuth();
   const invoiceRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const { usage, loading: usageLoading, increment } = useUsageLimit('invoices');
 
   const [invoice, setInvoice] = useState<InvoiceData>({
     businessName: user?.name || '',
@@ -133,6 +140,13 @@ export default function Invoices() {
 
   const downloadPDF = async () => {
     if (!invoiceRef.current) return;
+
+    // Check usage limit
+    if (usage && !usage.isPro && usage.remaining <= 0) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setDownloading(true);
     try {
       const { default: jsPDF } = await import('jspdf');
@@ -152,6 +166,9 @@ export default function Invoices() {
 
       pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
       pdf.save(`${invoice.invoiceNumber}.pdf`);
+
+      // Increment usage after successful download
+      await increment();
     } catch (err) {
       console.error('PDF download failed:', err);
     } finally {
@@ -163,14 +180,29 @@ export default function Invoices() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-          <Receipt className="w-3 h-3" /> BIR-Compliant
+        <div className="flex items-center gap-3 mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
+            <Receipt className="w-3 h-3" /> BIR-Compliant
+          </div>
+          {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Philippine Invoice Generator</h1>
         <p className="text-gray-500 mt-1 max-w-2xl">
           Generate BIR-compliant Sales, Cash, or Charge Invoices with VAT/Non-VAT support. Download as PDF.
         </p>
       </div>
+
+      {/* Upgrade Prompt */}
+      {showUpgrade && usage && (
+        <div className="mb-8 max-w-md">
+          <UpgradePrompt
+            feature="invoices"
+            used={usage.used}
+            limit={usage.limit}
+            onClose={() => setShowUpgrade(false)}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* ===== FORM ===== */}

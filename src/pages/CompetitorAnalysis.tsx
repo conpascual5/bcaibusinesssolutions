@@ -61,6 +61,13 @@ export default function CompetitorAnalysis() {
 
   const analyzeCopy = async () => {
     if (!input.trim()) return;
+
+    // Check usage limit
+    if (usage && !usage.isPro && usage.remaining <= 0) {
+      setShowUpgrade(true);
+      return;
+    }
+
     setIsAnalyzing(true);
     setError('');
     setResult(null);
@@ -75,6 +82,9 @@ export default function CompetitorAnalysis() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Analysis failed');
       setResult(data);
+
+      // Increment usage after successful analysis
+      await increment();
     } catch (err: any) {
       setError(err.message || 'Failed to analyze. Please try again.');
     } finally {
@@ -92,8 +102,11 @@ export default function CompetitorAnalysis() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase tracking-wider mb-3">
-          <FileSearch className="w-3 h-3" /> AI-Powered
+        <div className="flex items-center gap-3 mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase tracking-wider">
+            <FileSearch className="w-3 h-3" /> AI-Powered
+          </div>
+          {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Competitor Ad Copy Analyzer</h1>
         <p className="text-gray-500 mt-1 max-w-xl">
@@ -158,6 +171,18 @@ export default function CompetitorAnalysis() {
             </>
           )}
         </button>
+
+        {/* Upgrade Prompt */}
+        {showUpgrade && usage && (
+          <div className="mt-4">
+            <UpgradePrompt
+              feature="ad-analyzer"
+              used={usage.used}
+              limit={usage.limit}
+              onClose={() => setShowUpgrade(false)}
+            />
+          </div>
+        )}
       </div>
 
       {/* Error */}

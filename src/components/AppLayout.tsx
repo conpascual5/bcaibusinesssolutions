@@ -33,6 +33,7 @@ import {
   Sun,
   Target,
   Eye,
+  Crown,
 } from 'lucide-react';
 
 interface AppLayoutProps {
@@ -115,6 +116,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <SidebarSeparator className="mx-4 w-auto opacity-30" />
 
           <SidebarFooter className="p-4 space-y-1">
+            {/* Pro Badge / Upgrade CTA */}
+            <div className="group-data-[collapsible=icon]:hidden">
+              <button
+                onClick={() => navigate('/app/upgrade')}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 hover:from-amber-100 hover:to-orange-100 transition-all"
+              >
+                <div className="p-1.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-lg shadow-sm">
+                  <Crown className="w-3.5 h-3.5 text-white" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="text-xs font-bold text-amber-800">Upgrade to Pro</p>
+                  <p className="text-[10px] text-amber-600">Unlock unlimited access</p>
+                </div>
+                <Sparkles className="w-3 h-3 text-amber-400" />
+              </button>
+            </div>
+
             {/* Dark mode toggle */}
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg group-data-[collapsible=icon]:hidden">
               {darkMode ? (
