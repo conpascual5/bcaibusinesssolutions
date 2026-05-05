@@ -10,15 +10,14 @@ const app = new Hono();
 
 // Warm up the database connection on boot so first request doesn't timeout
 // This starts SQL.js WASM loading + table creation in the background
-if (env.databaseUrl) {
-  import("./queries/connection.js").then(({ waitForDb }) => {
-    waitForDb().then(() => {
-      console.log("[DB] Database warmed up successfully on boot");
-    }).catch((err) => {
-      console.error("[DB] Database warm-up failed (will retry on first request):", err?.message ?? err);
-    });
+// Always run this — even without DATABASE_URL (SQLite mode)
+import("./queries/connection.js").then(({ waitForDb }) => {
+  waitForDb().then(() => {
+    console.log("[DB] Database warmed up successfully on boot");
+  }).catch((err) => {
+    console.error("[DB] Database warm-up failed (will retry on first request):", err?.message ?? err);
   });
-}
+});
 
 // Mount sales wizard routes
 app.route("/", salesWizard);
@@ -282,14 +281,24 @@ app.get("/api/init-db", async (c) => {
 });
 
 // Health check endpoint - lets frontend verify API is reachable
+// Quick health check — responds immediately without waiting for DB
+// The client uses this to verify the server is reachable before attempting login
 app.get("/api/health", async (c) => {
-  const { testDbConnection } = await import("./queries/connection.js");
-  const dbOk = await testDbConnection();
-  return c.json({
-    status: dbOk ? "ok" : "db_unavailable",
-    time: Date.now(),
-    db: dbOk ? "connected" : "disconnected",
-  });
+  try {
+    const { testDbConnection } = await import("./queries/connection.js");
+    // Use a short timeout so we don't block the response
+    const dbOk = await Promise.race([
+      testDbConnection(),
+      new Promise<boolean>((resolve) => setTimeout(() => resolve(false), 3000)),
+    ]);
+    return c.json({
+      status: dbOk ? "ok" : "starting",
+      time: Date.now(),
+      db: dbOk ? "connected" : "initializing",
+    });
+  } catch {
+    return c.json({ status: "starting", time: Date.now(), db: "initializing" });
+  }
 });
 
 // Debug endpoint: test fal.ai API connectivity

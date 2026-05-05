@@ -10,6 +10,7 @@ import fs from "fs";
 let db: ReturnType<typeof drizzle> | null = null;
 let initPromise: Promise<void> | null = null;
 let sqlJsDb: SqlJsDatabase | null = null;
+let sqlInit: Awaited<ReturnType<typeof initSqlJs>> | null = null;
 
 const TABLE_CREATION_SQL = [
   `CREATE TABLE IF NOT EXISTS users (
@@ -84,22 +85,31 @@ const TABLE_CREATION_SQL = [
   )`,
 ];
 
-async function ensureTables(d: ReturnType<typeof drizzle>) {
+/** Check if tables exist by trying a simple query */
+function tablesExist(d: ReturnType<typeof drizzle>): boolean {
   try {
-    await (d as any).run(`SELECT 1 FROM users LIMIT 1`);
-    return; // tables exist
+    (d as any).run(`SELECT 1 FROM users LIMIT 1`);
+    return true;
   } catch {
-    // tables don't exist — create them
+    return false;
   }
+}
+
+/** Create tables synchronously (much faster than async for SQL.js) */
+function createTablesSync(sqlJsDb: SqlJsDatabase) {
   for (const sql of TABLE_CREATION_SQL) {
-    await (d as any).run(sql);
+    sqlJsDb.run(sql);
   }
 }
 
 export async function getDb() {
   if (!db) {
-    const SQL = await initSqlJs();
-    
+    // Pre-load SQL.js WASM if not already loaded
+    if (!sqlInit) {
+      sqlInit = await initSqlJs();
+    }
+    const SQL = sqlInit;
+
     // On Vercel, use /tmp which is writable; otherwise use local data dir
     const dbDir = env.isVercel ? "/tmp/data" : path.resolve(process.cwd(), "data");
     const dbPath = path.resolve(dbDir, "app.db");
@@ -110,6 +120,8 @@ export async function getDb() {
     } catch {}
 
     let buffer: Buffer | null = null;
+    let loadedFromSeed = false;
+
     // Try loading the writable DB first (has user data)
     try {
       buffer = fs.readFileSync(dbPath);
@@ -118,16 +130,15 @@ export async function getDb() {
       try {
         const seedPath = path.resolve(process.cwd(), "public", "seed.db");
         buffer = fs.readFileSync(seedPath);
-        console.log("[DB] Loaded pre-seeded database from", seedPath);
+        loadedFromSeed = true;
       } catch {
         // No pre-seeded DB either — will create from scratch
-        console.log("[DB] No existing database found, creating new one");
       }
     }
 
     sqlJsDb = new SQL.Database(buffer);
-    
-    // Auto-save to disk periodically
+
+    // Auto-save to disk
     const saveDb = () => {
       try {
         if (sqlJsDb) {
@@ -140,9 +151,7 @@ export async function getDb() {
       }
     };
 
-    // Save on process exit
     process.on("exit", saveDb);
-    // Save on SIGINT/SIGTERM
     process.on("SIGINT", () => { saveDb(); process.exit(0); });
     process.on("SIGTERM", () => { saveDb(); process.exit(0); });
 
@@ -152,24 +161,31 @@ export async function getDb() {
     }) as any;
     db = newDb;
 
-    // Start table creation and store the promise
-    initPromise = ensureTables(newDb).then(() => {
-      saveDb(); // Save after creating tables
-    }).catch((err) => {
-      console.error("[DB] Table creation failed:", err);
-      throw err;
-    });
+    // If loaded from pre-seeded seed.db, tables already exist — skip creation
+    if (loadedFromSeed && tablesExist(newDb)) {
+      initPromise = Promise.resolve();
+    } else {
+      // Create tables synchronously (fast for SQL.js)
+      try {
+        createTablesSync(sqlJsDb);
+        saveDb();
+        initPromise = Promise.resolve();
+      } catch (err) {
+        initPromise = Promise.reject(err);
+      }
+    }
   }
   return db!;
 }
 
-/** Wait for the database to be fully initialized (tables created) */
+/** Wait for the database to be fully initialized */
 export async function waitForDb() {
   await getDb();
   if (initPromise) {
-    // Add a timeout so we don't hang forever on cold starts
+    // Shorter timeout for Vercel (10s) vs local (25s)
+    const timeoutMs = env.isVercel ? 10000 : 25000;
     const timeoutPromise = new Promise<void>((_, reject) =>
-      setTimeout(() => reject(new Error("Database initialization timed out after 25 seconds")), 25000)
+      setTimeout(() => reject(new Error(`Database initialization timed out after ${timeoutMs / 1000}s`)), timeoutMs)
     );
     await Promise.race([initPromise, timeoutPromise]);
   }
@@ -177,7 +193,6 @@ export async function waitForDb() {
 
 /**
  * Get the database instance after ensuring tables are created.
- * This is the preferred way to get the DB — it waits for initialization.
  */
 export async function getDbReady() {
   await waitForDb();
