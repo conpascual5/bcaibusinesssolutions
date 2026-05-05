@@ -42,23 +42,17 @@ export const userRouter = createRouter({
       const supabase = getSupabaseClient();
 
       // Check if subscription exists
-      // @ts-expect-error - subscriptions table not in TS types
-      const { data: existing } = await supabase
-        .from("subscriptions")
+      const { data: existing } = await (supabase.from("subscriptions") as any)
         .select("id")
         .eq("user_id", input.userId)
         .maybeSingle();
 
       if (existing) {
-        // @ts-expect-error - subscriptions table not in TS types
-        await supabase
-          .from("subscriptions")
+        await (supabase.from("subscriptions") as any)
           .update({ plan: input.plan, status: "active", updated_at: new Date().toISOString() })
           .eq("user_id", input.userId);
       } else {
-        // @ts-expect-error - subscriptions table not in TS types
-        await supabase
-          .from("subscriptions")
+        await (supabase.from("subscriptions") as any)
           .insert({ user_id: input.userId, plan: input.plan, status: "active" });
       }
 

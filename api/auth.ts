@@ -84,8 +84,7 @@ export const authRouter = createRouter({
           try {
             const { getSupabaseClient } = await import("./queries/supabase-client.js");
             const supabase = getSupabaseClient();
-            // @ts-expect-error - subscriptions table not in TS types
-            await supabase.from("subscriptions").insert({
+            await (supabase.from("subscriptions") as any).insert({
               user_id: user.id,
               plan: "vip",
               status: "active",
