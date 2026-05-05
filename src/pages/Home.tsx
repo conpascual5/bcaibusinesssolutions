@@ -10,6 +10,8 @@ import UpgradePrompt from '@/components/UpgradePrompt';
 import UsageBadge from '@/components/UsageBadge';
 
 export default function Home() {
+  const { usage, loading: usageLoading } = useUsageLimit('captions-video-script');
+
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto">

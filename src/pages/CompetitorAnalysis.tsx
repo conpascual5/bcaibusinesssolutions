@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import UsageBadge from '@/components/UsageBadge';
 
 interface AnalysisResult {
   psychologicalTriggers: {
