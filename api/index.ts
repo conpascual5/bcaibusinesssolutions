@@ -30,7 +30,7 @@ async function initHandler() {
 initHandler();
 
 export default async function(req: Request): Promise<Response> {
-  // Wait for handler with timeout
+  // Wait for handler with timeout (Vercel Hobby plan has ~10s timeout)
   if (!handler) {
     await Promise.race([
       initHandler(),
@@ -52,7 +52,7 @@ export default async function(req: Request): Promise<Response> {
           };
         }
         resolve();
-      }, 20000)),
+      }, 8000)), // Reduced from 20s to 8s to fit within Vercel's 10s limit
     ]);
   }
   

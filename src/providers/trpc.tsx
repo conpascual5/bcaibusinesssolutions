@@ -37,15 +37,18 @@ async function trpcFetch(url: string, options?: RequestInit & { timeout?: number
   
   if (!response.ok) {
     const contentType = response.headers.get("content-type") || "";
-    // If the response is HTML (e.g. a 504 gateway timeout page), convert to JSON
-    if (contentType.includes("text/html")) {
+    // If the response is not JSON (e.g. a 504 gateway timeout HTML page), convert to JSON
+    if (!contentType.includes("application/json")) {
       const text = await response.text();
       const statusText = response.statusText || "Server Error";
+      // Extract a short preview from HTML error pages
+      const preview = text.length > 200 ? text.substring(0, 200) + "..." : text;
       return new Response(
         JSON.stringify({
           error: {
             message: `Server returned ${response.status} ${statusText}. The server may still be starting up. Please try again.`,
             code: response.status === 504 ? "TIMEOUT" : "SERVER_ERROR",
+            detail: preview,
           },
         }),
         {
