@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { trpc } from '@/providers/trpc';
@@ -16,10 +16,12 @@ export default function Auth() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const retryCountRef = useRef(0);
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: (data) => {
       console.log('[auth] Login success for:', data.user.email);
+      retryCountRef.current = 0;
       setAuth(data.token, data.user);
       if (data.user.isAdmin) {
         navigate('/admin');
@@ -30,8 +32,19 @@ export default function Auth() {
     onError: (err) => {
       console.error('[auth] Login error:', err);
       const msg = err.message || '';
-      if (msg.includes('Database connection failed') || msg.includes('timed out') || msg.includes('504')) {
-        setError('The server is taking too long to respond. Please try again in a few seconds.');
+      // Retry on timeout/504 errors (server cold start)
+      if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed'))) {
+        retryCountRef.current += 1;
+        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
+        setError(`Server is starting up... retrying (${retryCountRef.current}/3)`);
+        setTimeout(() => {
+          loginMutation.mutate({ email, password });
+        }, delay);
+        return;
+      }
+      retryCountRef.current = 0;
+      if (msg.includes('Database connection failed') || msg.includes('timed out') || msg.includes('504') || msg.includes('Unexpected token')) {
+        setError('The server is still starting up. Please wait a moment and try again.');
       } else {
         setError(msg || 'Login failed. Please check your credentials.');
       }
@@ -41,28 +54,63 @@ export default function Auth() {
   const registerMutation = trpc.auth.register.useMutation({
     onSuccess: (data) => {
       console.log('[auth] Register success for:', data.user.email);
+      retryCountRef.current = 0;
       setAuth(data.token, data.user);
       navigate('/app');
     },
     onError: (err) => {
       console.error('[auth] Register error:', err);
-      setError(err.message || 'Registration failed. Email may already be in use.');
+      const msg = err.message || '';
+      // Retry on timeout/504 errors (server cold start)
+      if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed'))) {
+        retryCountRef.current += 1;
+        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
+        setError(`Server is starting up... retrying (${retryCountRef.current}/3)`);
+        setTimeout(() => {
+          registerMutation.mutate({ email, password, name });
+        }, delay);
+        return;
+      }
+      retryCountRef.current = 0;
+      setError(msg || 'Registration failed. Email may already be in use.');
     },
   });
 
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
     onSuccess: (data) => {
+      retryCountRef.current = 0;
       setForgotSent(true);
     },
     onError: (err) => {
-      setError(err.message || 'Something went wrong. Please try again.');
+      const msg = err.message || '';
+      if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed'))) {
+        retryCountRef.current += 1;
+        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
+        setTimeout(() => {
+          forgotPasswordMutation.mutate({ email: forgotEmail });
+        }, delay);
+        return;
+      }
+      retryCountRef.current = 0;
+      setError(msg || 'Something went wrong. Please try again.');
     },
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (isLogin) {
+      // Quick health check before attempting login
+      try {
+        const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
+        if (!res.ok) {
+          setError('Server is not ready yet. Please wait a moment and try again.');
+          return;
+        }
+      } catch {
+        // Health check failed — still try the login, it might work
+      }
+      retryCountRef.current = 0;
       loginMutation.mutate({ email, password });
     } else {
       if (!name.trim()) {
