@@ -59,30 +59,30 @@ const FRAMEWORK_CATEGORIES: Record<string, { category: string; color: string }> 
 };
 
 const FRAMEWORKS = [
-  { id: "6-ws", name: "The Ultimate 6 W's", description: "Step-by-step guide to high-converting sales page", icon: "📈" },
-  { id: "story-solve-sell", name: "Story-Solve-Sell", description: "Kwento muna, solusyon, benta", icon: "📖🧩💰" },
-  { id: "solution-savings-social-proof", name: "Solution-Savings-Social Proof", description: "Social proof + savings = benta", icon: "📈💰👥" },
-  { id: "pain-agitate-relief", name: "Pain-Agitate-Relief", description: "Saktan mo muna, tapos iligtas", icon: "👉🏼" },
-  { id: "friend-expert", name: "Friend-Expert", description: "Kaibigan at eksperto, dalawa sa isa", icon: "👥📈🛍️" },
-  { id: "past-present-future", name: "Past-Present-Future", description: "Time travel para sa benta", icon: "🔙🔜🔮" },
-  { id: "positive-negative", name: "Positive-Negative", description: "Maganda at hindi, dalawa dapat", icon: "📈📉" },
-  { id: "exclusive-inclusive", name: "Exclusive-Inclusive", description: "Para sa lahat, pero special ka", icon: "📈👥" },
-  { id: "expectation-surprise", name: "Expectation-Surprise", description: "Asahan mo 'to... pero may twist!", icon: "👀" },
-  { id: "urgency-patience", name: "Urgency-Patience", description: "Bilisan mo... pero magtiwala ka muna", icon: "🚨🕰️" },
-  { id: "personal-universal", name: "Personal-Universal", description: "Para sa'yo, para sa lahat", icon: "🚀" },
-  { id: "emotion-logic", name: "Emotion-Logic", description: "Damdamin at dahilan, pagsamahin", icon: "🧠💕" },
-  { id: "strong-weak", name: "Strong-Weak", description: "Ipakita ang lakas, harapin ang kahinaan", icon: "📈📉" },
-  { id: "consistent-contrasting", name: "Consistent-Contrasting", description: "Consistent pero may contrast", icon: "🚀" },
-  { id: "5-objections", name: "5 Basic Objections", description: "Sagutin ang top 5 reasons para hindi bumili", icon: "🛑" },
-  { id: "acca", name: "Awareness-Comprehension-Conviction-Action", description: "Alamin, intindihin, paniwalaan, gawin", icon: "📈👀🧠💪💰" },
-  { id: "picture-promise-prove-push", name: "Picture-Promise-Prove-Push", description: "Larawan, pangako, patunay, push", icon: "📷💍💪" },
-  { id: "star-story-solution", name: "Star-Story-Solution", description: "Ikaw ang bida, ito ang story mo", icon: "🌟📖💡" },
-  { id: "problem-agitate-solve", name: "Problem-Agitate-Solve", description: "Problema, palakasin, solusyonan", icon: "📈🤔💡" },
-  { id: "aida", name: "Attention-Interest-Desire-Action", description: "Atensyon, interes, gusto, gawin", icon: "📢🤔💕💰" },
-  { id: "before-after-bridge", name: "Before-After-Bridge", description: "Dati-ngayon, ito ang tulay", icon: "🌉" },
-  { id: "pastor", name: "PASTOR", description: "5-step system para i-convert ang visitors", icon: "🛍️💰" },
+  { id: "6-ws", name: "The Ultimate 6 W's", description: "Step-by-step guide to a high-converting sales page", icon: "📈" },
+  { id: "story-solve-sell", name: "Story-Solve-Sell", description: "Hook with a story, present the solution, close the sale", icon: "📖🧩💰" },
+  { id: "solution-savings-social-proof", name: "Solution-Savings-Social Proof", description: "Combine social proof with savings to drive sales", icon: "📈💰👥" },
+  { id: "pain-agitate-relief", name: "Pain-Agitate-Relief", description: "Call out the pain, make it urgent, then offer relief", icon: "👉🏼" },
+  { id: "friend-expert", name: "Friend-Expert", description: "Be both a trusted friend and a credible expert", icon: "👥📈🛍️" },
+  { id: "past-present-future", name: "Past-Present-Future", description: "Take them from past struggles to a brighter future", icon: "🔙🔜🔮" },
+  { id: "positive-negative", name: "Positive-Negative", description: "Balance the good and the bad for honest persuasion", icon: "📈📉" },
+  { id: "exclusive-inclusive", name: "Exclusive-Inclusive", description: "Make everyone feel special and included", icon: "📈👥" },
+  { id: "expectation-surprise", name: "Expectation-Surprise", description: "Set an expectation, then deliver an unexpected twist", icon: "👀" },
+  { id: "urgency-patience", name: "Urgency-Patience", description: "Create urgency while building long-term trust", icon: "🚨🕰️" },
+  { id: "personal-universal", name: "Personal-Universal", description: "Speak to the individual and the crowd at once", icon: "🚀" },
+  { id: "emotion-logic", name: "Emotion-Logic", description: "Appeal to both heart and mind for maximum impact", icon: "🧠💕" },
+  { id: "strong-weak", name: "Strong-Weak", description: "Lead with strengths, honestly address weaknesses", icon: "📈📉" },
+  { id: "consistent-contrasting", name: "Consistent-Contrasting", description: "Stay on message while using contrast to stand out", icon: "🚀" },
+  { id: "5-objections", name: "5 Basic Objections", description: "Address the top 5 reasons people don't buy", icon: "🛑" },
+  { id: "acca", name: "Awareness-Comprehension-Conviction-Action", description: "Guide customers from awareness to action", icon: "📈👀🧠💪💰" },
+  { id: "picture-promise-prove-push", name: "Picture-Promise-Prove-Push", description: "Paint a vision, make a promise, prove it, push for action", icon: "📷💍💪" },
+  { id: "star-story-solution", name: "Star-Story-Solution", description: "Make the customer the hero of their own story", icon: "🌟📖💡" },
+  { id: "problem-agitate-solve", name: "Problem-Agitate-Solve", description: "Identify the problem, amplify it, then solve it", icon: "📈🤔💡" },
+  { id: "aida", name: "Attention-Interest-Desire-Action", description: "The classic formula: grab attention, build interest, create desire, drive action", icon: "📢🤔💕💰" },
+  { id: "before-after-bridge", name: "Before-After-Bridge", description: "Show the transformation and how to get there", icon: "🌉" },
+  { id: "pastor", name: "PASTOR", description: "5-step system to convert visitors into customers", icon: "🛍️💰" },
   { id: "four-c", name: "Four C's", description: "Captivating, Clear, Compelling, Convincing", icon: "👉📈" },
-  { id: "features-advantages-benefits", name: "Features-Advantages-Benefits", description: "Features, advantages, benefits — sunod-sunod", icon: "📝" },
+  { id: "features-advantages-benefits", name: "Features-Advantages-Benefits", description: "Translate features into real customer benefits", icon: "📝" },
 ];
 
 const CONTENT_TYPES = [
@@ -92,9 +92,9 @@ const CONTENT_TYPES = [
 ];
 
 const LANGUAGE_OPTIONS = [
-  { id: "taglish", label: "Taglish", icon: Globe, description: "Halo-halong Tagalog at English" },
-  { id: "english", label: "English", icon: MessageCircle, description: "Pure English" },
-  { id: "filipino", label: "Pure Filipino", icon: Heart, description: "100% Tagalog" },
+  { id: "taglish", label: "Taglish", icon: Globe, description: "Mix of Tagalog and English — natural and conversational" },
+  { id: "english", label: "English", icon: MessageCircle, description: "Pure English for a global audience" },
+  { id: "filipino", label: "Pure Filipino", icon: Heart, description: "100% Tagalog — deep and authentic" },
 ];
 
 function OutputSkeleton() {
@@ -258,7 +258,7 @@ export default function SalesWizard() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Product & Audience</h3>
-                  <p className="text-xs text-muted-foreground">Ano'ng binebenta mo at kanino?</p>
+                      <p className="text-xs text-muted-foreground">What are you selling and who is it for?</p>
                 </div>
               </div>
               <div className="space-y-4">
@@ -271,7 +271,7 @@ export default function SalesWizard() {
                   <Textarea id="audience" placeholder="e.g., Health-conscious women aged 25-45 na mahilig sa natural ingredients..." value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="min-h-[100px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="messageContext" className="text-xs font-medium text-muted-foreground">What's this about?</Label>
+                  <Label htmlFor="messageContext" className="text-xs font-medium text-muted-foreground">What's this about? (optional)</Label>
                   <Textarea id="messageContext" placeholder="e.g., 50% off launch promo, new feature announcement, seasonal sale..." value={messageContext} onChange={(e) => setMessageContext(e.target.value)} className="min-h-[80px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
                   <p className="text-[11px] text-muted-foreground/60">Describe the purpose — promo, announcement, launch, etc.</p>
                 </div>
@@ -317,7 +317,7 @@ export default function SalesWizard() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Language</h3>
-                  <p className="text-xs text-muted-foreground">Anong language ng copy mo?</p>
+                  <p className="text-xs text-muted-foreground">What language should the copy be in?</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-2">
@@ -365,7 +365,7 @@ export default function SalesWizard() {
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">Sales Frameworks</h3>
-                      <p className="text-xs text-muted-foreground">Pumili ng proven framework</p>
+                          <p className="text-xs text-muted-foreground">Choose a proven framework</p>
                     </div>
                   </div>
                   {selectedFrameworkData && frameworkCategory && (
@@ -447,7 +447,7 @@ export default function SalesWizard() {
                       <Wand2 className="w-7 h-7 text-muted-foreground/50 stroke-[1]" />
                     </div>
                     <p className="text-sm font-medium">Your generated copy will appear here</p>
-                    <p className="text-xs text-muted-foreground/70 mt-1">Fill in the details and click generate</p>
+                    <p className="text-xs text-muted-foreground/70 mt-1">Fill in the details and click Generate</p>
                   </div>
                 )}
               </ScrollArea>
