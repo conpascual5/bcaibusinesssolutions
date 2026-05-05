@@ -6,6 +6,7 @@ import { settingsRouter } from "./settings.js";
 import { imageRouter } from "./images.js";
 import { chatRouter } from "./chat.js";
 import { setupRouter } from "./setup.js";
+import { salesWizardSaveRouter } from "./sales-wizard-saves.js";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),
@@ -31,6 +32,7 @@ export const appRouter = createRouter({
   image: imageRouter,
   chat: chatRouter,
   setup: setupRouter,
+  salesWizardSaves: salesWizardSaveRouter,
 });
 
 export type AppRouter = typeof appRouter;

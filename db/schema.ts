@@ -75,6 +75,20 @@ export const generatedImages = pgTable("generated_images", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const salesWizardSaves = pgTable("sales_wizard_saves", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  title: varchar("title", { length: 200 }).notNull(),
+  productName: varchar("product_name", { length: 200 }).notNull(),
+  targetAudience: text("target_audience").notNull(),
+  messageContext: text("message_context"),
+  contentType: varchar("content_type", { length: 50 }).notNull(),
+  framework: varchar("framework", { length: 100 }).notNull(),
+  frameworkName: varchar("framework_name", { length: 200 }).notNull(),
+  output: text("output").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const chatMessages = pgTable("chat_messages", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),

@@ -1,12 +1,14 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { trpc } from "@/providers/trpc";
+import { useToast } from "@/hooks/use-toast";
 import {
   Sparkles,
   Wand2,
@@ -21,20 +23,14 @@ import {
   CheckCheck,
   Search,
   Brain,
-  Layers,
+  Globe,
+  MessageCircle,
   Heart,
-  TrendingUp,
-  Lightbulb,
-  Users,
-  Clock,
-  Zap,
-  Eye,
-  BarChart3,
-  Star,
-  ArrowRight,
+  Save,
+  X,
 } from "lucide-react";
+import AdAnalyzer from "@/components/AdAnalyzer";
 
-// Framework categories for colored badges
 const FRAMEWORK_CATEGORIES: Record<string, { category: string; color: string }> = {
   "6-ws": { category: "Conversion", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400" },
   "story-solve-sell": { category: "Storytelling", color: "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400" },
@@ -63,30 +59,30 @@ const FRAMEWORK_CATEGORIES: Record<string, { category: string; color: string }> 
 };
 
 const FRAMEWORKS = [
-  { id: "6-ws", name: "The Ultimate 6 W's", description: "A step-by-step guide to creating a high-converting sales page every time!", icon: "📈" },
-  { id: "story-solve-sell", name: "Story-Solve-Sell", description: "A method to create compelling pages by telling a story, solving a problem, and driving sales.", icon: "📖🧩💰" },
-  { id: "solution-savings-social-proof", name: "Solution-Savings-Social Proof", description: "A proven approach leveraging social proof and highlighting savings to increase conversions.", icon: "📈💰👥" },
-  { id: "pain-agitate-relief", name: "Pain-Agitate-Relief", description: "Structure your page highlighting your audience's struggles and offering solutions.", icon: "👉🏼" },
-  { id: "friend-expert", name: "Friend-Expert", description: "Leverage the roles of friend and expert to boost sales.", icon: "👥📈🛍️" },
-  { id: "past-present-future", name: "Past-Present-Future", description: "Transform your page into a time journey to boost conversions.", icon: "🔙🔜🔮" },
-  { id: "positive-negative", name: "Positive-Negative", description: "Highlight positive aspects while addressing negative concerns.", icon: "📈📉" },
-  { id: "exclusive-inclusive", name: "Exclusive-Inclusive", description: "Cater to both exclusive and inclusive audiences.", icon: "📈👥" },
-  { id: "expectation-surprise", name: "Expectation-Surprise", description: "Turn heads and convert sales with engaging content.", icon: "👀" },
-  { id: "urgency-patience", name: "Urgency-Patience", description: "Balance urgency with the patience needed to build trust.", icon: "🚨🕰️" },
-  { id: "personal-universal", name: "Personal-Universal", description: "Create pages tailored to your target audience.", icon: "🚀" },
-  { id: "emotion-logic", name: "Emotion-Logic", description: "Combine emotional and logical appeals to increase sales.", icon: "🧠💕" },
-  { id: "strong-weak", name: "Strong-Weak", description: "Highlight key benefits and address objections.", icon: "📈📉" },
-  { id: "consistent-contrasting", name: "Consistent-Contrasting", description: "Use consistent-contrasting design to attract and convert.", icon: "🚀" },
-  { id: "5-objections", name: "5 Basic Objections", description: "Overcoming the top 5 sales objections effectively.", icon: "🛑" },
-  { id: "acca", name: "Awareness-Comprehension-Conviction-Action", description: "Guide customers through stages of awareness to action.", icon: "📈👀🧠💪💰" },
-  { id: "picture-promise-prove-push", name: "Picture-Promise-Prove-Push", description: "Use pictures, promises, and proof to push purchases.", icon: "📷💍💪" },
-  { id: "star-story-solution", name: "Star-Story-Solution", description: "Craft compelling pages that tell a persuasive story.", icon: "🌟📖💡" },
-  { id: "problem-agitate-solve", name: "Problem-Agitate-Solve", description: "Identify pain points, amplify them, and offer a solution.", icon: "📈🤔💡" },
-  { id: "aida", name: "Attention-Interest-Desire-Action", description: "Structure pages that grab attention and lead to action.", icon: "📢🤔💕💰" },
-  { id: "before-after-bridge", name: "Before-After-Bridge", description: "Transform your page with the Before-After-Bridge model.", icon: "🌉" },
-  { id: "pastor", name: "PASTOR", description: "A proven 5-step system to convert visitors into loyal customers.", icon: "🛍️💰" },
-  { id: "four-c", name: "Four C's", description: "Captivating, Clear, Compelling, and Convincing.", icon: "👉📈" },
-  { id: "features-advantages-benefits", name: "Features-Advantages-Benefits", description: "Highlight product features, advantages, and benefits.", icon: "📝" },
+  { id: "6-ws", name: "The Ultimate 6 W's", description: "Step-by-step guide to high-converting sales page", icon: "📈" },
+  { id: "story-solve-sell", name: "Story-Solve-Sell", description: "Kwento muna, solusyon, benta", icon: "📖🧩💰" },
+  { id: "solution-savings-social-proof", name: "Solution-Savings-Social Proof", description: "Social proof + savings = benta", icon: "📈💰👥" },
+  { id: "pain-agitate-relief", name: "Pain-Agitate-Relief", description: "Saktan mo muna, tapos iligtas", icon: "👉🏼" },
+  { id: "friend-expert", name: "Friend-Expert", description: "Kaibigan at eksperto, dalawa sa isa", icon: "👥📈🛍️" },
+  { id: "past-present-future", name: "Past-Present-Future", description: "Time travel para sa benta", icon: "🔙🔜🔮" },
+  { id: "positive-negative", name: "Positive-Negative", description: "Maganda at hindi, dalawa dapat", icon: "📈📉" },
+  { id: "exclusive-inclusive", name: "Exclusive-Inclusive", description: "Para sa lahat, pero special ka", icon: "📈👥" },
+  { id: "expectation-surprise", name: "Expectation-Surprise", description: "Asahan mo 'to... pero may twist!", icon: "👀" },
+  { id: "urgency-patience", name: "Urgency-Patience", description: "Bilisan mo... pero magtiwala ka muna", icon: "🚨🕰️" },
+  { id: "personal-universal", name: "Personal-Universal", description: "Para sa'yo, para sa lahat", icon: "🚀" },
+  { id: "emotion-logic", name: "Emotion-Logic", description: "Damdamin at dahilan, pagsamahin", icon: "🧠💕" },
+  { id: "strong-weak", name: "Strong-Weak", description: "Ipakita ang lakas, harapin ang kahinaan", icon: "📈📉" },
+  { id: "consistent-contrasting", name: "Consistent-Contrasting", description: "Consistent pero may contrast", icon: "🚀" },
+  { id: "5-objections", name: "5 Basic Objections", description: "Sagutin ang top 5 reasons para hindi bumili", icon: "🛑" },
+  { id: "acca", name: "Awareness-Comprehension-Conviction-Action", description: "Alamin, intindihin, paniwalaan, gawin", icon: "📈👀🧠💪💰" },
+  { id: "picture-promise-prove-push", name: "Picture-Promise-Prove-Push", description: "Larawan, pangako, patunay, push", icon: "📷💍💪" },
+  { id: "star-story-solution", name: "Star-Story-Solution", description: "Ikaw ang bida, ito ang story mo", icon: "🌟📖💡" },
+  { id: "problem-agitate-solve", name: "Problem-Agitate-Solve", description: "Problema, palakasin, solusyonan", icon: "📈🤔💡" },
+  { id: "aida", name: "Attention-Interest-Desire-Action", description: "Atensyon, interes, gusto, gawin", icon: "📢🤔💕💰" },
+  { id: "before-after-bridge", name: "Before-After-Bridge", description: "Dati-ngayon, ito ang tulay", icon: "🌉" },
+  { id: "pastor", name: "PASTOR", description: "5-step system para i-convert ang visitors", icon: "🛍️💰" },
+  { id: "four-c", name: "Four C's", description: "Captivating, Clear, Compelling, Convincing", icon: "👉📈" },
+  { id: "features-advantages-benefits", name: "Features-Advantages-Benefits", description: "Features, advantages, benefits — sunod-sunod", icon: "📝" },
 ];
 
 const CONTENT_TYPES = [
@@ -95,7 +91,12 @@ const CONTENT_TYPES = [
   { id: "fb-post", label: "Long FB Post", icon: FileText, description: "Long-form Facebook post" },
 ];
 
-// Skeleton loader for the output area
+const LANGUAGE_OPTIONS = [
+  { id: "taglish", label: "Taglish", icon: Globe, description: "Halo-halong Tagalog at English" },
+  { id: "english", label: "English", icon: MessageCircle, description: "Pure English" },
+  { id: "filipino", label: "Pure Filipino", icon: Heart, description: "100% Tagalog" },
+];
+
 function OutputSkeleton() {
   return (
     <div className="space-y-4 p-6">
@@ -109,27 +110,40 @@ function OutputSkeleton() {
         <Skeleton className="h-4 w-full mb-2" />
         <Skeleton className="h-4 w-3/4" />
       </div>
-      <div className="pt-4">
-        <Skeleton className="h-5 w-2/5 mb-3" />
-        <Skeleton className="h-4 w-full mb-2" />
-        <Skeleton className="h-4 w-5/6" />
-      </div>
     </div>
   );
 }
 
 export default function SalesWizard() {
+  const navigate = useNavigate();
+  const { toast } = useToast();
   const [productName, setProductName] = useState("");
   const [targetAudience, setTargetAudience] = useState("");
   const [messageContext, setMessageContext] = useState("");
   const [contentType, setContentType] = useState<string>("");
   const [selectedFramework, setSelectedFramework] = useState<string>("");
+  const [language, setLanguage] = useState<string>("taglish");
   const [isGenerating, setIsGenerating] = useState(false);
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [copied, setCopied] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saveTitle, setSaveTitle] = useState("");
   const outputRef = useRef<HTMLDivElement>(null);
+
+  const saveMutation = trpc.salesWizardSaves.save.useMutation({
+    onSuccess: () => {
+      setShowSaveDialog(false);
+      setIsSaving(false);
+      toast({ title: "Saved to Library! 📚", description: "You can access it anytime from the Library." });
+    },
+    onError: (err) => {
+      setIsSaving(false);
+      toast({ title: "Failed to save", description: err.message, variant: "destructive" });
+    },
+  });
 
   const filteredFrameworks = FRAMEWORKS.filter((f) =>
     f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -141,57 +155,38 @@ export default function SalesWizard() {
       setError("Please fill in all fields and select a framework.");
       return;
     }
-
     setIsGenerating(true);
     setOutput("");
     setError("");
-
     try {
       const response = await fetch("/api/sales-wizard", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          productName,
-          targetAudience,
-          messageContext,
-          contentType,
-          framework: selectedFramework,
-        }),
+        body: JSON.stringify({ productName, targetAudience, messageContext, contentType, framework: selectedFramework, language }),
       });
-
       if (!response.ok) {
         const err = await response.json();
         throw new Error(err.error || "Generation failed");
       }
-
       const reader = response.body?.getReader();
       if (!reader) throw new Error("No response stream");
-
       const decoder = new TextDecoder();
       let buffer = "";
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split("\n");
         buffer = lines.pop() || "";
-
         for (const line of lines) {
           const trimmed = line.trim();
           if (!trimmed.startsWith("data: ")) continue;
           const dataStr = trimmed.slice(6);
           if (dataStr === "[DONE]") continue;
-
           try {
             const parsed = JSON.parse(dataStr);
-            if (parsed.content) {
-              setOutput((prev) => prev + parsed.content);
-            }
-          } catch {
-            // skip
-          }
+            if (parsed.content) setOutput((prev) => prev + parsed.content);
+          } catch { /* skip */ }
         }
       }
     } catch (err: any) {
@@ -201,10 +196,30 @@ export default function SalesWizard() {
     }
   };
 
+  const handleSave = () => {
+    if (!output) return;
+    const defaultTitle = `${productName} — ${FRAMEWORKS.find(f => f.id === selectedFramework)?.name || selectedFramework}`;
+    setSaveTitle(defaultTitle);
+    setShowSaveDialog(true);
+  };
+
+  const confirmSave = () => {
+    if (!saveTitle.trim()) return;
+    setIsSaving(true);
+    saveMutation.mutate({
+      title: saveTitle.trim(),
+      productName,
+      targetAudience,
+      messageContext: messageContext || undefined,
+      contentType,
+      framework: selectedFramework,
+      frameworkName: FRAMEWORKS.find(f => f.id === selectedFramework)?.name || selectedFramework,
+      output,
+    });
+  };
+
   useEffect(() => {
-    if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight;
-    }
+    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
   }, [output]);
 
   const selectedFrameworkData = FRAMEWORKS.find((f) => f.id === selectedFramework);
@@ -227,15 +242,15 @@ export default function SalesWizard() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-foreground tracking-tight">Sales Wizard</h1>
-              <p className="text-sm text-muted-foreground">Generate high-converting sales copy with AI-powered frameworks</p>
+              <p className="text-sm text-muted-foreground">Generate high-converting sales copy in Taglish, Filipino, or English</p>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Left Panel — Sticky sidebar for inputs */}
+          {/* Left Panel */}
           <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-24 lg:self-start">
-            {/* Product & Audience — Glassmorphism */}
+            {/* Product & Audience */}
             <div className="glass-panel rounded-2xl p-6 space-y-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
@@ -243,45 +258,27 @@ export default function SalesWizard() {
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-foreground">Product & Audience</h3>
-                  <p className="text-xs text-muted-foreground">Tell us what you're selling and who to</p>
+                  <p className="text-xs text-muted-foreground">Ano'ng binebenta mo at kanino?</p>
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="product" className="text-xs font-medium text-muted-foreground">Product Name or Business Name</Label>
-                  <Input
-                    id="product"
-                    placeholder="e.g., Organic Skincare Pro"
-                    value={productName}
-                    onChange={(e) => setProductName(e.target.value)}
-                    className="bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10"
-                  />
+                  <Input id="product" placeholder="e.g., Organic Skincare Pro" value={productName} onChange={(e) => setProductName(e.target.value)} className="bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="audience" className="text-xs font-medium text-muted-foreground">Target Audience</Label>
-                  <Textarea
-                    id="audience"
-                    placeholder="e.g., Health-conscious women aged 25-45 who care about natural ingredients..."
-                    value={targetAudience}
-                    onChange={(e) => setTargetAudience(e.target.value)}
-                    className="min-h-[100px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none"
-                  />
+                  <Textarea id="audience" placeholder="e.g., Health-conscious women aged 25-45 na mahilig sa natural ingredients..." value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="min-h-[100px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="messageContext" className="text-xs font-medium text-muted-foreground">What's this about?</Label>
-                  <Textarea
-                    id="messageContext"
-                    placeholder="e.g., 50% off launch promo, new feature announcement, seasonal sale, brand awareness campaign..."
-                    value={messageContext}
-                    onChange={(e) => setMessageContext(e.target.value)}
-                    className="min-h-[80px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none"
-                  />
+                  <Textarea id="messageContext" placeholder="e.g., 50% off launch promo, new feature announcement, seasonal sale..." value={messageContext} onChange={(e) => setMessageContext(e.target.value)} className="min-h-[80px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
                   <p className="text-[11px] text-muted-foreground/60">Describe the purpose — promo, announcement, launch, etc.</p>
                 </div>
               </div>
             </div>
 
-            {/* Content Type — Glassmorphism */}
+            {/* Content Type */}
             <div className="glass-panel rounded-2xl p-6 space-y-4">
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
@@ -297,29 +294,46 @@ export default function SalesWizard() {
                   const Icon = type.icon;
                   const isSelected = contentType === type.id;
                   return (
-                    <button
-                      key={type.id}
-                      onClick={() => setContentType(type.id)}
-                      className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all ${
-                        isSelected
-                          ? "border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 dark:border-indigo-500/50 ring-1 ring-indigo-400/20"
-                          : "border-border/60 hover:border-border hover:bg-accent/50"
-                      }`}
-                    >
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${
-                        isSelected ? "bg-indigo-500 text-white shadow-sm" : "bg-muted text-muted-foreground"
-                      }`}>
+                    <button key={type.id} onClick={() => setContentType(type.id)} className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all ${isSelected ? "border-indigo-400 bg-indigo-50/50 dark:bg-indigo-900/20 dark:border-indigo-500/50 ring-1 ring-indigo-400/20" : "border-border/60 hover:border-border hover:bg-accent/50"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isSelected ? "bg-indigo-500 text-white shadow-sm" : "bg-muted text-muted-foreground"}`}>
                         <Icon className="w-4 h-4 stroke-[1.5]" />
                       </div>
                       <div className="flex-1 min-w-0 text-left">
                         <div className="text-sm font-medium text-foreground">{type.label}</div>
                         <div className="text-xs text-muted-foreground truncate">{type.description}</div>
                       </div>
-                      {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0">
-                          <Check className="w-3 h-3 text-white" />
-                        </div>
-                      )}
+                      {isSelected && <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center flex-shrink-0"><Check className="w-3 h-3 text-white" /></div>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Language */}
+            <div className="glass-panel rounded-2xl p-6 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
+                  <Globe className="w-4 h-4 text-rose-600 dark:text-rose-400 stroke-[1.5]" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-foreground">Language</h3>
+                  <p className="text-xs text-muted-foreground">Anong language ng copy mo?</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-2">
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const Icon = lang.icon;
+                  const isSelected = language === lang.id;
+                  return (
+                    <button key={lang.id} onClick={() => setLanguage(lang.id)} className={`flex items-center gap-3 p-3.5 rounded-xl border transition-all ${isSelected ? "border-rose-400 bg-rose-50/50 dark:bg-rose-900/20 dark:border-rose-500/50 ring-1 ring-rose-400/20" : "border-border/60 hover:border-border hover:bg-accent/50"}`}>
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors ${isSelected ? "bg-rose-500 text-white shadow-sm" : "bg-muted text-muted-foreground"}`}>
+                        <Icon className="w-4 h-4 stroke-[1.5]" />
+                      </div>
+                      <div className="flex-1 min-w-0 text-left">
+                        <div className="text-sm font-medium text-foreground">{lang.label}</div>
+                        <div className="text-xs text-muted-foreground truncate">{lang.description}</div>
+                      </div>
+                      {isSelected && <div className="w-5 h-5 rounded-full bg-rose-500 flex items-center justify-center flex-shrink-0"><Check className="w-3 h-3 text-white" /></div>}
                     </button>
                   );
                 })}
@@ -327,22 +341,8 @@ export default function SalesWizard() {
             </div>
 
             {/* Generate Button */}
-            <Button
-              onClick={handleGenerate}
-              disabled={isGenerating || !productName || !targetAudience || !contentType || !selectedFramework}
-              className="w-full h-13 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-semibold shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Generating...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4 mr-2" />
-                  Generate Sales Copy
-                </>
-              )}
+            <Button onClick={handleGenerate} disabled={isGenerating || !productName || !targetAudience || !contentType || !selectedFramework} className="w-full h-13 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-semibold shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+              {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generate Sales Copy</>}
             </Button>
 
             {error && (
@@ -353,7 +353,7 @@ export default function SalesWizard() {
             )}
           </div>
 
-          {/* Right Panel — Frameworks + Output */}
+          {/* Right Panel */}
           <div className="lg:col-span-3 space-y-6">
             {/* Frameworks */}
             <div className="bg-card rounded-2xl card-shadow border border-border overflow-hidden animate-fade-in">
@@ -365,7 +365,7 @@ export default function SalesWizard() {
                     </div>
                     <div>
                       <h3 className="text-sm font-semibold text-foreground">Sales Frameworks</h3>
-                      <p className="text-xs text-muted-foreground">Choose a proven framework</p>
+                      <p className="text-xs text-muted-foreground">Pumili ng proven framework</p>
                     </div>
                   </div>
                   {selectedFrameworkData && frameworkCategory && (
@@ -376,47 +376,26 @@ export default function SalesWizard() {
                 </div>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground stroke-[1.5]" />
-                  <Input
-                    placeholder="Search frameworks..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9 bg-background border-border/60 focus:border-purple-400 focus:ring-purple-400/20 h-9 text-sm"
-                  />
+                  <Input placeholder="Search frameworks..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 bg-background border-border/60 focus:border-purple-400 focus:ring-purple-400/20 h-9 text-sm" />
                 </div>
               </div>
-              <ScrollArea className="h-[340px]">
+              <ScrollArea className="h-[280px]">
                 <div className="p-3 space-y-1">
                   {filteredFrameworks.map((fw) => {
                     const isSelected = selectedFramework === fw.id;
                     const cat = FRAMEWORK_CATEGORIES[fw.id];
                     return (
-                      <button
-                        key={fw.id}
-                        onClick={() => setSelectedFramework(fw.id)}
-                        className={`w-full text-left p-3.5 rounded-xl border transition-all ${
-                          isSelected
-                            ? "border-purple-400 bg-purple-50/50 dark:bg-purple-900/20 dark:border-purple-500/50 ring-1 ring-purple-400/20"
-                            : "border-transparent hover:border-border hover:bg-accent/50"
-                        }`}
-                      >
+                      <button key={fw.id} onClick={() => setSelectedFramework(fw.id)} className={`w-full text-left p-3.5 rounded-xl border transition-all ${isSelected ? "border-purple-400 bg-purple-50/50 dark:bg-purple-900/20 dark:border-purple-500/50 ring-1 ring-purple-400/20" : "border-transparent hover:border-border hover:bg-accent/50"}`}>
                         <div className="flex items-start gap-3">
                           <span className="text-lg mt-0.5 flex-shrink-0">{fw.icon}</span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 mb-0.5">
                               <span className="text-sm font-medium text-foreground">{fw.name}</span>
-                              {cat && (
-                                <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${cat.color} flex-shrink-0`}>
-                                  {cat.category}
-                                </span>
-                              )}
+                              {cat && <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${cat.color} flex-shrink-0`}>{cat.category}</span>}
                             </div>
                             <div className="text-xs text-muted-foreground line-clamp-1">{fw.description}</div>
                           </div>
-                          {isSelected && (
-                            <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <Check className="w-3 h-3 text-white" />
-                            </div>
-                          )}
+                          {isSelected && <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center flex-shrink-0 mt-0.5"><Check className="w-3 h-3 text-white" /></div>}
                         </div>
                       </button>
                     );
@@ -425,7 +404,7 @@ export default function SalesWizard() {
               </ScrollArea>
             </div>
 
-            {/* Output — Notion-like canvas */}
+            {/* Output */}
             <div className="bg-card rounded-2xl card-shadow border border-border overflow-hidden animate-fade-in-up">
               <div className="p-5 border-b border-border flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -434,27 +413,23 @@ export default function SalesWizard() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-foreground">Generated Copy</h3>
-                    <p className="text-xs text-muted-foreground">
-                      {selectedFrameworkData ? `${selectedFrameworkData.icon} ${selectedFrameworkData.name}` : "Select a framework to begin"}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{selectedFrameworkData ? `${selectedFrameworkData.icon} ${selectedFrameworkData.name}` : "Select a framework to begin"}</p>
                   </div>
                 </div>
-                {output && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopy}
-                    className="text-xs gap-1.5 rounded-xl border-border/60"
-                  >
-                    {copied ? (
-                      <><CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> Copied</>
-                    ) : (
-                      <><Copy className="w-3.5 h-3.5" /> Copy All</>
-                    )}
-                  </Button>
-                )}
+                <div className="flex items-center gap-2">
+                  {output && (
+                    <>
+                      <Button variant="outline" size="sm" onClick={handleSave} disabled={isSaving} className="text-xs gap-1.5 rounded-xl border-border/60">
+                        <Save className="w-3.5 h-3.5" /> Save
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={handleCopy} className="text-xs gap-1.5 rounded-xl border-border/60">
+                        {copied ? <><CheckCheck className="w-3.5 h-3.5 text-emerald-500" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
-              <ScrollArea className="h-[500px]" ref={outputRef}>
+              <ScrollArea className="h-[400px]" ref={outputRef}>
                 {isGenerating && !output ? (
                   <OutputSkeleton />
                 ) : output ? (
@@ -462,9 +437,7 @@ export default function SalesWizard() {
                     <div className="prose prose-sm max-w-none">
                       <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-[450]">
                         {output}
-                        {isGenerating && (
-                          <span className="inline-block w-[3px] h-[18px] bg-indigo-500 animate-pulse ml-0.5 align-text-bottom" />
-                        )}
+                        {isGenerating && <span className="inline-block w-[3px] h-[18px] bg-indigo-500 animate-pulse ml-0.5 align-text-bottom" />}
                       </div>
                     </div>
                   </div>
@@ -479,9 +452,44 @@ export default function SalesWizard() {
                 )}
               </ScrollArea>
             </div>
+
+            {/* Ad Analyzer */}
+            <AdAnalyzer language={language} />
           </div>
         </div>
       </div>
+
+      {/* Save Dialog */}
+      {showSaveDialog && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-md w-full shadow-2xl border border-border animate-scale-in">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-bold text-foreground">Save to Library</h3>
+              <button onClick={() => setShowSaveDialog(false)} className="p-1.5 rounded-lg hover:bg-accent transition-colors">
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label htmlFor="saveTitle" className="text-xs font-medium text-muted-foreground">Title</Label>
+                <Input id="saveTitle" value={saveTitle} onChange={(e) => setSaveTitle(e.target.value)} className="bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20" placeholder="Name your saved copy..." />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/50 rounded-xl p-3">
+                <Save className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>This will be saved in your Library where you can access it anytime.</span>
+              </div>
+              <div className="flex gap-3">
+                <Button variant="outline" onClick={() => setShowSaveDialog(false)} className="flex-1 rounded-xl border-border/60">
+                  Cancel
+                </Button>
+                <Button onClick={confirmSave} disabled={isSaving || !saveTitle.trim()} className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl shadow-lg shadow-indigo-600/20">
+                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

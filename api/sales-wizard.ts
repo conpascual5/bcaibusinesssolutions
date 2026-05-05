@@ -194,7 +194,7 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<string, string> = {
 
 app.post("/api/sales-wizard", async (c) => {
   try {
-    const { productName, targetAudience, messageContext, contentType, framework } = await c.req.json();
+    const { productName, targetAudience, messageContext, contentType, framework, language } = await c.req.json();
 
     if (!productName || !targetAudience || !contentType || !framework) {
       return c.json({ error: "Missing required fields: productName, targetAudience, contentType, framework" }, 400);
@@ -221,6 +221,14 @@ app.post("/api/sales-wizard", async (c) => {
 
     const frameworkPrompt = FRAMEWORK_PROMPTS[framework] || FRAMEWORK_PROMPTS["pastor"];
     const contentTypeInstruction = CONTENT_TYPE_INSTRUCTIONS[contentType] || CONTENT_TYPE_INSTRUCTIONS["caption"];
+
+    // Language instruction
+    const languageInstructions: Record<string, string> = {
+      taglish: "IMPORTANT: Write the copy in TAGLISH (a natural mix of Tagalog and English). Use conversational Filipino phrases mixed with English terms. This should sound natural and relatable to a Filipino audience — like how people actually talk on social media. Example: 'Mga kaibigan, gusto niyo bang mag-save ng malaki? Eto na ang chance niyo!'",
+      filipino: "IMPORTANT: Write the copy in PURE FILIPINO (Tagalog). Use deep, natural Filipino language. Avoid English words as much as possible. Make it sound authentic and culturally resonant.",
+      english: "IMPORTANT: Write the copy in PURE ENGLISH. Use professional, persuasive English language suitable for a global audience.",
+    };
+    const languageInstruction = languageInstructions[language] || languageInstructions.taglish;
 
     const contextSection = messageContext
       ? "\nContext / Purpose: " + messageContext + "\n\nThis is the specific message, offer, or announcement the copy should focus on. Make sure the copy revolves around this purpose."
