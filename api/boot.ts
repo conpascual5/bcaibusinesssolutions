@@ -188,8 +188,8 @@ app.get("/api/init-db", async (c) => {
       results.push("✅ All tables created");
 
       // Seed admin user
-      const bcrypt = await import("bcryptjs");
-      const hash = bcrypt.hashSync("admin123", 10);
+      const { createHash } = await import("node:crypto");
+      const hash = createHash("sha256").update("admin123" + "4hQ0T1VwbgkK9NCRZfpEMnyTb3jY88wr").digest("base64");
       await sqlNeon`INSERT INTO users (email, password_hash, name, is_active, is_admin)
          VALUES ('conpascual5@gmail.com', ${hash}, 'BC AI Admin', true, true)
          ON CONFLICT (email) DO NOTHING`;
@@ -259,8 +259,8 @@ app.get("/api/init-db", async (c) => {
       results.push("✅ All tables created");
 
       // Seed admin
-      const bcrypt = await import("bcryptjs");
-      const hash = bcrypt.hashSync("admin123", 10);
+      const { createHash } = await import("node:crypto");
+      const hash = createHash("sha256").update("admin123" + "4hQ0T1VwbgkK9NCRZfpEMnyTb3jY88wr").digest("base64");
       sqlJsDb.run(
         `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
          VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,
@@ -469,8 +469,9 @@ app.get("/api/admin/db-init", async (c) => {
     results.push("✅ chat_messages table ready");
     
     // Seed admin user
-    const bcrypt = await import("bcryptjs");
-    const hash = bcrypt.hashSync("admin123", 10);
+    // Uses SHA-256(password + APP_SECRET) to match the app's hashPassword function
+    const { createHash } = await import("node:crypto");
+    const hash = createHash("sha256").update("admin123" + "4hQ0T1VwbgkK9NCRZfpEMnyTb3jY88wr").digest("base64");
     await db.execute(
       `INSERT INTO users (email, password_hash, name, is_active, is_admin)
        VALUES ('conpascual5@gmail.com', '${hash}', 'BC AI Admin', true, true)
