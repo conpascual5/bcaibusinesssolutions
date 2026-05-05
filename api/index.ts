@@ -6,12 +6,55 @@ export const config = {
 };
 
 let handler: ((req: Request) => Promise<Response>) | null = null;
+let handlerPromise: Promise<void> | null = null;
+
+async function initHandler() {
+  if (handler) return;
+  if (handlerPromise) return handlerPromise;
+  
+  handlerPromise = (async () => {
+    try {
+      const { default: app } = await import("./boot.js");
+      handler = app.fetch.bind(app);
+      console.log("[api/index] Handler initialized");
+    } catch (err) {
+      console.error("[api/index] Failed to initialize handler:", err);
+      handlerPromise = null; // Allow retry
+    }
+  })();
+  
+  return handlerPromise;
+}
+
+// Start initialization immediately on module load
+initHandler();
 
 export default async function(req: Request): Promise<Response> {
+  // Wait for handler with timeout
   if (!handler) {
-    // Lazy-load the app on first request
-    const { default: app } = await import("./boot.js");
-    handler = app.fetch.bind(app);
+    await Promise.race([
+      initHandler(),
+      new Promise<void>((resolve) => setTimeout(() => {
+        if (!handler) {
+          console.error("[api/index] Handler init timed out, creating fallback");
+          // Create a minimal fallback handler that returns JSON errors
+          handler = async (req) => {
+            return new Response(
+              JSON.stringify({ 
+                error: "Server is still starting up. Please try again in a few seconds.",
+                code: "SERVER_STARTING"
+              }),
+              { 
+                status: 503,
+                headers: { "Content-Type": "application/json" }
+              }
+            );
+          };
+        }
+        resolve();
+      }, 20000)),
+    ]);
   }
-  return handler(req);
+  
+  return handler!(req);
 }

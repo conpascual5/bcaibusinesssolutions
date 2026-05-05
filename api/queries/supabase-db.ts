@@ -1,5 +1,5 @@
 // Supabase database adapter for the API
-// Uses the Supabase JS client with drizzle-orm for query building
+// Uses Supabase JS client + direct Postgres connection via service role key
 // This avoids cold start WASM loading that SQLite requires
 
 import { drizzle } from "drizzle-orm/postgres-js";
@@ -13,6 +13,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const password = process.env.SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
 
 // Connection string using Supabase's transaction pooler
+// The password is URL-encoded to handle special characters
 const connectionString = `postgresql://postgres.dkatgjtvhitknghvaxxn:${encodeURIComponent(password)}@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres`;
 
 let db: ReturnType<typeof drizzle> | null = null;
@@ -23,17 +24,22 @@ export async function getSupabaseDb() {
   
   console.log("[supabase-db] Connecting to Supabase Postgres...");
   
-  const client = postgres(connectionString, {
-    prepare: false,
-    max: 1,
-    idle_timeout: 20,
-    connect_timeout: 10,
-  });
-  
-  db = drizzle(client, { schema });
-  ready = true;
-  console.log("[supabase-db] Connected to Supabase Postgres");
-  return db;
+  try {
+    const client = postgres(connectionString, {
+      prepare: false,
+      max: 1,
+      idle_timeout: 20,
+      connect_timeout: 10,
+    });
+    
+    db = drizzle(client, { schema });
+    ready = true;
+    console.log("[supabase-db] Connected to Supabase Postgres");
+    return db;
+  } catch (err) {
+    console.error("[supabase-db] Failed to connect:", err);
+    throw err;
+  }
 }
 
 export async function waitForSupabaseDb() {

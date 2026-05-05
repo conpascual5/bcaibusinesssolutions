@@ -375,17 +375,146 @@ app.delete("/api/samples/:filename", async (c) => {
   }
 });
 
+// Admin endpoint to initialize database tables and seed admin user
+// Visit GET /api/admin/db-init in your browser to trigger this
+app.get("/api/admin/db-init", async (c) => {
+  const results: string[] = [];
+  try {
+    results.push("Starting database initialization...");
+    
+    // Connect to Supabase directly
+    const { getSupabaseDb } = await import("./queries/supabase-db.js");
+    const db = await getSupabaseDb();
+    results.push("✅ Connected to Supabase Postgres");
+    
+    // Create tables (they already exist from our SQL migration, but this is idempotent)
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL, name VARCHAR(100) NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true, is_admin BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ users table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS searches (
+        id SERIAL PRIMARY KEY, user_id INTEGER,
+        product_query VARCHAR(500) NOT NULL, ip_address VARCHAR(100),
+        user_agent TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ searches table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS settings (
+        id SERIAL PRIMARY KEY, key VARCHAR(100) NOT NULL UNIQUE,
+        value TEXT NOT NULL, updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ settings table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS images (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        url TEXT NOT NULL, prompt TEXT NOT NULL,
+        width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0,
+        content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ images table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS chats (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ chats table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY, chat_id INTEGER NOT NULL,
+        role VARCHAR(20) NOT NULL, content TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ messages table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS generated_images (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        product_image_url TEXT NOT NULL, theme_title VARCHAR(200) NOT NULL,
+        prompt TEXT NOT NULL, result_image_url TEXT, overlay_text VARCHAR(500),
+        overlay_settings TEXT, final_image_url TEXT,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ generated_images table ready");
+    
+    await db.execute(`
+      CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        user_name VARCHAR(100) NOT NULL, user_email VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT false,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      );
+    `);
+    results.push("✅ chat_messages table ready");
+    
+    // Seed admin user
+    const bcrypt = await import("bcryptjs");
+    const hash = bcrypt.hashSync("admin123", 10);
+    await db.execute(
+      `INSERT INTO users (email, password_hash, name, is_active, is_admin)
+       VALUES ('conpascual5@gmail.com', '${hash}', 'BC AI Admin', true, true)
+       ON CONFLICT (email) DO NOTHING`
+    );
+    results.push("✅ Admin user seeded (conpascual5@gmail.com / admin123)");
+    
+    // Verify by counting users
+    const [countResult] = await db.execute(`SELECT COUNT(*) as count FROM users`);
+    results.push(`📊 Total users in database: ${JSON.stringify(countResult)}`);
+    
+    return c.json({ success: true, results });
+  } catch (err: any) {
+    console.error("[admin/db-init] Failed:", err);
+    return c.json({ success: false, error: err.message, stack: err.stack, results }, 500);
+  }
+});
+
+// tRPC handler with improved error handling — always returns JSON, never HTML
 app.use("/api/trpc/*", async (c) => {
   try {
-    return await fetchRequestHandler({
-      endpoint: "/api/trpc",
-      req: c.req.raw,
-      router: appRouter,
-      createContext,
-    });
+    // Set a timeout to prevent hanging requests
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("tRPC request timed out after 25 seconds")), 25000)
+    );
+    
+    const result = await Promise.race([
+      fetchRequestHandler({
+        endpoint: "/api/trpc",
+        req: c.req.raw,
+        router: appRouter,
+        createContext,
+      }),
+      timeoutPromise,
+    ]);
+    
+    return result;
   } catch (err: any) {
-    console.error("[tRPC handler error]", err);
-    return c.json({ error: err?.message || "Internal server error" }, 500);
+    console.error("[tRPC handler error]", err?.message ?? err);
+    // Always return JSON, never let Vercel return HTML
+    return c.json({
+      error: err?.message || "Internal server error",
+      code: "INTERNAL_SERVER_ERROR"
+    }, 500);
   }
 });
 

@@ -17,7 +17,12 @@ export const authRouter = createRouter({
     .mutation(async ({ input }) => {
       let db;
       try {
-        db = await getDbReady();
+        db = await Promise.race([
+          getDbReady(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Database connection timed out")), 15000)
+          ),
+        ]);
       } catch (err: any) {
         console.error("[auth.register] getDbReady failed:", err?.message ?? err);
         console.error("[auth.register] stack:", err?.stack ?? "(no stack)");
@@ -57,7 +62,13 @@ export const authRouter = createRouter({
     .mutation(async ({ input }) => {
       let db;
       try {
-        db = await getDbReady();
+        // Add a timeout to getDbReady so we don't hang forever
+        db = await Promise.race([
+          getDbReady(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Database connection timed out")), 15000)
+          ),
+        ]);
       } catch (err: any) {
         console.error("[auth.login] getDbReady failed:", err?.message ?? err);
         console.error("[auth.login] stack:", err?.stack ?? "(no stack)");
@@ -88,7 +99,12 @@ export const authRouter = createRouter({
     .mutation(async ({ input }) => {
       let db;
       try {
-        db = await getDbReady();
+        db = await Promise.race([
+          getDbReady(),
+          new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("Database connection timed out")), 15000)
+          ),
+        ]);
       } catch (err: any) {
         console.error("[auth.forgotPassword] getDbReady failed:", err?.message ?? err);
         console.error("[auth.forgotPassword] stack:", err?.stack ?? "(no stack)");
@@ -116,7 +132,12 @@ export const authRouter = createRouter({
     if (!ctx.user) return null;
     let db;
     try {
-      db = await getDbReady();
+      db = await Promise.race([
+        getDbReady(),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error("Database connection timed out")), 15000)
+        ),
+      ]);
     } catch (err: any) {
       console.error("[auth.me] getDbReady failed:", err?.message ?? err);
       console.error("[auth.me] stack:", err?.stack ?? "(no stack)");
