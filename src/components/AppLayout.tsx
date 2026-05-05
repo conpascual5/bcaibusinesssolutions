@@ -52,6 +52,7 @@ const navItems = [
   { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
   { icon: FileText, label: 'Invoices', path: '/app/invoices' },
   { icon: Library, label: 'Library', path: '/library' },
+  { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {

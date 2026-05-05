@@ -16,6 +16,9 @@ import {
   TrendingUp,
   FileSearch,
   FileText,
+  Crown,
+  Star,
+  Shield,
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -84,6 +87,9 @@ export default function Dashboard() {
         ))}
       </div>
 
+      {/* Plan Card */}
+      <PlanCard />
+
       {/* Quick Actions */}
       <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
         <Sparkles className="w-5 h-5 text-blue-600" />
@@ -139,5 +145,59 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+  );
+}
+
+function PlanCard() {
+  const navigate = useNavigate();
+  const { data: profile } = trpc.user.profile.useQuery();
+  const plan = (profile?.plan || 'free') as string;
+
+  const planConfig: Record<string, { label: string; icon: any; color: string; bg: string; border: string; desc: string }> = {
+    free: {
+      label: 'Free',
+      icon: Sparkles,
+      color: 'text-gray-500',
+      bg: 'bg-gray-50',
+      border: 'border-gray-200',
+      desc: 'Limited monthly usage — upgrade to unlock more',
+    },
+    pro: {
+      label: 'Pro',
+      icon: Crown,
+      color: 'text-amber-600',
+      bg: 'bg-amber-50',
+      border: 'border-amber-200',
+      desc: 'Unlimited access to all tools',
+    },
+    vip: {
+      label: 'VIP',
+      icon: Star,
+      color: 'text-purple-600',
+      bg: 'bg-purple-50',
+      border: 'border-purple-200',
+      desc: 'VIP access — 100 uses per month',
+    },
+  };
+
+  const cfg = planConfig[plan] || planConfig.free;
+  const PlanIcon = cfg.icon;
+
+  return (
+    <button
+      onClick={() => navigate('/app/my-plan')}
+      className={`w-full mb-8 rounded-2xl border ${cfg.border} ${cfg.bg} p-5 flex items-center justify-between hover:shadow-md transition-all text-left`}
+    >
+      <div className="flex items-center gap-3">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${cfg.bg}`}>
+          <PlanIcon className={`w-6 h-6 ${cfg.color}`} />
+        </div>
+        <div>
+          <p className="font-bold text-gray-900">{cfg.label} Plan</p>
+          <p className="text-sm text-gray-500">{cfg.desc}</p>
+        </div>
+      </div>
+      <ArrowRight className={`w-5 h-5 ${cfg.color}`} />
+    </button>
   );
 }
