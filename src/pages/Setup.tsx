@@ -151,7 +151,7 @@ export default function Setup() {
               <div>
                 <p className="font-medium">Step 2: Create Admin User</p>
                 <p className="text-sm text-slate-400">
-                  conpascual5@gmail.com / admin123
+                  Creates the default admin account
                 </p>
               </div>
               <Button
