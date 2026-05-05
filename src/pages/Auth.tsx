@@ -1,7 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2, UserPlus } from 'lucide-react';
-import { trpc } from '@/providers/trpc';
+import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/providers/auth';
 
 export default function Auth() {
@@ -21,111 +20,114 @@ export default function Auth() {
   const warmedUpRef = useRef(false);
 
   // Warm up the server immediately when the page loads
-  // This triggers the cold start in the background so login is instant
   useEffect(() => {
     if (warmedUpRef.current) return;
     warmedUpRef.current = true;
-    // Use the lightweight warmup endpoint that returns immediately
-    // and triggers DB module loading in the background
-    fetch('/api/warmup', { signal: AbortSignal.timeout(8000) }).catch(() => {
-      // Silent — warm-up is best-effort
-    });
+    fetch('/api/warmup', { signal: AbortSignal.timeout(8000) }).catch(() => {});
   }, []);
 
-  const loginMutation = trpc.auth.login.useMutation({
-    onSuccess: (data) => {
-      console.log('[auth] Login success for:', data.user.email);
-      setIsSubmitting(false);
-      retryCountRef.current = 0;
-      setAuth(data.token, data.user);
-      if (data.user.isAdmin) {
-        navigate('/admin');
-      } else {
-        navigate('/app');
-      }
-    },
-    onError: (err) => {
-      console.error('[auth] Login error:', err);
-      const msg = err.message || '';
-      // Retry on timeout/504 errors (server cold start)
-      if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed'))) {
-        retryCountRef.current += 1;
-        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
-        setError(`Server is starting up... retrying (${retryCountRef.current}/3)`);
-        setTimeout(() => {
-          loginMutation.mutate({ email, password });
-        }, delay);
-        return;
-      }
-      setIsSubmitting(false);
-      retryCountRef.current = 0;
-      if (msg.includes('Database connection failed') || msg.includes('timed out') || msg.includes('504') || msg.includes('Unexpected token')) {
-        setError('The server is still starting up. Please wait a moment and try again.');
-      } else {
-        setError(msg || 'Login failed. Please check your credentials.');
-      }
-    },
-  });
+  const handleLogin = async (email: string, password: string) => {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Login failed');
+    return data;
+  };
 
-  const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: (data) => {
-      console.log('[auth] Register success for:', data.user.email);
-      setIsSubmitting(false);
-      retryCountRef.current = 0;
-      setAuth(data.token, data.user);
-      navigate('/app');
-    },
-    onError: (err) => {
-      console.error('[auth] Register error:', err);
-      setIsSubmitting(false);
-      retryCountRef.current = 0;
-      setError(err.message || 'Registration failed. Please try again.');
-    },
-  });
-
-  const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
-    onSuccess: () => {
-      retryCountRef.current = 0;
-      setForgotSent(true);
-    },
-    onError: (err) => {
-      const msg = err.message || '';
-      if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed'))) {
-        retryCountRef.current += 1;
-        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
-        setTimeout(() => {
-          forgotPasswordMutation.mutate({ email: forgotEmail });
-        }, delay);
-        return;
-      }
-      retryCountRef.current = 0;
-      setError(msg || 'Something went wrong. Please try again.');
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
     retryCountRef.current = 0;
+
     if (isLogin) {
-      loginMutation.mutate({ email, password });
+      try {
+        const data = await attemptLogin(email, password);
+        setIsSubmitting(false);
+        retryCountRef.current = 0;
+        setAuth(data.token, data.user);
+        navigate(data.user.isAdmin ? '/admin' : '/app');
+      } catch (err: any) {
+        const msg = err.message || '';
+        if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed') || msg.includes('starting'))) {
+          retryCountRef.current += 1;
+          const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
+          setError(`Server is starting up... retrying (${retryCountRef.current}/3)`);
+          setTimeout(() => {
+            handleSubmit(e);
+          }, delay);
+          return;
+        }
+        setIsSubmitting(false);
+        retryCountRef.current = 0;
+        if (msg.includes('Database') || msg.includes('timed out') || msg.includes('504') || msg.includes('Unexpected token')) {
+          setError('The server is still starting up. Please wait a moment and try again.');
+        } else {
+          setError(msg || 'Login failed. Please check your credentials.');
+        }
+      }
     } else {
-      registerMutation.mutate({ email, password, name });
+      // Register via fetch to /api/trpc (bypasses tRPC client for cold start)
+      try {
+        const res = await fetch('/api/trpc/auth.register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 0: { email, password, name } }),
+        });
+        const json = await res.json();
+        if (json.error) throw new Error(json.error.message || 'Registration failed');
+        const data = json.result?.data;
+        if (!data) throw new Error('Registration failed');
+        setIsSubmitting(false);
+        retryCountRef.current = 0;
+        setAuth(data.token, data.user);
+        navigate('/app');
+      } catch (err: any) {
+        console.error('[auth] Register error:', err);
+        setIsSubmitting(false);
+        retryCountRef.current = 0;
+        setError(err.message || 'Registration failed. Please try again.');
+      }
     }
   };
 
-  const handleForgotSubmit = (e: React.FormEvent) => {
+  const attemptLogin = async (email: string, password: string, retries = 0): Promise<any> => {
+    try {
+      return await handleLogin(email, password);
+    } catch (err: any) {
+      const msg = err.message || '';
+      if (retries < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed') || msg.includes('starting'))) {
+        const delay = Math.min(1000 * Math.pow(2, retries + 1), 8000);
+        await new Promise(r => setTimeout(r, delay));
+        return attemptLogin(email, password, retries + 1);
+      }
+      throw err;
+    }
+  };
+
+  const handleForgotSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     if (!forgotEmail.trim()) {
       setError('Paki-enter ang iyong email');
       return;
     }
-    forgotPasswordMutation.mutate({ email: forgotEmail });
+    try {
+      const res = await fetch('/api/trpc/auth.forgotPassword', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 0: { email: forgotEmail } }),
+      });
+      const json = await res.json();
+      if (json.error) throw new Error(json.error.message || 'Request failed');
+      setForgotSent(true);
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.');
+    }
   };
-
-  const isLoading = isSubmitting || loginMutation.isPending || registerMutation.isPending;
 
   // Forgot Password View
   if (showForgotPassword) {
@@ -187,10 +189,10 @@ export default function Auth() {
                 </div>
                 <button
                   type="submit"
-                  disabled={forgotPasswordMutation.isPending}
+                  disabled={isSubmitting}
                   className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {forgotPasswordMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
                   Send Reset Link
                 </button>
               </form>
@@ -292,10 +294,10 @@ export default function Auth() {
 
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+              {isSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
               {isLogin ? 'Mag-Log In' : 'Mag-Sign Up'}
             </button>
           </form>
