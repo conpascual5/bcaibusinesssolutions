@@ -107,7 +107,7 @@ export default function CompetitorAnalysis() {
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-bold uppercase tracking-wider">
             <FileSearch className="w-3 h-3" /> AI-Powered
           </div>
-          {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
+          {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} />}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Competitor Ad Copy Analyzer</h1>
         <p className="text-gray-500 mt-1 max-w-xl">

@@ -169,7 +169,7 @@ export default function FBAdsTargeting() {
               <span className="font-semibold text-[15px] tracking-tight text-sidebar-foreground truncate group-data-[collapsible=icon]:hidden">
                 BC AI
               </span>
-              {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} className="group-data-[collapsible=icon]:hidden" />}
+              {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} className="group-data-[collapsible=icon]:hidden" />}
             </div>
           </SidebarHeader>
 
@@ -261,7 +261,7 @@ export default function FBAdsTargeting() {
                       <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <span className="hidden sm:inline font-medium">{user?.name}</span>
-                    {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
+                    {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} />}
                   </div>
               </div>
             </div>

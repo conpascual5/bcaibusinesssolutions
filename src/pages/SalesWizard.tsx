@@ -260,7 +260,7 @@ export default function SalesWizard() {
             <div className="flex-1">
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-bold text-foreground tracking-tight">Sales Wizard</h1>
-                {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
+                {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} />}
               </div>
               <p className="text-sm text-muted-foreground">Generate high-converting sales copy in Taglish, Filipino, or English</p>
             </div>

@@ -48,6 +48,7 @@ app.get("/api/usage/:feature", async (c) => {
       .maybeSingle();
 
     const isPro = sub?.plan === "pro" && sub?.status === "active";
+    const isVip = sub?.plan === "vip" && sub?.status === "active";
 
     if (isPro) {
       return c.json({
@@ -56,6 +57,31 @@ app.get("/api/usage/:feature", async (c) => {
         limit: -1,
         remaining: 999,
         isPro: true,
+        plan: "pro",
+      });
+    }
+
+    // VIP: 100 uses per month across all features
+    const vipLimit = 100;
+    if (isVip) {
+      // Get total usage across all features for this month
+      const { data: totalUsage } = await supabase
+        .from("user_usage")
+        .select("count")
+        .eq("user_id", payload.userId)
+        .eq("month", month);
+
+      const totalUsed = totalUsage?.reduce((sum, r) => sum + (r.count ?? 0), 0) ?? 0;
+      const remaining = Math.max(0, vipLimit - totalUsed);
+
+      return c.json({
+        feature,
+        used: totalUsed,
+        limit: vipLimit,
+        remaining,
+        isPro: false,
+        isVip: true,
+        plan: "vip",
       });
     }
 
@@ -77,6 +103,8 @@ app.get("/api/usage/:feature", async (c) => {
       limit,
       remaining,
       isPro: false,
+      isVip: false,
+      plan: "free",
     });
   } catch (err: any) {
     console.error("[usage] Error:", err);
@@ -113,9 +141,67 @@ app.post("/api/usage/:feature/increment", async (c) => {
       .maybeSingle();
 
     const isPro = sub?.plan === "pro" && sub?.status === "active";
+    const isVip = sub?.plan === "vip" && sub?.status === "active";
 
     if (isPro) {
-      return c.json({ success: true, isPro: true });
+      return c.json({ success: true, isPro: true, plan: "pro" });
+    }
+
+    // VIP: check total monthly usage across all features
+    const vipLimit = 100;
+    if (isVip) {
+      const { data: totalUsage } = await supabase
+        .from("user_usage")
+        .select("count")
+        .eq("user_id", payload.userId)
+        .eq("month", month);
+
+      const totalUsed = totalUsage?.reduce((sum, r) => sum + (r.count ?? 0), 0) ?? 0;
+
+      if (totalUsed >= vipLimit) {
+        return c.json({
+          error: "limit_reached",
+          message: `You've reached your VIP monthly limit of ${vipLimit} uses. Please wait until next month.`,
+          feature,
+          limit: vipLimit,
+          used: totalUsed,
+        }, 403);
+      }
+
+      // Increment
+      const { data: usageRow } = await supabase
+        .from("user_usage")
+        .select("count, id")
+        .eq("user_id", payload.userId)
+        .eq("feature", feature)
+        .eq("month", month)
+        .maybeSingle();
+
+      if (usageRow?.id) {
+        await supabase
+          .from("user_usage")
+          .update({ count: (usageRow.count ?? 0) + 1, updated_at: new Date().toISOString() })
+          .eq("id", usageRow.id);
+      } else {
+        await supabase
+          .from("user_usage")
+          .insert({
+            user_id: payload.userId,
+            feature,
+            month,
+            count: 1,
+          });
+      }
+
+      return c.json({
+        success: true,
+        feature,
+        used: totalUsed + 1,
+        remaining: vipLimit - (totalUsed + 1),
+        isPro: false,
+        isVip: true,
+        plan: "vip",
+      });
     }
 
     // Check current usage
@@ -162,6 +248,8 @@ app.post("/api/usage/:feature/increment", async (c) => {
       used: used + 1,
       remaining: limit - (used + 1),
       isPro: false,
+      isVip: false,
+      plan: "free",
     });
   } catch (err: any) {
     console.error("[usage] Increment error:", err);

@@ -184,7 +184,7 @@ export default function Invoices() {
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
             <Receipt className="w-3 h-3" /> BIR-Compliant
           </div>
-          {usage && <UsageBadge isPro={usage.isPro} used={usage.used} limit={usage.limit} />}
+          {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} />}
         </div>
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Philippine Invoice Generator</h1>
         <p className="text-gray-500 mt-1 max-w-2xl">

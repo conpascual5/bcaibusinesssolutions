@@ -1,14 +1,60 @@
-import { Sparkles, Crown, X } from "lucide-react";
+import { Sparkles, Crown, Star, X } from "lucide-react";
 
 type UpgradePromptProps = {
   feature: string;
   used: number;
   limit: number;
+  plan?: string;
+  isVip?: boolean;
   onClose?: () => void;
 };
 
-export default function UpgradePrompt({ feature, used, limit, onClose }: UpgradePromptProps) {
+export default function UpgradePrompt({ feature, used, limit, plan, isVip, onClose }: UpgradePromptProps) {
   const featureName = feature.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  // VIP users see a different message
+  if (isVip || plan === "vip") {
+    return (
+      <div className="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-2xl border border-purple-200 p-6 shadow-sm relative">
+        {onClose && (
+          <button onClick={onClose} className="absolute top-3 right-3 p-1 text-purple-400 hover:text-purple-600 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
+        )}
+
+        <div className="flex items-center gap-3 mb-4">
+          <div className="p-2.5 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl shadow-md">
+            <Star className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h3 className="font-bold text-gray-900">VIP Monthly Limit Reached</h3>
+            <p className="text-xs text-gray-500">You've used all 100 VIP credits this month</p>
+          </div>
+        </div>
+
+        <div className="mb-4">
+          <div className="flex items-center justify-between text-sm mb-1.5">
+            <span className="text-gray-600">Monthly Usage (all tools)</span>
+            <span className="font-semibold text-gray-900">{used}/{limit} used</span>
+          </div>
+          <div className="w-full h-2 bg-purple-100 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-purple-400 to-indigo-500 rounded-full transition-all"
+              style={{ width: `${Math.min(100, (used / limit) * 100)}%` }}
+            />
+          </div>
+        </div>
+
+        <p className="text-sm text-gray-600 mb-4">
+          You've reached your <strong>VIP monthly limit</strong> of {limit} uses across all tools. Your limit will reset next month.
+        </p>
+
+        <p className="text-xs text-gray-400 text-center">
+          Need more? Contact us to discuss upgrading your plan.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200 p-6 shadow-sm relative">

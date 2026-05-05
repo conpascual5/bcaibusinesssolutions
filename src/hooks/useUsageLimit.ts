@@ -7,6 +7,8 @@ type UsageInfo = {
   limit: number;
   remaining: number;
   isPro: boolean;
+  isVip?: boolean;
+  plan?: string;
 };
 
 type UsageState = {

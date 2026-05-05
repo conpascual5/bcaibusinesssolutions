@@ -1,18 +1,29 @@
-import { Crown, Sparkles } from "lucide-react";
+import { Crown, Sparkles, Star } from "lucide-react";
 
 type UsageBadgeProps = {
   isPro?: boolean;
+  isVip?: boolean;
   used?: number;
   limit?: number;
+  plan?: string;
   className?: string;
 };
 
-export default function UsageBadge({ isPro, used = 0, limit = 0, className = "" }: UsageBadgeProps) {
+export default function UsageBadge({ isPro, isVip, used = 0, limit = 0, plan, className = "" }: UsageBadgeProps) {
   if (isPro) {
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold rounded-full ${className}`}>
         <Crown className="w-2.5 h-2.5" />
         PRO
+      </span>
+    );
+  }
+
+  if (isVip || plan === "vip") {
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-purple-500 to-indigo-600 text-white text-[10px] font-bold rounded-full ${className}`}>
+        <Star className="w-2.5 h-2.5" />
+        VIP
       </span>
     );
   }
