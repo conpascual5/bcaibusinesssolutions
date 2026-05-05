@@ -27,6 +27,10 @@ import("./queries/connection.js").then(({ waitForDb }) => {
 // Mount sales wizard routes
 app.route("/", salesWizard);
 
+// Mount FB Ads Targeting routes
+import fbAdsTargeting from "./fb-ads-targeting.js";
+app.route("/", fbAdsTargeting);
+
 // Global error handler — ensures all errors return JSON
 app.onError((err, c) => {
   console.error("[Hono error]", err);

@@ -24,7 +24,6 @@ import {
   LogOut,
   Shield,
   Library,
-  ImageIcon,
   FileText,
   FileSearch,
   LayoutDashboard,
@@ -41,8 +40,7 @@ interface AppLayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
   { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
-  { icon: Crosshair, label: 'Targeting', path: '/app/targeting' },
-  { icon: ImageIcon, label: 'Captions', path: '/captions' },
+  { icon: Crosshair, label: 'Captions and Video Script', path: '/app/targeting' },
   { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
   { icon: FileText, label: 'Invoices', path: '/app/invoices' },
   { icon: Library, label: 'Library', path: '/library' },

@@ -1,13 +1,75 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router';
-import { Crosshair, Sparkles, User, Users, Target, BarChart3, Lightbulb, ImageIcon, MessageSquare, Film, Layers } from 'lucide-react';
+import { Crosshair, Sparkles, User, Users, Target, BarChart3, Lightbulb, ImageIcon, MessageSquare, Film, Layers, Loader2, AlertCircle, Copy, Check, Facebook, Instagram, Music2, Wand2 } from 'lucide-react';
 import { generateTargeting } from '@/lib/targetingEngine';
-import type { TargetingResult } from '@/lib/targetingEngine';
-import { PersonaCard, KeywordsCard, DemographicsCard, BehavioralLayerCard, WhyCard, CaptionCard, VideoScriptCard } from '@/components/ResultCards';
+import type { TargetingResult, Caption, VideoScript, VisualPrompt } from '@/lib/targetingEngine';
+import { CaptionCard, VideoScriptCard } from '@/components/ResultCards';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+
+type Tab = 'captions-scripts' | 'fb-ads-targeting';
 
 export default function Home() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<Tab>('captions-scripts');
+
+  return (
+    <div className="min-h-screen bg-background">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="mb-8 animate-fade-in">
+          <div className="flex items-center gap-4 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
+              <Crosshair className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-foreground tracking-tight">Captions and Video Script</h1>
+              <p className="text-sm text-muted-foreground">Generate ad captions, video scripts, and Facebook Ads targeting</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Tab Switcher */}
+        <div className="flex items-center gap-1.5 bg-card p-1 rounded-xl card-shadow border border-border w-fit mb-8">
+          <button
+            onClick={() => setActiveTab('captions-scripts')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'captions-scripts'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            }`}
+          >
+            <Film className="w-4 h-4 stroke-[1.5]" />
+            Captions & Video Script
+          </button>
+          <button
+            onClick={() => setActiveTab('fb-ads-targeting')}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'fb-ads-targeting'
+                ? 'bg-primary text-primary-foreground shadow-md'
+                : 'text-muted-foreground hover:text-foreground hover:bg-accent'
+            }`}
+          >
+            <Target className="w-4 h-4 stroke-[1.5]" />
+            FB Ads Targeting
+          </button>
+        </div>
+
+        {activeTab === 'captions-scripts' && <CaptionsAndScripts />}
+        {activeTab === 'fb-ads-targeting' && <FBAdsTargeting />}
+      </div>
+    </div>
+  );
+}
+
+function CaptionsAndScripts() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [query, setQuery] = useState('');
@@ -47,25 +109,10 @@ export default function Home() {
   if (!user) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      {/* Hero Section */}
-      <div className="max-w-4xl mx-auto px-4 pt-12 pb-8">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-full mb-6">
-            <Crosshair className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-semibold text-blue-700">AI-Powered Audience Intelligence</span>
-          </div>
-          <h1 className="text-4xl sm:text-5xl font-bold text-gray-900 mb-4">
-            Facebook Ads Targeting Generator
-          </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            I-type ang iyong product name at makakuha ng laser-focused audience personas, 
-            targeting keywords, at demographic guardrails para sa iyong Facebook ads.
-          </p>
-        </div>
-
-        {/* Search Input */}
-        <div className="mt-10 max-w-2xl mx-auto">
+    <>
+      {/* Search Input */}
+      <div className="mb-8">
+        <div className="max-w-2xl">
           <div className="relative">
             <input
               type="text"
@@ -73,98 +120,58 @@ export default function Home() {
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && handleAnalyze()}
               placeholder="e.g., Organic Face Serum, Smart Fitness Watch, Baby Stroller..."
-              className="w-full px-6 py-4 text-lg bg-white border-2 border-gray-200 rounded-2xl outline-none focus:border-blue-500 transition-all shadow-sm pr-36"
+              className="w-full px-6 py-4 bg-card border-2 border-border rounded-2xl outline-none focus:border-indigo-500 transition-all shadow-sm pr-36 text-foreground"
             />
             <button
               onClick={handleAnalyze}
               disabled={!query.trim() || isAnalyzing}
-              className="absolute right-2 top-2 bottom-2 px-6 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center gap-2"
+              className="absolute right-2 top-2 bottom-2 px-6 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition-all disabled:opacity-50 flex items-center gap-2"
             >
               {isAnalyzing ? (
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
-                <Crosshair className="w-4 h-4" />
+                <Sparkles className="w-4 h-4" />
               )}
               {isAnalyzing ? 'Generating...' : 'Generate'}
             </button>
           </div>
 
           {/* Quick Examples */}
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <span className="text-sm text-gray-500">Subukan:</span>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="text-sm text-muted-foreground">Try:</span>
             {['Organic Face Serum', 'Smart Fitness Watch', 'Baby Stroller', 'Vegan Protein Powder', 'LED Desk Lamp'].map(example => (
               <button
                 key={example}
                 onClick={() => { setQuery(example); }}
-                className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 transition-colors"
               >
                 {example}
               </button>
             ))}
-          </div>
-
-          {/* Caption Generator CTA */}
-          <div className="mt-8 flex justify-center">
-            <button
-              onClick={() => navigate('/captions')}
-              className="flex items-center gap-2 px-6 py-3 bg-white border-2 border-blue-200 rounded-xl text-blue-700 font-semibold hover:bg-blue-50 transition-all shadow-sm"
-            >
-              <ImageIcon className="w-5 h-5" />
-              O mag-generate ng Ad Captions
-            </button>
           </div>
         </div>
       </div>
 
       {/* Results Section */}
       {result && (
-        <div ref={resultsRef} className="max-w-6xl mx-auto px-4 pb-16">
+        <div ref={resultsRef} className="pb-16">
           {/* Header */}
-          <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-              <Sparkles className="w-6 h-6 text-white" />
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">Targeting Strategy for &ldquo;{result.product}&rdquo;</h2>
-              <p className="text-sm text-gray-500">Generated using lateral thinking AI — going beyond the obvious to find hidden audiences</p>
+              <h2 className="text-xl font-bold text-foreground">Results for &ldquo;{result.product}&rdquo;</h2>
+              <p className="text-sm text-muted-foreground">AI-generated captions and video scripts</p>
             </div>
-          </div>
-
-          {/* 3 Personas */}
-          <div className="mb-8">
-            <div className="flex items-center gap-2 mb-4">
-              <Users className="w-5 h-5 text-blue-600" />
-              <h3 className="text-lg font-bold text-gray-900">3 Buyer Personas</h3>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-              {result.personas.map((persona, i) => (
-                <PersonaCard key={i} persona={persona} index={i} />
-              ))}
-            </div>
-          </div>
-
-          {/* Targeting Keywords */}
-          <div className="mb-8">
-            <KeywordsCard keywords={result.keywords} />
-          </div>
-
-          {/* Behavioral Layer */}
-          <div className="mb-8">
-            <BehavioralLayerCard behavioralLayer={result.behavioralLayer} />
-          </div>
-
-          {/* Demographics & Why */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            <DemographicsCard demographics={result.demographics} />
-            <WhyCard why={result.why} />
           </div>
 
           {/* Ad Captions */}
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
-              <MessageSquare className="w-5 h-5 text-green-600" />
-              <h3 className="text-lg font-bold text-gray-900">Ad Captions ({result.captions.length} total)</h3>
-              <span className="text-xs text-gray-500 ml-2">Ready-to-use with hashtags</span>
+              <MessageSquare className="w-5 h-5 text-emerald-600" />
+              <h3 className="text-lg font-bold text-foreground">Ad Captions ({result.captions.length} total)</h3>
+              <span className="text-xs text-muted-foreground ml-2">Ready-to-use with hashtags</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {result.captions.map((cap, i) => (
@@ -177,8 +184,8 @@ export default function Home() {
           <div className="mb-8">
             <div className="flex items-center gap-2 mb-4">
               <Film className="w-5 h-5 text-purple-600" />
-              <h3 className="text-lg font-bold text-gray-900">Video Ad Scripts (3 scripts)</h3>
-              <span className="text-xs text-gray-500 ml-2">Hook, scenes, and CTA included</span>
+              <h3 className="text-lg font-bold text-foreground">Video Ad Scripts (3 scripts)</h3>
+              <span className="text-xs text-muted-foreground ml-2">Hook, scenes, and CTA included</span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
               {result.videoScripts.map((script, i) => (
@@ -195,13 +202,13 @@ export default function Home() {
                 setQuery('');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              className="px-6 py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-semibold hover:border-gray-300 transition-all"
+              className="px-6 py-3 bg-card border-2 border-border rounded-xl text-foreground font-semibold hover:border-muted-foreground/30 transition-all"
             >
               Generate Another Product
             </button>
             <button
               onClick={() => navigate('/generate')}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg flex items-center gap-2"
+              className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:opacity-90 transition-all shadow-lg flex items-center gap-2"
             >
               <ImageIcon className="w-5 h-5" />
               Generate Ad Images
@@ -212,31 +219,30 @@ export default function Home() {
 
       {/* Loading State */}
       {isAnalyzing && (
-        <div className="max-w-4xl mx-auto px-4 pb-16 text-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-gray-600 font-medium">Analyzing audience data and applying lateral thinking...</p>
-          <p className="text-sm text-gray-400 mt-1">This may take a few seconds</p>
+        <div className="pb-16 text-center">
+          <div className="w-12 h-12 border-4 border-border border-t-indigo-500 rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-foreground font-medium">Generating captions and video scripts...</p>
+          <p className="text-sm text-muted-foreground mt-1">This may take a few seconds</p>
         </div>
       )}
 
       {/* Empty State */}
       {!result && !isAnalyzing && (
-        <div className="max-w-4xl mx-auto px-4 pb-16">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <div className="pb-16">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
-              { icon: <User className="w-6 h-6 text-blue-600" />, title: '3 Buyer Personas', desc: 'Detailed descriptions of who will buy your product' },
-              { icon: <Target className="w-6 h-6 text-purple-600" />, title: 'Targeting Keywords', desc: 'Facebook Interests & Behaviors using lateral thinking' },
-              { icon: <Layers className="w-6 h-6 text-emerald-600" />, title: 'Behavioral Layer', desc: 'Engaged Shoppers + secondary behavior targeting' },
-              { icon: <MessageSquare className="w-6 h-6 text-green-600" />, title: 'Ad Captions', desc: 'Ready-to-use captions with hashtags for FB/IG/TikTok' },
+              { icon: <MessageSquare className="w-6 h-6 text-emerald-600" />, title: 'Ad Captions', desc: 'Ready-to-use captions with hashtags for FB/IG/TikTok' },
               { icon: <Film className="w-6 h-6 text-purple-600" />, title: 'Video Scripts', desc: '3 complete ad scripts with hook, scenes, and CTA' },
-              { icon: <BarChart3 className="w-6 h-6 text-rose-600" />, title: 'Demographics', desc: 'Age, gender, and income recommendations' },
+              { icon: <Wand2 className="w-6 h-6 text-indigo-600" />, title: 'AI Image Prompts', desc: 'Visual prompts for each video scene' },
+              { icon: <Facebook className="w-6 h-6 text-blue-600" />, title: 'FB Captions', desc: 'Long-form Facebook ad captions' },
+              { icon: <Instagram className="w-6 h-6 text-pink-600" />, title: 'IG Captions', desc: 'Aesthetic Instagram ad captions' },
             ].map((item, i) => (
-              <div key={i} className="bg-white rounded-2xl p-6 border border-gray-100 text-center">
-                <div className="w-12 h-12 bg-gray-50 rounded-xl flex items-center justify-center mx-auto mb-3">
+              <div key={i} className="bg-card rounded-2xl p-6 border border-border text-center">
+                <div className="w-12 h-12 bg-muted rounded-xl flex items-center justify-center mx-auto mb-3">
                   {item.icon}
                 </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{item.title}</h3>
-                <p className="text-sm text-gray-500">{item.desc}</p>
+                <h3 className="font-semibold text-foreground mb-1">{item.title}</h3>
+                <p className="text-sm text-muted-foreground">{item.desc}</p>
               </div>
             ))}
           </div>
@@ -244,13 +250,13 @@ export default function Home() {
           {/* Recent Searches */}
           {searches && searches.length > 0 && (
             <div className="mt-12">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-4">Recent Analysis</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Recent Searches</h3>
               <div className="flex flex-wrap gap-2">
                 {searches.slice(0, 8).map((s) => (
                   <button
                     key={s.id}
                     onClick={() => setQuery(s.productQuery)}
-                    className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-sm text-gray-600 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                    className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 transition-colors"
                   >
                     {s.productQuery}
                   </button>
@@ -260,6 +266,165 @@ export default function Home() {
           )}
         </div>
       )}
+    </>
+  );
+}
+
+function FBAdsTargeting() {
+  const [productName, setProductName] = useState('');
+  const [targetAudience, setTargetAudience] = useState('');
+  const [productDescription, setProductDescription] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [output, setOutput] = useState('');
+  const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+  const outputRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
+  }, [output]);
+
+  const handleGenerate = async () => {
+    if (!productName || !targetAudience) {
+      setError('Please fill in Product Name and Target Audience.');
+      return;
+    }
+    setIsGenerating(true);
+    setOutput('');
+    setError('');
+
+    try {
+      const response = await fetch('/api/fb-ads-targeting', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productName, targetAudience, productDescription }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Generation failed');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response stream');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data: ')) continue;
+          const dataStr = trimmed.slice(6);
+          if (dataStr === '[DONE]') continue;
+          try {
+            const parsed = JSON.parse(dataStr);
+            if (parsed.content) setOutput((prev) => prev + parsed.content);
+          } catch { /* skip */ }
+        }
+      }
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(output);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+      {/* Left Panel — Inputs */}
+      <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-24 lg:self-start">
+        <div className="bg-card rounded-2xl card-shadow border border-border p-6 space-y-5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+              <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400 stroke-[1.5]" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">Product Details</h3>
+              <p className="text-xs text-muted-foreground">What are you advertising?</p>
+            </div>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="fb-product" className="text-xs font-medium text-muted-foreground">Product Name *</Label>
+              <Input id="fb-product" placeholder="e.g., Organic Face Serum" value={productName} onChange={(e) => setProductName(e.target.value)} className="bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="fb-audience" className="text-xs font-medium text-muted-foreground">Target Audience *</Label>
+              <Textarea id="fb-audience" placeholder="e.g., Health-conscious women aged 25-45 interested in natural skincare..." value={targetAudience} onChange={(e) => setTargetAudience(e.target.value)} className="min-h-[100px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="fb-desc" className="text-xs font-medium text-muted-foreground">Product Description (optional)</Label>
+              <Textarea id="fb-desc" placeholder="e.g., Organic serum with vitamin C and hyaluronic acid, P499..." value={productDescription} onChange={(e) => setProductDescription(e.target.value)} className="min-h-[80px] bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 resize-none" />
+            </div>
+          </div>
+        </div>
+
+        <Button onClick={handleGenerate} disabled={isGenerating || !productName || !targetAudience} className="w-full h-13 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-semibold shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
+          {isGenerating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating...</> : <><Sparkles className="w-4 h-4 mr-2" /> Generate FB Ads Targeting</>}
+        </Button>
+
+        {error && (
+          <div className="flex items-start gap-2.5 p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive animate-fade-in">
+            <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Right Panel — Output */}
+      <div className="lg:col-span-3">
+        <div className="bg-card rounded-2xl card-shadow border border-border overflow-hidden animate-fade-in-up">
+          <div className="p-5 border-b border-border flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[1.5]" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">FB Ads Targeting Strategy</h3>
+                <p className="text-xs text-muted-foreground">AI-powered audience insights</p>
+              </div>
+            </div>
+            {output && (
+              <Button variant="outline" size="sm" onClick={handleCopy} className="text-xs gap-1.5 rounded-xl border-border/60">
+                {copied ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
+              </Button>
+            )}
+          </div>
+          <div ref={outputRef} className="h-[500px] overflow-y-auto p-6">
+            {isGenerating && !output ? (
+              <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+                <Loader2 className="w-8 h-8 animate-spin mb-4 text-indigo-500" />
+                <p className="text-sm font-medium">Generating targeting strategy...</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Using AI to analyze your product and audience</p>
+              </div>
+            ) : output ? (
+              <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-[450]">
+                {output}
+                {isGenerating && <span className="inline-block w-[3px] h-[18px] bg-indigo-500 animate-pulse ml-0.5 align-text-bottom" />}
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
+                <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
+                  <Target className="w-7 h-7 text-muted-foreground/50 stroke-[1]" />
+                </div>
+                <p className="text-sm font-medium">Your FB Ads Targeting strategy will appear here</p>
+                <p className="text-xs text-muted-foreground/70 mt-1">Fill in the details and click Generate</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

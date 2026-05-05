@@ -183,7 +183,7 @@ export default function Admin() {
                 Deepseek API Key
               </h2>
               <p className="text-sm text-muted-foreground mb-5">
-                Used for AI ad copy analysis and sales wizard.
+                Used for AI ad copy analysis, sales wizard, and FB Ads Targeting.
               </p>
               <div className="space-y-3">
                 <input
