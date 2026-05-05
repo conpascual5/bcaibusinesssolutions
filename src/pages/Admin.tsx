@@ -26,19 +26,29 @@ export default function Admin() {
     onSuccess: () => refetchApiKey(),
   });
   const [deepseekSaved, setDeepseekSaved] = useState(false);
+  const [deepseekError, setDeepseekError] = useState('');
   const setDeepseekKeyMutation = trpc.settings.setDeepseekKey.useMutation({
     onSuccess: () => {
       refetchDeepseekKey();
       setDeepseekSaved(true);
+      setDeepseekError('');
       setTimeout(() => setDeepseekSaved(false), 2000);
+    },
+    onError: (err) => {
+      setDeepseekError(err.message);
     },
   });
   const [openaiSaved, setOpenaiSaved] = useState(false);
+  const [openaiError, setOpenaiError] = useState('');
   const setOpenaiKeyMutation = trpc.settings.setOpenaiKey.useMutation({
     onSuccess: () => {
       refetchOpenaiKey();
       setOpenaiSaved(true);
+      setOpenaiError('');
       setTimeout(() => setOpenaiSaved(false), 2000);
+    },
+    onError: (err) => {
+      setOpenaiError(err.message);
     },
   });
 
@@ -251,6 +261,9 @@ export default function Admin() {
                   {deepseekSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
                   {deepseekSaved ? 'Saved!' : 'Save Deepseek Key'}
                 </button>
+                {deepseekError && (
+                  <p className="text-sm text-red-500 mt-2">{deepseekError}</p>
+                )}
               </div>
             </div>
 
@@ -279,6 +292,9 @@ export default function Admin() {
                   {openaiSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
                   {openaiSaved ? 'Saved!' : 'Save OpenAI Key'}
                 </button>
+                {openaiError && (
+                  <p className="text-sm text-red-500 mt-2">{openaiError}</p>
+                )}
               </div>
             </div>
           </div>

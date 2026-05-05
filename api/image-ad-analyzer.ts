@@ -16,8 +16,10 @@ async function getApiKey(keyName: string): Promise<string> {
     const { eq } = await import("drizzle-orm");
     const db = await getDbReady();
     const [row] = await db.select().from(settings).where(eq(settings.key, keyName)).limit(1);
+    console.log(`[image-ad-analyzer] getApiKey(${keyName}):`, row ? `found (len=${row.value?.length})` : "not found");
     return row?.value ?? "";
-  } catch {
+  } catch (err) {
+    console.error(`[image-ad-analyzer] getApiKey(${keyName}) error:`, err);
     return "";
   }
 }
