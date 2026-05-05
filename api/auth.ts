@@ -2,7 +2,7 @@ import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware.js";
 import { getDbReady } from "./queries/connection.js";
 import { users } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { hashPassword, verifyPassword, signJWT } from "./auth-utils.js";
 
 // Timeout for DB connection — must be under Vercel's 10s limit
@@ -71,12 +71,15 @@ export const authRouter = createRouter({
         if (existing) throw new Error("Email already registered");
         
         const passwordHash = await hashPassword(input.password);
+        // Check if this is the first user — make them admin
+        const [{ count }] = await db.select({ count: sql`count(*)` }).from(users);
+        const isAdmin = count === 0 ? 1 : 0;
         const [user] = await db.insert(users).values({
           email: input.email,
           passwordHash,
           name: input.name,
           isActive: 1,
-          isAdmin: 0,
+          isAdmin,
         }).returning();
 
         // If existing customer, auto-create VIP subscription

@@ -60,16 +60,63 @@ export default function Admin() {
     onSuccess: () => refetchUsers(),
   });
 
+  const [promoting, setPromoting] = useState(false);
+  const [promoteMsg, setPromoteMsg] = useState('');
+  const [promoteError, setPromoteError] = useState('');
+
+  const handlePromote = async () => {
+    if (!user?.email) return;
+    setPromoting(true);
+    setPromoteMsg('');
+    setPromoteError('');
+    try {
+      const res = await fetch('/api/promote-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: user.email }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPromoteMsg('You are now an admin! Please log out and log back in.');
+      } else {
+        setPromoteError(data.error || 'Failed to promote');
+      }
+    } catch (err: any) {
+      setPromoteError(err.message);
+    } finally {
+      setPromoting(false);
+    }
+  };
+
   if (!user?.isAdmin) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center animate-fade-in">
+        <div className="text-center animate-fade-in max-w-md mx-auto px-4">
           <Shield className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h1 className="text-2xl font-bold text-foreground mb-2">Access Denied</h1>
           <p className="text-muted-foreground mb-6">Admin access required.</p>
-          <button onClick={() => navigate('/app')} className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-lg shadow-primary/20">
-            Back to App
-          </button>
+          {promoteMsg && (
+            <div className="mb-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+              <p className="text-sm text-emerald-700 dark:text-emerald-400 font-medium">{promoteMsg}</p>
+            </div>
+          )}
+          {promoteError && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl">
+              <p className="text-sm text-red-700 dark:text-red-400">{promoteError}</p>
+            </div>
+          )}
+          <div className="flex flex-col gap-3 items-center">
+            <button
+              onClick={handlePromote}
+              disabled={promoting}
+              className="px-6 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 disabled:opacity-50"
+            >
+              {promoting ? 'Promoting...' : 'Promote me to Admin'}
+            </button>
+            <button onClick={() => navigate('/app')} className="px-6 py-2.5 bg-muted text-muted-foreground rounded-xl text-sm font-semibold">
+              Back to App
+            </button>
+          </div>
         </div>
       </div>
     );

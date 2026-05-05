@@ -615,6 +615,24 @@ app.use("/api/trpc/*", async (c) => {
   }
 });
 
+// Promote first user to admin (one-time use, for setup)
+app.post("/api/promote-admin", async (c) => {
+  try {
+    const { email } = await c.req.json();
+    if (!email) return c.json({ error: "Email required" }, 400);
+    const { getDbReady } = await import("./queries/connection.js");
+    const { users } = await import("../db/schema.js");
+    const { eq } = await import("drizzle-orm");
+    const db = await getDbReady();
+    const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    if (!user) return c.json({ error: "User not found" }, 404);
+    await db.update(users).set({ isAdmin: 1 }).where(eq(users.email, email));
+    return c.json({ success: true, message: `User ${email} is now an admin` });
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500);
+  }
+});
+
 // Reactivate admin endpoint - no auth required (for recovery)
 app.post("/api/reactivate-admin", async (c) => {
   try {
