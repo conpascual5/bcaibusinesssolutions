@@ -31,6 +31,10 @@ app.route("/", salesWizard);
 import fbAdsTargeting from "./fb-ads-targeting.js";
 app.route("/", fbAdsTargeting);
 
+// Mount Image Ad Analyzer routes
+import imageAdAnalyzer from "./image-ad-analyzer.js";
+app.route("/", imageAdAnalyzer);
+
 // Global error handler — ensures all errors return JSON
 app.onError((err, c) => {
   console.error("[Hono error]", err);

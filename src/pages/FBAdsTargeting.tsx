@@ -39,6 +39,7 @@ import {
   FileSearch,
   FileText,
   Wand2,
+  Eye,
 } from 'lucide-react';
 
 export default function FBAdsTargeting() {
@@ -135,6 +136,7 @@ export default function FBAdsTargeting() {
     { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
     { icon: Crosshair, label: 'Captions & Video Script', path: '/app/targeting' },
     { icon: Target, label: 'FB Ads Targeting', path: '/app/fb-ads-targeting' },
+    { icon: Eye, label: 'Image Ad Analyzer', path: '/app/image-ad-analyzer' },
     { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
     { icon: FileText, label: 'Invoices', path: '/app/invoices' },
   ];

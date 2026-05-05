@@ -1,15 +1,15 @@
-import { useState, useRef } from 'react';
-import { Upload, Sparkles, Copy, Check, MessageSquare, ImageIcon, Wand2, X } from 'lucide-react';
-import { generateImageCaptions } from '@/lib/captionEngine';
-import type { ImageCaption } from '@/lib/captionEngine';
+import { useState, useRef, useEffect } from 'react';
+import { Upload, Sparkles, Copy, Check, ImageIcon, X, Target, MessageSquare, Eye, Loader2 } from 'lucide-react';
 
-export default function CaptionGenerator() {
+export default function ImageAdAnalyzer() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [imageDescription, setImageDescription] = useState('');
-  const [captions, setCaptions] = useState<ImageCaption[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [result, setResult] = useState<string>('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [activeTab, setActiveTab] = useState<'captions' | 'targeting'>('captions');
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -21,56 +21,99 @@ export default function CaptionGenerator() {
     const reader = new FileReader();
     reader.onload = () => {
       setUploadedImage(reader.result as string);
-      setCaptions([]);
+      setResult('');
     };
     reader.readAsDataURL(file);
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!uploadedImage) return;
     setIsGenerating(true);
+    setResult('');
 
-    setTimeout(() => {
-      const desc = imageDescription.trim() || 'ad image';
-      const result = generateImageCaptions(desc, uploadedImage);
-      setCaptions(result);
+    try {
+      const response = await fetch('/api/image-ad-analyzer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          imageDescription: imageDescription.trim() || 'a product in an advertisement image',
+          imageDataUrl: uploadedImage,
+        }),
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to analyze image');
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response stream');
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let fullText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          const data = trimmed.slice(6);
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.content) {
+              fullText += parsed.content;
+              setResult(fullText);
+            }
+          } catch {
+            // Skip malformed chunks
+          }
+        }
+      }
+    } catch (err: any) {
+      setResult(`❌ Error: ${err.message}`);
+    } finally {
       setIsGenerating(false);
-    }, 800);
+    }
   };
 
+  // Extract captions and targeting sections from the result
+  const sections = result ? parseSections(result) : null;
+
+  // Auto-scroll to results when they come in
+  useEffect(() => {
+    if (result && resultRef.current) {
+      resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [result]);
+
   const handleCopy = (text: string, index: number) => {
-    const fullText = `${text}\n${captions[index].hashtags.join(' ')}`;
-    navigator.clipboard.writeText(fullText);
+    navigator.clipboard.writeText(text);
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
   };
 
-  const platformColors: Record<string, string> = {
-    facebook: 'bg-blue-50 border-blue-200',
-    instagram: 'bg-pink-50 border-pink-200',
-    tiktok: 'bg-cyan-50 border-cyan-200',
-  };
-
-  const platformLabels: Record<string, string> = {
-    facebook: 'Facebook',
-    instagram: 'Instagram',
-    tiktok: 'TikTok',
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
-      <div className="max-w-4xl mx-auto px-4 py-10">
+      <div className="max-w-5xl mx-auto px-4 py-10">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-50 rounded-full mb-4">
-            <MessageSquare className="w-4 h-4 text-green-600" />
-            <span className="text-sm font-semibold text-green-700">AI Caption Generator</span>
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-violet-50 rounded-full mb-4">
+            <Eye className="w-4 h-4 text-violet-600" />
+            <span className="text-sm font-semibold text-violet-700">AI Image Ad Analyzer</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-3">
-            Mag-generate ng Ad Captions
+            Image Ad Analyzer
           </h1>
-          <p className="text-gray-600 max-w-lg mx-auto">
-            I-upload ang iyong ad image at makakuha ng 3 optimized captions with hashtags para sa Facebook, Instagram, at TikTok.
+          <p className="text-gray-600 max-w-2xl mx-auto">
+            I-upload ang iyong ad image at gagamit ang AI para i-analyze ito, mag-generate ng <strong>3 Taglish captions</strong>, at gumawa ng <strong>Facebook Ads targeting strategy</strong> para sa'yo.
           </p>
         </div>
 
@@ -86,7 +129,7 @@ export default function CaptionGenerator() {
               {!uploadedImage ? (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full h-64 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-blue-400 hover:bg-blue-50/50 transition-all"
+                  className="w-full h-64 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-3 hover:border-violet-400 hover:bg-violet-50/50 transition-all"
                 >
                   <Upload className="w-10 h-10 text-gray-400" />
                   <p className="text-sm text-gray-500">Click to upload image</p>
@@ -100,7 +143,7 @@ export default function CaptionGenerator() {
                     className="w-full h-64 object-contain rounded-xl border border-gray-200 bg-gray-50"
                   />
                   <button
-                    onClick={() => { setUploadedImage(null); setCaptions([]); }}
+                    onClick={() => { setUploadedImage(null); setResult(''); }}
                     className="absolute top-2 right-2 p-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                   >
                     <X className="w-3 h-3" />
@@ -126,10 +169,10 @@ export default function CaptionGenerator() {
                 value={imageDescription}
                 onChange={(e) => setImageDescription(e.target.value)}
                 placeholder="e.g., Organic face serum, Fitness smartwatch, Baby stroller..."
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-violet-500 transition-all"
               />
               <p className="text-xs text-gray-500 mt-2">
-                Mas maganda kung may description — mas accurate ang captions!
+                Mas maganda kung may description — mas accurate ang AI analysis!
               </p>
             </div>
 
@@ -137,78 +180,135 @@ export default function CaptionGenerator() {
             <button
               onClick={handleGenerate}
               disabled={!uploadedImage || isGenerating}
-              className="w-full py-4 bg-gray-900 text-white rounded-xl font-bold text-lg hover:bg-gray-800 transition-all disabled:opacity-40 flex items-center justify-center gap-2"
+              className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-violet-200"
             >
               {isGenerating ? (
                 <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Generating Captions...
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  AI is Analyzing Image...
                 </>
               ) : (
                 <>
                   <Sparkles className="w-5 h-5" />
-                  Generate Captions
+                  Analyze with AI
                 </>
               )}
             </button>
           </div>
 
           {/* Right Column — Results */}
-          <div>
-            {captions.length > 0 ? (
+          <div ref={resultRef}>
+            {result ? (
               <div className="space-y-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <MessageSquare className="w-5 h-5 text-green-600" />
-                  <h3 className="text-lg font-bold text-gray-900">Generated Captions</h3>
-                  <span className="text-xs text-gray-500">{captions.length} captions</span>
-                </div>
-
-                {captions.map((cap, i) => (
-                  <div
-                    key={i}
-                    className={`rounded-2xl p-5 border-2 ${platformColors[cap.platform] || 'bg-gray-50 border-gray-200'} transition-all hover:shadow-md`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-bold text-gray-500 uppercase">
-                        {platformLabels[cap.platform] || cap.platform}
-                      </span>
-                      <span className="text-xs text-gray-400">#{i + 1}</span>
-                    </div>
-                    <p className="text-sm text-gray-800 leading-relaxed mb-3">{cap.text}</p>
-                    <p className="text-xs text-gray-500 mb-4">{cap.hashtags.join(' ')}</p>
+                {/* Tab Switcher */}
+                {sections && (
+                  <div className="flex gap-2 bg-white rounded-xl p-1.5 border border-gray-200 shadow-sm">
                     <button
-                      onClick={() => handleCopy(cap.text, i)}
-                      className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors flex items-center gap-2"
+                      onClick={() => setActiveTab('captions')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
+                        activeTab === 'captions'
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
                     >
-                      {copiedIndex === i ? (
-                        <>
-                          <Check className="w-4 h-4 text-green-600" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <Copy className="w-4 h-4" />
-                          Copy with Hashtags
-                        </>
-                      )}
+                      <MessageSquare className="w-4 h-4" />
+                      Taglish Captions
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('targeting')}
+                      className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
+                        activeTab === 'targeting'
+                          ? 'bg-violet-600 text-white shadow-md'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      <Target className="w-4 h-4" />
+                      FB Ads Targeting
                     </button>
                   </div>
-                ))}
+                )}
 
-                {/* Action */}
+                {/* Content */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                  {activeTab === 'captions' && sections?.captions && (
+                    <div className="space-y-6">
+                      <div className="flex items-center gap-2 mb-2">
+                        <MessageSquare className="w-5 h-5 text-violet-600" />
+                        <h3 className="text-lg font-bold text-gray-900">Taglish Captions</h3>
+                      </div>
+                      {sections.captions.map((cap, i) => (
+                        <div
+                          key={i}
+                          className="rounded-xl border border-gray-200 p-5 hover:border-violet-200 hover:shadow-sm transition-all"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-bold text-violet-600 uppercase tracking-wider">
+                              {cap.platform || `Caption ${i + 1}`}
+                            </span>
+                            <span className="text-xs text-gray-400">#{i + 1}</span>
+                          </div>
+                          <p className="text-sm text-gray-800 leading-relaxed mb-3 whitespace-pre-wrap">{cap.text}</p>
+                          {cap.hashtags && (
+                            <p className="text-xs text-violet-500 mb-4">{cap.hashtags}</p>
+                          )}
+                          <button
+                            onClick={() => handleCopy(`${cap.text}\n${cap.hashtags || ''}`, i)}
+                            className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-violet-50 hover:border-violet-200 transition-colors flex items-center gap-2"
+                          >
+                            {copiedIndex === i ? (
+                              <><Check className="w-4 h-4 text-green-600" /> Copied!</>
+                            ) : (
+                              <><Copy className="w-4 h-4" /> Copy with Hashtags</>
+                            )}
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeTab === 'targeting' && sections?.targeting && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Target className="w-5 h-5 text-violet-600" />
+                        <h3 className="text-lg font-bold text-gray-900">FB Ads Targeting Strategy</h3>
+                      </div>
+                      <div className="prose prose-sm max-w-none text-gray-700 whitespace-pre-wrap leading-relaxed">
+                        {sections.targeting}
+                      </div>
+                      <button
+                        onClick={() => handleCopy(sections.targeting!, 99)}
+                        className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-semibold text-gray-700 hover:bg-violet-50 hover:border-violet-200 transition-colors flex items-center gap-2"
+                      >
+                        {copiedIndex === 99 ? (
+                          <><Check className="w-4 h-4 text-green-600" /> Copied!</>
+                        ) : (
+                          <><Copy className="w-4 h-4" /> Copy Targeting Strategy</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {!sections && (
+                    <div className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      {result}
+                    </div>
+                  )}
+                </div>
+
+                {/* Reset */}
                 <button
-                  onClick={() => { setCaptions([]); setImageDescription(''); }}
+                  onClick={() => { setResult(''); setImageDescription(''); }}
                   className="w-full py-3 bg-white border-2 border-gray-200 rounded-xl text-gray-700 font-semibold hover:border-gray-300 transition-all"
                 >
-                  Generate New Captions
+                  Analyze New Image
                 </button>
               </div>
             ) : (
               <div className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 text-center">
                 <ImageIcon className="w-12 h-12 text-gray-200 mx-auto mb-4" />
-                <h3 className="text-lg font-semibold text-gray-400 mb-2">No Captions Yet</h3>
+                <h3 className="text-lg font-semibold text-gray-400 mb-2">No Analysis Yet</h3>
                 <p className="text-sm text-gray-400">
-                  Upload an image and click &ldquo;Generate Captions&rdquo; to get started.
+                  Upload an image and click <strong>"Analyze with AI"</strong> to get Taglish captions + FB Ads targeting strategy.
                 </p>
               </div>
             )}
@@ -217,4 +317,57 @@ export default function CaptionGenerator() {
       </div>
     </div>
   );
+}
+
+// Helper to parse the AI response into sections
+function parseSections(text: string): { captions: { text: string; platform: string; hashtags: string }[]; targeting: string } | null {
+  const captions: { text: string; platform: string; hashtags: string }[] = [];
+  let targeting = '';
+
+  // Try to find SECTION 3 or FB ADS TARGETING section
+  const targetingMatch = text.match(/(?:##\s*SECTION\s*3|##\s*FB ADS TARGETING|FB ADS TARGETING STRATEGY)[:\s]*([\s\S]*?)$/i);
+  if (targetingMatch) {
+    targeting = targetingMatch[1].trim();
+  }
+
+  // Try to find captions — look for "Caption N (Platform):" patterns
+  const captionRegex = /\*\*Caption\s*(\d+)\s*\(([^)]+)\):\*\*\s*([\s\S]*?)(?=\*\*Caption\s*\d+\s*\(|##\s*SECTION\s*3|##\s*FB ADS|$)/gi;
+  let match;
+  while ((match = captionRegex.exec(text)) !== null) {
+    const fullText = match[3].trim();
+    // Split hashtags from text
+    const hashtagMatch = fullText.match(/(#[\w#]+[\s#]*[\w#]*)\s*$/);
+    const captionText = hashtagMatch ? fullText.slice(0, fullText.lastIndexOf(hashtagMatch[1])).trim() : fullText;
+    const hashtags = hashtagMatch ? hashtagMatch[1].trim() : '';
+    captions.push({
+      text: captionText,
+      platform: match[2].trim(),
+      hashtags,
+    });
+  }
+
+  // Fallback: if regex didn't match, try to find captions between sections
+  if (captions.length === 0) {
+    // Try to extract between SECTION 2 and SECTION 3
+    const section2Match = text.match(/##\s*SECTION\s*2[:\s]*([\s\S]*?)(?:##\s*SECTION\s*3|##\s*FB ADS)/i);
+    if (section2Match) {
+      const raw = section2Match[1].trim();
+      // Split by numbered captions
+      const parts = raw.split(/\*\*Caption\s*\d+/i);
+      parts.forEach((part, i) => {
+        if (i === 0) return;
+        const platformMatch = part.match(/\(([^)]+)\):\*\*/);
+        const platform = platformMatch ? platformMatch[1].trim() : `Caption ${i}`;
+        const text = part.replace(/\([^)]+\):\*\*/, '').trim();
+        const hashtagMatch = text.match(/(#[\w#]+[\s#]*[\w#]*)\s*$/);
+        const captionText = hashtagMatch ? text.slice(0, text.lastIndexOf(hashtagMatch[1])).trim() : text;
+        const hashtags = hashtagMatch ? hashtagMatch[1].trim() : '';
+        captions.push({ text: captionText, platform, hashtags });
+      });
+    }
+  }
+
+  if (captions.length === 0 && !targeting) return null;
+
+  return { captions, targeting };
 }
