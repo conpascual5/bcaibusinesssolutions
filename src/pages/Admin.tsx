@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
-import { Users, Settings, Shield, CheckCircle, XCircle, Key, Save } from 'lucide-react';
+import { Users, Settings, Shield, CheckCircle, XCircle, Key, Save, Check } from 'lucide-react';
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -17,8 +17,13 @@ export default function Admin() {
   const setApiKeyMutation = trpc.settings.setApiKey.useMutation({
     onSuccess: () => refetchApiKey(),
   });
+  const [deepseekSaved, setDeepseekSaved] = useState(false);
   const setDeepseekKeyMutation = trpc.settings.setDeepseekKey.useMutation({
-    onSuccess: () => refetchDeepseekKey(),
+    onSuccess: () => {
+      refetchDeepseekKey();
+      setDeepseekSaved(true);
+      setTimeout(() => setDeepseekSaved(false), 2000);
+    },
   });
 
   const toggleActiveMutation = trpc.user.toggleActive.useMutation({
@@ -198,8 +203,8 @@ export default function Admin() {
                   disabled={!deepseekKey}
                   className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary/20"
                 >
-                  <Save className="w-4 h-4 stroke-[1.5]" />
-                  Save Deepseek Key
+                  {deepseekSaved ? <Check className="w-4 h-4 stroke-[1.5]" /> : <Save className="w-4 h-4 stroke-[1.5]" />}
+                  {deepseekSaved ? 'Saved!' : 'Save Deepseek Key'}
                 </button>
               </div>
             </div>
