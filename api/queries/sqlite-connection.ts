@@ -181,6 +181,16 @@ export async function getDb() {
       // Create tables synchronously (fast for SQL.js)
       try {
         createTablesSync(sqlJsDb);
+
+        // Seed admin user if not exists
+        const { createHash } = await import("node:crypto");
+        const adminHash = createHash("sha256").update("admin123" + env.jwtSecret).digest("base64");
+        sqlJsDb.run(
+          `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
+           VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,
+          [adminHash]
+        );
+
         saveDb();
         initPromise = Promise.resolve();
       } catch (err) {
