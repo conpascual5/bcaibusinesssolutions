@@ -6,52 +6,6 @@ import { eq } from "drizzle-orm";
 import { hashPassword, verifyPassword, signJWT } from "./auth-utils.js";
 
 export const authRouter = createRouter({
-  register: publicQuery
-    .input(
-      z.object({
-        email: z.string().email().max(255),
-        password: z.string().min(6).max(100),
-        name: z.string().min(1).max(100),
-      })
-    )
-    .mutation(async ({ input }) => {
-      let db;
-      try {
-        db = await Promise.race([
-          getDbReady(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error("Database connection timed out")), 15000)
-          ),
-        ]);
-      } catch (err: any) {
-        console.error("[auth.register] getDbReady failed:", err?.message ?? err);
-        console.error("[auth.register] stack:", err?.stack ?? "(no stack)");
-        throw new Error("Database connection failed. Please try again later.");
-      }
-      try {
-        const existing = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
-        if (existing.length > 0) {
-          throw new Error("Email already registered");
-        }
-        const passwordHash = await hashPassword(input.password);
-        const result = await db.insert(users).values({
-          email: input.email,
-          passwordHash,
-          name: input.name,
-          isActive: true,
-          isAdmin: false,
-        }).returning({ id: users.id });
-        const userId = result[0].id;
-        
-        const token = signJWT({ userId, email: input.email, isAdmin: false });
-        return { token, user: { id: userId, email: input.email, name: input.name, isAdmin: false } };
-      } catch (err: any) {
-        console.error("[auth.register] query error:", err?.message ?? err);
-        console.error("[auth.register] stack:", err?.stack ?? "(no stack)");
-        throw err;
-      }
-    }),
-
   login: publicQuery
     .input(
       z.object({

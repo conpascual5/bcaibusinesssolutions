@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Sparkles, Eye, EyeOff, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { trpc } from '@/providers/trpc';
@@ -7,11 +7,9 @@ import { useAuth } from '@/providers/auth';
 export default function Auth() {
   const navigate = useNavigate();
   const { setAuth } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -51,33 +49,8 @@ export default function Auth() {
     },
   });
 
-  const registerMutation = trpc.auth.register.useMutation({
-    onSuccess: (data) => {
-      console.log('[auth] Register success for:', data.user.email);
-      retryCountRef.current = 0;
-      setAuth(data.token, data.user);
-      navigate('/app');
-    },
-    onError: (err) => {
-      console.error('[auth] Register error:', err);
-      const msg = err.message || '';
-      // Retry on timeout/504 errors (server cold start)
-      if (retryCountRef.current < 2 && (msg.includes('504') || msg.includes('timed out') || msg.includes('Unexpected token') || msg.includes('fetch failed'))) {
-        retryCountRef.current += 1;
-        const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 8000);
-        setError(`Server is starting up... retrying (${retryCountRef.current}/3)`);
-        setTimeout(() => {
-          registerMutation.mutate({ email, password, name });
-        }, delay);
-        return;
-      }
-      retryCountRef.current = 0;
-      setError(msg || 'Registration failed. Email may already be in use.');
-    },
-  });
-
   const forgotPasswordMutation = trpc.auth.forgotPassword.useMutation({
-    onSuccess: (data) => {
+    onSuccess: () => {
       retryCountRef.current = 0;
       setForgotSent(true);
     },
@@ -99,26 +72,18 @@ export default function Auth() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    if (isLogin) {
-      // Quick health check before attempting login
-      try {
-        const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
-        if (!res.ok) {
-          setError('Server is not ready yet. Please wait a moment and try again.');
-          return;
-        }
-      } catch {
-        // Health check failed — still try the login, it might work
-      }
-      retryCountRef.current = 0;
-      loginMutation.mutate({ email, password });
-    } else {
-      if (!name.trim()) {
-        setError('Paki-enter ang iyong pangalan');
+    // Quick health check before attempting login
+    try {
+      const res = await fetch('/api/health', { signal: AbortSignal.timeout(5000) });
+      if (!res.ok) {
+        setError('Server is not ready yet. Please wait a moment and try again.');
         return;
       }
-      registerMutation.mutate({ email, password, name });
+    } catch {
+      // Health check failed — still try the login, it might work
     }
+    retryCountRef.current = 0;
+    loginMutation.mutate({ email, password });
   };
 
   const handleForgotSubmit = (e: React.FormEvent) => {
@@ -131,7 +96,7 @@ export default function Auth() {
     forgotPasswordMutation.mutate({ email: forgotEmail });
   };
 
-  const isLoading = loginMutation.isPending || registerMutation.isPending;
+  const isLoading = loginMutation.isPending;
 
   // Forgot Password View
   if (showForgotPassword) {
@@ -221,10 +186,10 @@ export default function Auth() {
             </div>
           </div>
           <h1 className="text-2xl font-bold text-gray-900">
-            {isLogin ? 'Mag-Log In' : 'Mag-Sign Up'}
+            Mag-Log In
           </h1>
           <p className="text-gray-500 mt-1">
-            {isLogin ? 'Welcome back! I-login ang iyong account.' : 'Gumawa ng libreng account ngayon.'}
+            Welcome back! I-login ang iyong account.
           </p>
         </div>
 
@@ -236,21 +201,6 @@ export default function Auth() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {!isLogin && (
-              <>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pangalan</label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Juan Dela Cruz"
-                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                  />
-                </div>
-              </>
-            )}
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
               <input
@@ -285,17 +235,15 @@ export default function Auth() {
               </div>
             </div>
 
-            {isLogin && (
-              <div className="text-right">
-                <button
-                  type="button"
-                  onClick={() => { setShowForgotPassword(true); setError(''); }}
-                  className="text-sm text-blue-600 font-medium hover:underline"
-                >
-                  Forgot Password?
-                </button>
-              </div>
-            )}
+            <div className="text-right">
+              <button
+                type="button"
+                onClick={() => { setShowForgotPassword(true); setError(''); }}
+                className="text-sm text-blue-600 font-medium hover:underline"
+              >
+                Forgot Password?
+              </button>
+            </div>
 
             <button
               type="submit"
@@ -303,21 +251,9 @@ export default function Auth() {
               className="w-full py-3 bg-gray-900 text-white rounded-xl font-semibold hover:bg-gray-800 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
             >
               {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-              {isLogin ? 'Mag-Log In' : 'Mag-Sign Up'}
+              Mag-Log In
             </button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-500">
-              {isLogin ? 'Wala pang account?' : 'May account na?'}{' '}
-              <button
-                onClick={() => { setIsLogin(!isLogin); setError(''); }}
-                className="text-blue-600 font-semibold hover:underline"
-              >
-                {isLogin ? 'Mag-Sign Up' : 'Mag-Log In'}
-              </button>
-            </p>
-          </div>
         </div>
 
         <p className="text-center text-xs text-gray-400 mt-6">

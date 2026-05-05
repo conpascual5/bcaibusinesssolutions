@@ -120,18 +120,80 @@ ${text}`;
 
 // Auto-init endpoint — creates tables and seeds admin directly (no shell commands)
 // Visit /api/init-db once to set up the database
+// Works on Vercel (Supabase Postgres via drizzle) and local dev (SQLite or Neon)
 app.get("/api/init-db", async (c) => {
   try {
     const results: string[] = [];
     const { env } = await import("./lib/env.js");
 
-    if (!env.databaseUrl) {
-      return c.json({ success: false, error: "DATABASE_URL not configured" }, 400);
-    }
+    // On Vercel, use the Supabase Postgres connection via drizzle
+    if (env.isVercel) {
+      results.push("Using Supabase Postgres (Vercel)...");
+      const { getSupabaseDb } = await import("./queries/supabase-db.js");
+      const db = await getSupabaseDb();
+      results.push("✅ Connected to Supabase Postgres");
 
-    const isNeon = env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://");
+      // Create all tables
+      await db.execute(`CREATE TABLE IF NOT EXISTS users (
+        id SERIAL PRIMARY KEY, email VARCHAR(255) NOT NULL UNIQUE,
+        password_hash VARCHAR(255) NOT NULL, name VARCHAR(100) NOT NULL,
+        is_active BOOLEAN NOT NULL DEFAULT true, is_admin BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS searches (
+        id SERIAL PRIMARY KEY, user_id INTEGER,
+        product_query VARCHAR(500) NOT NULL, ip_address VARCHAR(100),
+        user_agent TEXT, created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS settings (
+        id SERIAL PRIMARY KEY, key VARCHAR(100) NOT NULL UNIQUE,
+        value TEXT NOT NULL, updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS images (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        url TEXT NOT NULL, prompt TEXT NOT NULL,
+        width INTEGER NOT NULL DEFAULT 0, height INTEGER NOT NULL DEFAULT 0,
+        content_type VARCHAR(50) NOT NULL DEFAULT 'image/jpeg',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS chats (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY, chat_id INTEGER NOT NULL,
+        role VARCHAR(20) NOT NULL, content TEXT NOT NULL,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS generated_images (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        product_image_url TEXT NOT NULL, theme_title VARCHAR(200) NOT NULL,
+        prompt TEXT NOT NULL, result_image_url TEXT, overlay_text VARCHAR(500),
+        overlay_settings TEXT, final_image_url TEXT,
+        status VARCHAR(50) NOT NULL DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      await db.execute(`CREATE TABLE IF NOT EXISTS chat_messages (
+        id SERIAL PRIMARY KEY, user_id INTEGER NOT NULL,
+        user_name VARCHAR(100) NOT NULL, user_email VARCHAR(255) NOT NULL,
+        message TEXT NOT NULL, is_admin BOOLEAN NOT NULL DEFAULT false,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+      )`);
+      results.push("✅ All tables created");
 
-    if (isNeon) {
+      // Seed admin user
+      const { createHash } = await import("node:crypto");
+      const hash = createHash("sha256").update("admin123" + "4hQ0T1VwbgkK9NCRZfpEMnyTb3jY88wr").digest("base64");
+      await db.execute(
+        `INSERT INTO users (email, password_hash, name, is_active, is_admin)
+         VALUES ('conpascual5@gmail.com', '${hash}', 'BC AI Admin', true, true)
+         ON CONFLICT (email) DO NOTHING`
+      );
+      results.push("✅ Admin user seeded (conpascual5@gmail.com / admin123)");
+    } else if (env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"))) {
       results.push("Using Neon/Postgres database...");
       const { neon } = await import("@neondatabase/serverless");
       const sqlNeon = neon(env.databaseUrl);
@@ -339,12 +401,18 @@ app.post("/api/upload", bodyLimit({ maxSize: 50 * 1024 * 1024 }), async (c) => {
   }
 });
 
-// List uploaded sample images (cached for 30s to avoid repeated filesystem reads)
+// List uploaded sample images
+// On Vercel, there's no local filesystem, so we return empty
+// In local dev, reads from public/samples directory
 let samplesCache: { images: { url: string; name: string }[]; ts: number } | null = null;
 const SAMPLES_CACHE_TTL = 30_000;
 
 app.get("/api/samples", async (c) => {
   try {
+    // On Vercel, return empty immediately (no local filesystem)
+    if (env.isVercel) {
+      return c.json({ images: [] });
+    }
     const now = Date.now();
     if (samplesCache && (now - samplesCache.ts) < SAMPLES_CACHE_TTL) {
       return c.json({ images: samplesCache.images });
