@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware.js";
-import { getDbReady } from "./queries/connection.js";
+import { getDbReady, saveDb } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { eq, sql } from "drizzle-orm";
 import { hashPassword, verifyPassword, signJWT } from "./auth-utils.js";
@@ -81,6 +81,7 @@ export const authRouter = createRouter({
           isActive: 1,
           isAdmin,
         }).returning();
+        await saveDb();
 
         // If existing customer, auto-create VIP subscription
         if (input.isExistingCustomer) {

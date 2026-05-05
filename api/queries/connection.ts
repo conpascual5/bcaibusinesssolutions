@@ -80,3 +80,12 @@ export async function testDbConnection(): Promise<boolean> {
   }
   return testSqliteConnection();
 }
+
+/** Save the SQLite database to disk (only needed for SQL.js in-memory DB) */
+export async function saveDb() {
+  if (useSupabase || useNeon) return;
+  const db = await getDbReady() as any;
+  if (db.__saveDb) {
+    db.__saveDb();
+  }
+}

@@ -181,6 +181,10 @@ export async function getDb() {
       schema: { ...schema, ...relations },
       logger: false,
     }) as any;
+
+    // Expose saveDb for manual saving after write operations
+    (newDb as any).__saveDb = saveDb;
+
     db = newDb;
 
     // If loaded from pre-seeded seed.db, tables already exist — skip creation

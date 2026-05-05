@@ -160,11 +160,6 @@ export default function Auth() {
         <p className="text-center text-xs text-gray-400 mt-6">
           BC AI Business Solutions — Social Trend Analyzer
         </p>
-        <div className="mt-4 text-center">
-          <p className="text-xs text-gray-400">
-            Admin login: <span className="text-gray-500">conpascual5@gmail.com</span>
-          </p>
-        </div>
       </div>
     </div>
   );

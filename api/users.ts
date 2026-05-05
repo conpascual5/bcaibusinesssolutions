@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery, authedQuery } from "./middleware.js";
-import { getDbReady } from "./queries/connection.js";
+import { getDbReady, saveDb } from "./queries/connection.js";
 import { users } from "../db/schema.js";
 import { desc, eq } from "drizzle-orm";
 
@@ -21,6 +21,7 @@ export const userRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = await getDbReady() as any;
       await db.update(users).set({ isActive: input.isActive ? 1 : 0 }).where(eq(users.id, input.userId));
+      await saveDb();
       return { success: true };
     }),
 
@@ -29,6 +30,7 @@ export const userRouter = createRouter({
     .mutation(async ({ input }) => {
       const db = await getDbReady() as any;
       await db.update(users).set({ plan: input.plan }).where(eq(users.id, input.userId));
+      await saveDb();
       return { success: true, plan: input.plan };
     }),
 

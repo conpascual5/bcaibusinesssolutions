@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createRouter, adminQuery } from "./middleware.js";
-import { getDbReady } from "./queries/connection.js";
+import { getDbReady, saveDb } from "./queries/connection.js";
 import { settings } from "../db/schema.js";
 import { eq } from "drizzle-orm";
 
@@ -25,6 +25,7 @@ export const settingsRouter = createRouter({
       } else {
         await db.insert(settings).values({ key: FAL_KEY, value: input.apiKey });
       }
+      await saveDb();
       return { success: true };
     }),
 
@@ -57,6 +58,7 @@ export const settingsRouter = createRouter({
         await db.insert(settings).values({ key: DEEPSEEK_KEY, value: input.apiKey });
         console.log("[settings] inserted new row");
       }
+      await saveDb();
       return { success: true };
     }),
 
@@ -89,6 +91,7 @@ export const settingsRouter = createRouter({
         await db.insert(settings).values({ key: OPENAI_KEY, value: input.apiKey });
         console.log("[settings] inserted new row");
       }
+      await saveDb();
       return { success: true };
     }),
 
