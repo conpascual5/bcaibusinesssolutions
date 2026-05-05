@@ -40,7 +40,10 @@ import {
   FileText,
   Wand2,
   Eye,
+  Crown,
 } from 'lucide-react';
+import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 export default function FBAdsTargeting() {
   const navigate = useNavigate();
@@ -69,7 +72,10 @@ export default function FBAdsTargeting() {
   const [output, setOutput] = useState('');
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const outputRef = useRef<HTMLDivElement>(null);
+
+  const { usage, loading: usageLoading, increment } = useUsageLimit('fb-ads-targeting');
 
   useEffect(() => {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Sparkles, Copy, Check, ImageIcon, X, Target, MessageSquare, Eye, Loader2 } from 'lucide-react';
+import { Upload, Sparkles, Copy, Check, ImageIcon, X, Target, MessageSquare, Eye, Loader2, AlertCircle } from 'lucide-react';
+import { useUsageLimit } from '@/hooks/useUsageLimit';
+import UpgradePrompt from '@/components/UpgradePrompt';
 
 export default function ImageAdAnalyzer() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -8,8 +10,11 @@ export default function ImageAdAnalyzer() {
   const [result, setResult] = useState<string>('');
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<'captions' | 'targeting'>('captions');
+  const [showUpgrade, setShowUpgrade] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resultRef = useRef<HTMLDivElement>(null);
+
+  const { usage, loading: usageLoading, increment } = useUsageLimit('image-ad-analyzer');
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,6 +33,18 @@ export default function ImageAdAnalyzer() {
 
   const handleGenerate = async () => {
     if (!uploadedImage) return;
+
+    // Check usage limit first
+    const incResult = await increment();
+    if (!incResult.success) {
+      if (incResult.limitReached) {
+        setShowUpgrade(true);
+        return;
+      }
+      alert(incResult.error || 'Failed to check usage');
+      return;
+    }
+
     setIsGenerating(true);
     setResult('');
 
@@ -84,10 +101,8 @@ export default function ImageAdAnalyzer() {
     }
   };
 
-  // Extract captions and targeting sections from the result
   const sections = result ? parseSections(result) : null;
 
-  // Auto-scroll to results when they come in
   useEffect(() => {
     if (result && resultRef.current) {
       resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -99,6 +114,10 @@ export default function ImageAdAnalyzer() {
     setCopiedIndex(index);
     setTimeout(() => setCopiedIndex(null), 2000);
   };
+
+  const remaining = usage ? usage.remaining : 0;
+  const limit = usage ? usage.limit : 0;
+  const isPro = usage?.isPro ?? false;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -115,6 +134,22 @@ export default function ImageAdAnalyzer() {
           <p className="text-gray-600 max-w-2xl mx-auto">
             I-upload ang iyong ad image at gagamit ang AI para i-analyze ito, mag-generate ng <strong>3 Taglish captions</strong>, at gumawa ng <strong>Facebook Ads targeting strategy</strong> para sa'yo.
           </p>
+
+          {/* Usage indicator */}
+          {!usageLoading && !isPro && (
+            <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-white rounded-full border border-gray-200 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+              <span className="text-sm text-gray-600">
+                <strong className="text-gray-900">{remaining}</strong>/{limit} analyses remaining this month
+              </span>
+            </div>
+          )}
+          {!usageLoading && isPro && (
+            <div className="inline-flex items-center gap-2 mt-4 px-4 py-2 bg-gradient-to-r from-amber-50 to-orange-50 rounded-full border border-amber-200 shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-sm font-semibold text-amber-700">Unlimited — Pro Plan</span>
+            </div>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -179,13 +214,18 @@ export default function ImageAdAnalyzer() {
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
-              disabled={!uploadedImage || isGenerating}
+              disabled={!uploadedImage || isGenerating || (!isPro && remaining <= 0)}
               className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-violet-200"
             >
               {isGenerating ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
                   AI is Analyzing Image...
+                </>
+              ) : !isPro && remaining <= 0 ? (
+                <>
+                  <AlertCircle className="w-5 h-5" />
+                  Limit Reached — Upgrade to Pro
                 </>
               ) : (
                 <>
@@ -194,6 +234,16 @@ export default function ImageAdAnalyzer() {
                 </>
               )}
             </button>
+
+            {/* Upgrade prompt inline */}
+            {showUpgrade && (
+              <UpgradePrompt
+                feature="image-ad-analyzer"
+                used={usage?.used ?? 0}
+                limit={usage?.limit ?? 5}
+                onClose={() => setShowUpgrade(false)}
+              />
+            )}
           </div>
 
           {/* Right Column — Results */}
@@ -324,18 +374,15 @@ function parseSections(text: string): { captions: { text: string; platform: stri
   const captions: { text: string; platform: string; hashtags: string }[] = [];
   let targeting = '';
 
-  // Try to find SECTION 3 or FB ADS TARGETING section
   const targetingMatch = text.match(/(?:##\s*SECTION\s*3|##\s*FB ADS TARGETING|FB ADS TARGETING STRATEGY)[:\s]*([\s\S]*?)$/i);
   if (targetingMatch) {
     targeting = targetingMatch[1].trim();
   }
 
-  // Try to find captions — look for "Caption N (Platform):" patterns
   const captionRegex = /\*\*Caption\s*(\d+)\s*\(([^)]+)\):\*\*\s*([\s\S]*?)(?=\*\*Caption\s*\d+\s*\(|##\s*SECTION\s*3|##\s*FB ADS|$)/gi;
   let match;
   while ((match = captionRegex.exec(text)) !== null) {
     const fullText = match[3].trim();
-    // Split hashtags from text
     const hashtagMatch = fullText.match(/(#[\w#]+[\s#]*[\w#]*)\s*$/);
     const captionText = hashtagMatch ? fullText.slice(0, fullText.lastIndexOf(hashtagMatch[1])).trim() : fullText;
     const hashtags = hashtagMatch ? hashtagMatch[1].trim() : '';
@@ -346,13 +393,10 @@ function parseSections(text: string): { captions: { text: string; platform: stri
     });
   }
 
-  // Fallback: if regex didn't match, try to find captions between sections
   if (captions.length === 0) {
-    // Try to extract between SECTION 2 and SECTION 3
     const section2Match = text.match(/##\s*SECTION\s*2[:\s]*([\s\S]*?)(?:##\s*SECTION\s*3|##\s*FB ADS)/i);
     if (section2Match) {
       const raw = section2Match[1].trim();
-      // Split by numbered captions
       const parts = raw.split(/\*\*Caption\s*\d+/i);
       parts.forEach((part, i) => {
         if (i === 0) return;

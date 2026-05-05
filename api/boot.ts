@@ -35,6 +35,10 @@ app.route("/", fbAdsTargeting);
 import imageAdAnalyzer from "./image-ad-analyzer.js";
 app.route("/", imageAdAnalyzer);
 
+// Mount Usage tracking routes
+import usageApp from "./usage.js";
+app.route("/", usageApp);
+
 // Global error handler — ensures all errors return JSON
 app.onError((err, c) => {
   console.error("[Hono error]", err);
