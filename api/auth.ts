@@ -54,6 +54,7 @@ export const authRouter = createRouter({
         email: z.string().email(),
         password: z.string().min(6),
         name: z.string().min(1),
+        isExistingCustomer: z.boolean().optional().default(false),
       })
     )
     .mutation(async ({ input }) => {
@@ -77,6 +78,24 @@ export const authRouter = createRouter({
           isActive: 1,
           isAdmin: 0,
         }).returning();
+
+        // If existing customer, auto-create VIP subscription
+        if (input.isExistingCustomer) {
+          try {
+            const { getSupabaseClient } = await import("./queries/supabase-client.js");
+            const supabase = getSupabaseClient();
+            // @ts-expect-error - subscriptions table not in TS types
+            await supabase.from("subscriptions").insert({
+              user_id: user.id,
+              plan: "vip",
+              status: "active",
+            });
+            console.log(`[auth.register] VIP subscription created for user ${user.id} (${input.email})`);
+          } catch (subErr: any) {
+            console.error("[auth.register] Failed to create VIP subscription:", subErr?.message ?? subErr);
+            // Don't block registration if subscription creation fails
+          }
+        }
         
         const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
         return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin } };

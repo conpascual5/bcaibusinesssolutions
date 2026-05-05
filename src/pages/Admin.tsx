@@ -2,7 +2,13 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
-import { Users, Settings, Shield, CheckCircle, XCircle, Key, Save, Check } from 'lucide-react';
+import { Users, Settings, Shield, CheckCircle, XCircle, Key, Save, Check, Star, Crown, Sparkles } from 'lucide-react';
+
+const PLAN_OPTIONS = [
+  { value: 'free', label: 'Free', icon: Sparkles, color: 'text-gray-500' },
+  { value: 'pro', label: 'Pro', icon: Crown, color: 'text-amber-500' },
+  { value: 'vip', label: 'VIP', icon: Star, color: 'text-purple-500' },
+] as const;
 
 export default function Admin() {
   const navigate = useNavigate();
@@ -27,6 +33,10 @@ export default function Admin() {
   });
 
   const toggleActiveMutation = trpc.user.toggleActive.useMutation({
+    onSuccess: () => refetchUsers(),
+  });
+
+  const setPlanMutation = trpc.user.setPlan.useMutation({
     onSuccess: () => refetchUsers(),
   });
 
@@ -97,13 +107,14 @@ export default function Admin() {
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Joined</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {usersList?.map((u) => (
+                  {usersList?.map((u: any) => (
                     <tr key={u.id} className="hover:bg-accent/50 transition-colors">
                       <td className="px-6 py-4 text-sm text-muted-foreground">{u.id}</td>
                       <td className="px-6 py-4 text-sm font-medium text-foreground">{u.name}</td>
@@ -117,6 +128,30 @@ export default function Admin() {
                           {u.isAdmin ? <Shield className="w-3 h-3" /> : <Users className="w-3 h-3" />}
                           {u.isAdmin ? 'Admin' : 'User'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="relative">
+                          <select
+                            value={u.plan || 'free'}
+                            onChange={(e) => setPlanMutation.mutate({ userId: u.id, plan: e.target.value as 'free' | 'pro' | 'vip' })}
+                            className={`appearance-none px-3 py-1.5 pr-8 rounded-lg text-xs font-semibold border cursor-pointer transition-all focus:outline-none focus:ring-2 focus:ring-ring ${
+                              u.plan === 'vip'
+                                ? 'bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800'
+                                : u.plan === 'pro'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800'
+                                : 'bg-muted text-muted-foreground border-border'
+                            }`}
+                          >
+                            {PLAN_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>{opt.label}</option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                            <svg className="w-3 h-3 text-current opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${

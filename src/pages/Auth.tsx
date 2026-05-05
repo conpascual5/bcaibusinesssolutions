@@ -11,6 +11,7 @@ export default function Auth() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [isExistingCustomer, setIsExistingCustomer] = useState(false);
   const [error, setError] = useState('');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
@@ -75,7 +76,7 @@ export default function Auth() {
         const res = await fetch('/api/trpc/auth.register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 0: { email, password, name } }),
+          body: JSON.stringify({ 0: { email, password, name, isExistingCustomer } }),
         });
         const json = await res.json();
         if (json.error) throw new Error(json.error.message || 'Registration failed');
@@ -279,6 +280,25 @@ export default function Auth() {
                 </button>
               </div>
             </div>
+
+            {!isLogin && (
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  checked={isExistingCustomer}
+                  onChange={(e) => setIsExistingCustomer(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900 transition-colors">
+                    I am an existing customer
+                  </span>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Existing customers get <span className="font-semibold text-purple-600">VIP status</span> with 100 uses/month across all tools
+                  </p>
+                </div>
+              </label>
+            )}
 
             {isLogin && (
               <div className="text-right">
