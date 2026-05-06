@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { env } from "./lib/env.js";
+import { env } from "./lib/env.ts";
 import { streamSSE } from "hono/streaming";
 
 const app = new Hono();

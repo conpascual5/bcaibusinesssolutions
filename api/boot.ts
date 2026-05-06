@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "./router.js";
-import { createContext } from "./context.js";
-import { env } from "./lib/env.js";
-import salesWizard from "./sales-wizard.js";
-import loginApp from "./login.js";
-import registerApp from "./register.js";
+import { appRouter } from "./router";
+import { createContext } from "./context";
+import { env } from "./lib/env";
+import salesWizard from "./sales-wizard";
+import loginApp from "./login";
+import registerApp from "./register";
 
 const app = new Hono();
 
@@ -18,15 +18,15 @@ app.route("/", registerApp);
 app.route("/", salesWizard);
 
 // Mount FB Ads Targeting routes
-import fbAdsTargeting from "./fb-ads-targeting.js";
+import fbAdsTargeting from "./fb-ads-targeting";
 app.route("/", fbAdsTargeting);
 
 // Mount Image Ad Analyzer routes
-import imageAdAnalyzer from "./image-ad-analyzer.js";
+import imageAdAnalyzer from "./image-ad-analyzer";
 app.route("/", imageAdAnalyzer);
 
 // Mount Usage tracking routes
-import usageApp from "./usage.js";
+import usageApp from "./usage";
 app.route("/", usageApp);
 
 // Global error handler — ensures all errors return JSON

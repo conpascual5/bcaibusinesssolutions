@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, authedQuery } from "./middleware.js";
-import { getSupabaseClient } from "./queries/supabase-client.js";
-import { env } from "./lib/env.js";
+import { createRouter, authedQuery } from "./middleware.ts";
+import { getSupabaseClient } from "./queries/supabase-client.ts";
+import { env } from "./lib/env.ts";
 
 async function getFalKey(): Promise<string> {
   const supabase = getSupabaseClient();
