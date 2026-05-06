@@ -24,6 +24,13 @@ export default function AuthPage() {
     navigate(user.isAdmin ? "/admin" : "/app", { replace: true });
   }, [user, isLoading, navigate]);
 
+  // Force clear session if stuck
+  const forceLogout = async () => {
+    localStorage.removeItem("supabase.auth.token");
+    await supabase.auth.signOut();
+    window.location.reload();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -181,6 +188,15 @@ export default function AuthPage() {
             <p className="text-xs text-indigo-900">
               Tip: After signing up, check your email if confirmation is enabled in Supabase.
             </p>
+          </div>
+
+          <div className="mt-4 text-center">
+            <button
+              onClick={forceLogout}
+              className="text-xs text-gray-400 hover:text-red-500 transition-colors underline"
+            >
+              Stuck? Force reset session
+            </button>
           </div>
         </div>
 
