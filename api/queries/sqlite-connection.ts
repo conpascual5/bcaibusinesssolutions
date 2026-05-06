@@ -143,7 +143,16 @@ export async function getDb() {
   if (!db) {
     // Pre-load SQL.js WASM if not already loaded
     if (!sqlInit) {
-      sqlInit = await initSqlJs();
+      // Ensure sql.js can locate its WASM file in serverless/bundled environments.
+      // In some runtimes, the default path resolution breaks (ENOENT on sql-wasm.wasm).
+      sqlInit = await initSqlJs({
+        locateFile: (file) => {
+          if (file.endsWith(".wasm")) {
+            return new URL("../../node_modules/sql.js/dist/sql-wasm.wasm", import.meta.url).pathname;
+          }
+          return file;
+        },
+      } as any);
     }
     const SQL = sqlInit;
 
