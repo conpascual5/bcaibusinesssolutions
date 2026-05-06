@@ -13,14 +13,26 @@ loginApp.post("/api/login", async (c) => {
     }
 
     const { env } = await import("./lib/env.js");
-    const { getDbReady } = await import("./queries/connection.js");
+    const { getDbReady, getRawDb } = await import("./queries/connection.js");
     const { verifyPassword } = await import("./auth-utils.js");
-    const db = await getDbReady() as any;
+    await getDbReady();
 
-    // Query the local SQLite database
-    const user = db.prepare(
+    // Get the raw SQL.js database for direct queries
+    const sqlJsDb = await getRawDb();
+    if (!sqlJsDb) {
+      return c.json({ error: "Database not initialized" }, 500);
+    }
+
+    // Query using SQL.js prepare API
+    const stmt = sqlJsDb.prepare(
       "SELECT id, email, name, password_hash, is_active, is_admin FROM users WHERE email = ?"
-    ).get(email);
+    );
+    stmt.bind([email]);
+    let user: any = null;
+    if (stmt.step()) {
+      user = stmt.getAsObject();
+    }
+    stmt.free();
 
     if (!user) {
       return c.json({ error: "Invalid credentials" }, 401);

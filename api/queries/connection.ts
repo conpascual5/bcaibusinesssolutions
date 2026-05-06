@@ -41,6 +41,13 @@ async function getSqliteDbReady() {
   return sqliteGetReady();
 }
 
+export async function getRawDb() {
+  // Only available for SQLite
+  if (useSupabase || useNeon) return null;
+  const { getRawDb: sqliteGetRaw } = await import("./sqlite-connection.js");
+  return sqliteGetRaw();
+}
+
 async function waitForSqliteDb() {
   const { waitForDb: sqliteWait } = await import("./sqlite-connection.js");
   return sqliteWait();

@@ -12,6 +12,11 @@ let initPromise: Promise<void> | null = null;
 let sqlJsDb: SqlJsDatabase | null = null;
 let sqlInit: Awaited<ReturnType<typeof initSqlJs>> | null = null;
 
+// Export the raw SQL.js database for direct queries (used by login endpoint and auth router)
+export function getRawDb(): SqlJsDatabase | null {
+  return sqlJsDb;
+}
+
 const TABLE_CREATION_SQL = [
   `CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
