@@ -1,8 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import type { TrpcContext } from "./context.js";
-import { getDbReady } from "./queries/connection.js";
-import { users } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 import superjson from "superjson";
 
 const t = initTRPC.context<TrpcContext>().create({
@@ -26,20 +24,25 @@ export const authedQuery = t.procedure.use(
       throw new TRPCError({ code: "UNAUTHORIZED", message: "Not authenticated. Please login." });
     }
 
-    // Check DB connection with timeout protection
     try {
-      const db = await getDbReady() as any;
-      const rows = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, ctx.user.userId))
-        .limit(1);
+      const supabase = getSupabaseClient();
+      const { data: rows, error } = await (supabase
+        .from("users")
+        .select("id, is_active, is_admin")
+        .eq("id", ctx.user.userId)
+        .limit(1) as any);
 
-      if (!rows[0]) {
+      if (error) {
+        console.error("[middleware] query error:", error.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database error. Please try again." });
+      }
+
+      const user = (rows as any[])?.[0];
+      if (!user) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "User not found in database" });
       }
 
-      if (!rows[0].isActive) {
+      if (!user.is_active) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Account deactivated" });
       }
 
@@ -48,22 +51,12 @@ export const authedQuery = t.procedure.use(
           ...ctx,
           user: {
             ...ctx.user,
-            isAdmin: rows[0].isAdmin,
+            isAdmin: !!user.is_admin,
           },
         },
       });
     } catch (err: any) {
-      // If it's already a TRPCError, rethrow it
       if (err instanceof TRPCError) throw err;
-
-      // Check if it's a connection timeout
-      if (err?.message?.includes("timeout") || err?.code === "ETIMEDOUT" || err?.code === "ECONNREFUSED") {
-        throw new TRPCError({
-          code: "INTERNAL_SERVER_ERROR",
-          message: "Database connection failed. Please try again later.",
-        });
-      }
-
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: `Database error: ${err?.message ?? "Unknown error"}`,
@@ -82,21 +75,27 @@ export const adminQuery = t.procedure.use(
     }
 
     try {
-      const db = await getDbReady() as any;
-      console.log("[middleware] adminQuery: db ready, querying user", ctx.user.userId);
-      const rows = await db
-        .select()
-        .from(users)
-        .where(eq(users.id, ctx.user.userId))
-        .limit(1);
+      const supabase = getSupabaseClient();
+      console.log("[middleware] adminQuery: querying user", ctx.user.userId);
+      const { data: rows, error } = await (supabase
+        .from("users")
+        .select("id, is_active, is_admin")
+        .eq("id", ctx.user.userId)
+        .limit(1) as any);
+
+      if (error) {
+        console.error("[middleware] adminQuery query error:", error.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database error. Please try again." });
+      }
 
       console.log("[middleware] adminQuery: user rows:", rows?.length);
-      if (!rows[0]?.isAdmin) {
+      const user = (rows as any[])?.[0];
+      if (!user?.is_admin) {
         console.log("[middleware] adminQuery: user is not admin");
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
 
-      if (!rows[0].isActive) {
+      if (!user.is_active) {
         console.log("[middleware] adminQuery: user is inactive");
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Account deactivated" });
       }

@@ -1,20 +1,28 @@
 import { z } from "zod";
 import { createRouter, publicQuery } from "./middleware.js";
-import { getDbReady, saveDb } from "./queries/connection.js";
-import { users } from "../db/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 import { hashPassword, verifyPassword, signJWT } from "./auth-utils.js";
 
 // Timeout for DB connection — must be under Vercel's 10s limit
 const DB_TIMEOUT_MS = 8000;
 
-async function getDbWithTimeout(): Promise<ReturnType<typeof getDbReady>> {
+async function queryWithTimeout<T>(fn: () => Promise<T>): Promise<T> {
   return Promise.race([
-    getDbReady(),
+    fn(),
     new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("Database connection timed out. The server may still be starting up — please try again.")), DB_TIMEOUT_MS)
     ),
   ]);
+}
+
+// Type for user rows from Supabase
+interface UserRow {
+  id: number;
+  email: string;
+  name: string;
+  password_hash: string;
+  is_active: number;
+  is_admin: number;
 }
 
 export const authRouter = createRouter({
@@ -26,24 +34,30 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      let db;
       try {
-        db = await getDbWithTimeout();
-      } catch (err: any) {
-        console.error("[auth.login] getDbReady failed:", err?.message ?? err);
-        throw new Error("Database connection failed. Please try again later.");
-      }
-      try {
-        const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+        const supabase = getSupabaseClient();
+        const { data: users, error } = await queryWithTimeout(async () => {
+          const res = await supabase
+            .from("users")
+            .select("*")
+            .eq("email", input.email)
+            .limit(1);
+          return res as any;
+        });
+        if (error) {
+          console.error("[auth.login] query error:", error.message);
+          throw new Error("Database error. Please try again.");
+        }
+        const user = (users as UserRow[])?.[0];
         if (!user) throw new Error("Invalid credentials");
-        if (!user.isActive) throw new Error("Account deactivated");
-        const valid = await verifyPassword(input.password, user.passwordHash);
+        if (!user.is_active) throw new Error("Account deactivated");
+        const valid = await verifyPassword(input.password, user.password_hash);
         if (!valid) throw new Error("Invalid credentials");
         
-        const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
-        return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin } };
+        const token = signJWT({ userId: user.id, email: user.email, isAdmin: !!user.is_admin });
+        return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: !!user.is_admin } };
       } catch (err: any) {
-        console.error("[auth.login] query/verify error:", err?.message ?? err);
+        console.error("[auth.login] error:", err?.message ?? err);
         throw err;
       }
     }),
@@ -58,36 +72,55 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      let db;
       try {
-        db = await getDbWithTimeout();
-      } catch (err: any) {
-        console.error("[auth.register] getDbReady failed:", err?.message ?? err);
-        throw new Error("Database connection failed. Please try again later.");
-      }
-      try {
+        const supabase = getSupabaseClient();
+
         // Check if email already exists
-        const [existing] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
-        if (existing) throw new Error("Email already registered");
+        const { data: existing } = await queryWithTimeout(async () => {
+          const res = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", input.email)
+            .limit(1);
+          return res as any;
+        });
+        if ((existing as any[])?.length) throw new Error("Email already registered");
         
         const passwordHash = await hashPassword(input.password);
+
         // Check if this is the first user — make them admin
-        const [{ count }] = await db.select({ count: sql`count(*)` }).from(users);
+        const { count } = await queryWithTimeout(async () => {
+          const res = await supabase
+            .from("users")
+            .select("*", { count: "exact", head: true });
+          return res as any;
+        });
         const isAdmin = count === 0 ? 1 : 0;
-        const [user] = await db.insert(users).values({
-          email: input.email,
-          passwordHash,
-          name: input.name,
-          isActive: 1,
-          isAdmin,
-        }).returning();
-        await saveDb();
+
+        // Insert the user
+        const { data: newUsers, error: insertError } = await queryWithTimeout(async () => {
+          const res = await supabase
+            .from("users")
+            .insert({
+              email: input.email,
+              password_hash: passwordHash,
+              name: input.name,
+              is_active: 1,
+              is_admin: isAdmin,
+            } as any)
+            .select();
+          return res as any;
+        });
+        if (insertError) {
+          console.error("[auth.register] insert error:", insertError.message);
+          throw new Error("Failed to create account. Please try again.");
+        }
+        const user = (newUsers as UserRow[])?.[0];
+        if (!user) throw new Error("Failed to create account.");
 
         // If existing customer, auto-create VIP subscription
         if (input.isExistingCustomer) {
           try {
-            const { getSupabaseClient } = await import("./queries/supabase-client.js");
-            const supabase = getSupabaseClient();
             await (supabase.from("subscriptions") as any).insert({
               user_id: user.id,
               plan: "vip",
@@ -96,12 +129,11 @@ export const authRouter = createRouter({
             console.log(`[auth.register] VIP subscription created for user ${user.id} (${input.email})`);
           } catch (subErr: any) {
             console.error("[auth.register] Failed to create VIP subscription:", subErr?.message ?? subErr);
-            // Don't block registration if subscription creation fails
           }
         }
         
-        const token = signJWT({ userId: user.id, email: user.email, isAdmin: user.isAdmin });
-        return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin } };
+        const token = signJWT({ userId: user.id, email: user.email, isAdmin: !!user.is_admin });
+        return { token, user: { id: user.id, email: user.email, name: user.name, isAdmin: !!user.is_admin } };
       } catch (err: any) {
         console.error("[auth.register] error:", err?.message ?? err);
         throw err;
@@ -115,45 +147,46 @@ export const authRouter = createRouter({
       })
     )
     .mutation(async ({ input }) => {
-      let db;
       try {
-        db = await getDbWithTimeout();
-      } catch (err: any) {
-        console.error("[auth.forgotPassword] getDbReady failed:", err?.message ?? err);
-        throw new Error("Database connection failed. Please try again later.");
-      }
-      try {
-        const [user] = await db.select().from(users).where(eq(users.email, input.email)).limit(1);
+        const supabase = getSupabaseClient();
+        const { data: users } = await queryWithTimeout(async () => {
+          const res = await supabase
+            .from("users")
+            .select("id, email")
+            .eq("email", input.email)
+            .limit(1);
+          return res as any;
+        });
+        const user = (users as { id: number; email: string }[])?.[0];
         if (!user) {
-          // Don't reveal whether email exists — return success either way
           return { success: true, message: "If that email is registered, a password reset link has been sent." };
         }
-        // Generate a simple reset token (in production, store this in DB with expiry)
         const resetToken = btoa(`${user.id}:${user.email}:${Date.now()}`);
-        // In a real app, you'd email this. For now, we log it and return it.
         console.log(`[forgot-password] Reset token for ${input.email}: ${resetToken}`);
         return { success: true, message: "If that email is registered, a password reset link has been sent." };
       } catch (err: any) {
-        console.error("[auth.forgotPassword] query error:", err?.message ?? err);
+        console.error("[auth.forgotPassword] error:", err?.message ?? err);
         throw err;
       }
     }),
 
   me: publicQuery.query(async ({ ctx }) => {
     if (!ctx.user) return null;
-    let db;
     try {
-      db = await getDbWithTimeout();
+      const supabase = getSupabaseClient();
+      const { data: users } = await queryWithTimeout(async () => {
+        const res = await supabase
+          .from("users")
+          .select("id, email, name, is_admin, is_active")
+          .eq("id", ctx.user!.userId)
+          .limit(1);
+        return res as any;
+      });
+      const user = (users as UserRow[])?.[0];
+      if (!user || !user.is_active) return null;
+      return { id: user.id, email: user.email, name: user.name, isAdmin: !!user.is_admin };
     } catch (err: any) {
-      console.error("[auth.me] getDbReady failed:", err?.message ?? err);
-      return null;
-    }
-    try {
-      const [user] = await db.select().from(users).where(eq(users.id, ctx.user.userId)).limit(1);
-      if (!user || !user.isActive) return null;
-      return { id: user.id, email: user.email, name: user.name, isAdmin: user.isAdmin };
-    } catch (err: any) {
-      console.error("[auth.me] query error:", err?.message ?? err);
+      console.error("[auth.me] error:", err?.message ?? err);
       return null;
     }
   }),
