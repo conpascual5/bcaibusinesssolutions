@@ -28,7 +28,7 @@ async function getUserFromToken(token: string) {
 
 async function getUserPlan(userId: string): Promise<string> {
   const supabase = getSupabaseClient();
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("profiles")
     .select("plan")
     .eq("id", userId)
@@ -73,7 +73,7 @@ app.get("/api/usage/:feature", async (c) => {
     // VIP: 100 uses per month across all features
     const vipLimit = 100;
     if (isVip) {
-      const { data: totalRows } = await supabase
+      const { data: totalRows } = await (supabase as any)
         .from("user_usage")
         .select("count")
         .eq("user_id", supaUser.id)
@@ -94,7 +94,7 @@ app.get("/api/usage/:feature", async (c) => {
     }
 
     // Free: get current usage count for this feature
-    const { data: usageRow } = await supabase
+    const { data: usageRow } = await (supabase as any)
       .from("user_usage")
       .select("count")
       .eq("user_id", supaUser.id)
@@ -150,7 +150,7 @@ app.post("/api/usage/:feature/increment", async (c) => {
     // VIP: check total monthly usage across all features
     const vipLimit = 100;
     if (isVip) {
-      const { data: totalRows } = await supabase
+      const { data: totalRows } = await (supabase as any)
         .from("user_usage")
         .select("count")
         .eq("user_id", supaUser.id)
@@ -169,7 +169,7 @@ app.post("/api/usage/:feature/increment", async (c) => {
       }
 
       // Upsert usage
-      const { data: existing } = await supabase
+      const { data: existing } = await (supabase as any)
         .from("user_usage")
         .select("id, count")
         .eq("user_id", supaUser.id)
@@ -178,12 +178,12 @@ app.post("/api/usage/:feature/increment", async (c) => {
         .single();
 
       if (existing) {
-        await supabase
+        await (supabase as any)
           .from("user_usage")
           .update({ count: (existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
           .eq("id", existing.id);
       } else {
-        await supabase
+        await (supabase as any)
           .from("user_usage")
           .insert({ user_id: supaUser.id, feature, month, count: 1 });
       }
@@ -200,7 +200,7 @@ app.post("/api/usage/:feature/increment", async (c) => {
     }
 
     // Free: check current usage
-    const { data: existing } = await supabase
+    const { data: existing } = await (supabase as any)
       .from("user_usage")
       .select("id, count")
       .eq("user_id", supaUser.id)
@@ -222,12 +222,12 @@ app.post("/api/usage/:feature/increment", async (c) => {
 
     // Increment
     if (existing) {
-      await supabase
+      await (supabase as any)
         .from("user_usage")
         .update({ count: (existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
         .eq("id", existing.id);
     } else {
-      await supabase
+      await (supabase as any)
         .from("user_usage")
         .insert({ user_id: supaUser.id, feature, month, count: 1 });
     }

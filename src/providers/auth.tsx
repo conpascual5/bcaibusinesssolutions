@@ -15,6 +15,7 @@ type AuthContextType = {
   user: AuthUser | null;
   isLoading: boolean;
   session: Session | null;
+  token: string | null;
   logout: () => Promise<void>;
 };
 
@@ -93,16 +94,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const token = session?.access_token ?? null;
+
   const value = useMemo(
     () => ({
       user,
       isLoading,
       session,
+      token,
       logout: async () => {
         await supabase.auth.signOut();
       },
     }),
-    [user, isLoading, session]
+    [user, isLoading, session, token]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

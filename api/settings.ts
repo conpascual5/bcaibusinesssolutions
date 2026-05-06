@@ -8,7 +8,7 @@ const OPENAI_KEY = "openai_api_key";
 
 async function getSetting(key: string): Promise<string> {
   const supabase = getSupabaseClient();
-  const { data } = await supabase
+  const { data } = await (supabase as any)
     .from("settings")
     .select("value")
     .eq("key", key)
@@ -18,19 +18,19 @@ async function getSetting(key: string): Promise<string> {
 
 async function upsertSetting(key: string, value: string): Promise<void> {
   const supabase = getSupabaseClient();
-  const { data: existing } = await supabase
+  const { data: existing } = await (supabase as any)
     .from("settings")
     .select("id")
     .eq("key", key)
     .single();
 
   if (existing) {
-    await supabase
+    await (supabase as any)
       .from("settings")
       .update({ value, updated_at: new Date().toISOString() })
       .eq("key", key);
   } else {
-    await supabase
+    await (supabase as any)
       .from("settings")
       .insert({ key, value, updated_at: new Date().toISOString() });
   }

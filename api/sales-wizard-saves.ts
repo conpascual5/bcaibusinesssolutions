@@ -19,7 +19,7 @@ export const salesWizardSaveRouter = createRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("sales_wizard_saves")
         .insert({
           user_id: ctx.user.userId,
@@ -45,7 +45,7 @@ export const salesWizardSaveRouter = createRouter({
 
   list: authedQuery.query(async ({ ctx }) => {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("sales_wizard_saves")
       .select("*")
       .eq("user_id", ctx.user.userId)
@@ -75,7 +75,7 @@ export const salesWizardSaveRouter = createRouter({
     .input(z.object({ id: z.number() }))
     .query(async ({ input, ctx }) => {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("sales_wizard_saves")
         .select("*")
         .eq("id", input.id)
@@ -105,7 +105,7 @@ export const salesWizardSaveRouter = createRouter({
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const supabase = getSupabaseClient();
-      const { data: row, error: fetchError } = await supabase
+      const { data: row, error: fetchError } = await (supabase as any)
         .from("sales_wizard_saves")
         .select("id, user_id")
         .eq("id", input.id)
@@ -116,7 +116,7 @@ export const salesWizardSaveRouter = createRouter({
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your save" });
       }
 
-      const { error } = await supabase.from("sales_wizard_saves").delete().eq("id", input.id);
+      const { error } = await (supabase as any).from("sales_wizard_saves").delete().eq("id", input.id);
       if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete" });
 
       return { success: true };

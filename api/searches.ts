@@ -16,7 +16,7 @@ export const searchRouter = createRouter({
       const ipAddress = forwarded?.split(",")[0]?.trim() || realIp || "unknown";
       const userAgent = ctx.req.headers.get("user-agent") ?? undefined;
 
-      const { error } = await supabase.from("searches").insert({
+      const { error } = await (supabase as any).from("searches").insert({
         user_id: ctx.user.userId,
         product_query: input.productQuery,
         ip_address: ipAddress.length > 100 ? ipAddress.slice(0, 100) : ipAddress,
@@ -33,7 +33,7 @@ export const searchRouter = createRouter({
 
   list: authedQuery.query(async () => {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("searches")
       .select("*")
       .order("created_at", { ascending: false })

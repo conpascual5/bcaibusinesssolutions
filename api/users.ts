@@ -6,7 +6,7 @@ import { getSupabaseClient } from "./queries/supabase-client.js";
 export const userRouter = createRouter({
   list: adminQuery.query(async () => {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("profiles")
       .select("id, email, full_name, is_admin, plan, is_active, activated_at, created_at")
       .order("created_at", { ascending: false });
@@ -32,7 +32,7 @@ export const userRouter = createRouter({
     .input(z.object({ userId: z.string(), isActive: z.boolean() }))
     .mutation(async ({ input }) => {
       const supabase = getSupabaseClient();
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from("profiles")
         .update({
           is_active: input.isActive,
@@ -53,7 +53,7 @@ export const userRouter = createRouter({
       const supabase = getSupabaseClient();
 
       // Get current plan before updating
-      const { data: current, error: fetchError } = await supabase
+      const { data: current, error: fetchError } = await (supabase as any)
         .from("profiles")
         .select("plan")
         .eq("id", input.userId)
@@ -67,7 +67,7 @@ export const userRouter = createRouter({
       const previousPlan = current?.plan ?? "free";
 
       // Update user plan
-      const { error: updateError } = await supabase
+      const { error: updateError } = await (supabase as any)
         .from("profiles")
         .update({
           plan: input.plan,
@@ -82,18 +82,19 @@ export const userRouter = createRouter({
       }
 
       // Log plan change to history
-      const { error: insertError } = await supabase.from("plan_history").insert({
-        user_id: input.userId,
-        plan: input.plan,
-        previous_plan: previousPlan,
-        set_by: ctx.user?.email ?? "Admin",
-        notes: "",
-        created_at: new Date().toISOString(),
-      });
+      const { error: insertError } = await (supabase as any)
+        .from("plan_history")
+        .insert({
+          user_id: input.userId,
+          plan: input.plan,
+          previous_plan: previousPlan,
+          set_by: ctx.user?.email ?? "Admin",
+          notes: "",
+          created_at: new Date().toISOString(),
+        });
 
       if (insertError) {
         console.error("[user.setPlan] history insert error:", insertError.message);
-        // Non-fatal: plan was updated, history logging failed
       }
 
       return { success: true, plan: input.plan };
@@ -103,7 +104,7 @@ export const userRouter = createRouter({
     .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
       const supabase = getSupabaseClient();
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from("plan_history")
         .select("*")
         .eq("user_id", input.userId)
@@ -127,7 +128,7 @@ export const userRouter = createRouter({
 
   profile: authedQuery.query(async ({ ctx }) => {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("profiles")
       .select("id, email, full_name, is_admin, plan, is_active")
       .eq("id", ctx.user.userId)

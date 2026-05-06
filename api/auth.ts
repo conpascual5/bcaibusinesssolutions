@@ -8,7 +8,7 @@ export const authRouter = createRouter({
     if (!ctx.user) return null;
 
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("profiles")
       .select("id, email, full_name, is_admin, plan, is_active")
       .eq("id", ctx.user.userId)

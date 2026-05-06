@@ -17,7 +17,7 @@ export const setupRouter = createRouter({
         const supabase = getSupabaseClient();
 
         // Check if any admin already exists
-        const { data: existingAdmins } = await supabase
+        const { data: existingAdmins } = await (supabase as any)
           .from("profiles")
           .select("id")
           .eq("is_admin", true)
@@ -48,7 +48,7 @@ export const setupRouter = createRouter({
         }
 
         // Promote to admin in profiles
-        const { error: profileError } = await supabase
+        const { error: profileError } = await (supabase as any)
           .from("profiles")
           .update({
             is_admin: true,
@@ -77,7 +77,7 @@ export const setupRouter = createRouter({
   checkAdminExists: publicQuery.query(async () => {
     try {
       const supabase = getSupabaseClient();
-      const { data: admins, error } = await supabase
+      const { data: admins, error } = await (supabase as any)
         .from("profiles")
         .select("id")
         .eq("is_admin", true)
@@ -100,7 +100,7 @@ export const setupRouter = createRouter({
     .mutation(async ({ input }) => {
       try {
         const supabase = getSupabaseClient();
-        const { data: users, error: findError } = await supabase
+        const { data: users, error: findError } = await (supabase as any)
           .from("profiles")
           .select("id")
           .eq("email", input.email)
@@ -110,7 +110,7 @@ export const setupRouter = createRouter({
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("profiles")
           .update({ is_admin: true })
           .eq("email", input.email);
@@ -132,7 +132,7 @@ export const setupRouter = createRouter({
     .mutation(async ({ input }) => {
       try {
         const supabase = getSupabaseClient();
-        const { data: users, error: findError } = await supabase
+        const { data: users, error: findError } = await (supabase as any)
           .from("profiles")
           .select("id")
           .eq("email", input.email)
@@ -142,7 +142,7 @@ export const setupRouter = createRouter({
           throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
         }
 
-        const { error } = await supabase
+        const { error } = await (supabase as any)
           .from("profiles")
           .update({ is_active: true })
           .eq("email", input.email);

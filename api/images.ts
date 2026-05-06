@@ -15,7 +15,7 @@ export const imageRouter = createRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const supabase = getSupabaseClient();
-      const { data: falSetting } = await supabase
+      const { data: falSetting } = await (supabase as any)
         .from("settings")
         .select("value")
         .eq("key", "fal_api_key")
@@ -53,7 +53,7 @@ export const imageRouter = createRouter({
       const savedImages: any[] = [];
       if (data.images) {
         for (const img of data.images) {
-          const { data: inserted, error } = await supabase
+          const { data: inserted, error } = await (supabase as any)
             .from("images")
             .insert({
               user_id: ctx.user.userId,
@@ -81,7 +81,7 @@ export const imageRouter = createRouter({
 
   list: authedQuery.query(async ({ ctx }) => {
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase
+    const { data, error } = await (supabase as any)
       .from("images")
       .select("*")
       .eq("user_id", ctx.user.userId)
@@ -109,7 +109,7 @@ export const imageRouter = createRouter({
     .input(z.object({ imageId: z.number() }))
     .mutation(async ({ input, ctx }) => {
       const supabase = getSupabaseClient();
-      const { data: img, error: fetchError } = await supabase
+      const { data: img, error: fetchError } = await (supabase as any)
         .from("images")
         .select("id, user_id")
         .eq("id", input.imageId)
@@ -120,7 +120,7 @@ export const imageRouter = createRouter({
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your image" });
       }
 
-      const { error } = await supabase.from("images").delete().eq("id", input.imageId);
+      const { error } = await (supabase as any).from("images").delete().eq("id", input.imageId);
       if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete image" });
 
       return { success: true };

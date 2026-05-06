@@ -36,7 +36,9 @@ export const authedQuery = t.procedure.use(
         throw new TRPCError({ code: "UNAUTHORIZED", message: "User not found in database" });
       }
 
-      if (!data.is_active) {
+      const profile = data as unknown as { is_admin: boolean; is_active: boolean };
+
+      if (!profile.is_active) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Account deactivated" });
       }
 
@@ -45,7 +47,7 @@ export const authedQuery = t.procedure.use(
           ...ctx,
           user: {
             ...ctx.user,
-            isAdmin: !!data.is_admin,
+            isAdmin: !!profile.is_admin,
           },
         },
       });
@@ -83,12 +85,14 @@ export const adminQuery = t.procedure.use(
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database error. Please try again." });
       }
 
-      if (!data?.is_admin) {
+      const profile = data as unknown as { is_admin: boolean; is_active: boolean } | null;
+
+      if (!profile?.is_admin) {
         console.log("[middleware] adminQuery: user is not admin");
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
 
-      if (!data.is_active) {
+      if (!profile.is_active) {
         console.log("[middleware] adminQuery: user is inactive");
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Account deactivated" });
       }
