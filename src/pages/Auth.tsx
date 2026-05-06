@@ -1,16 +1,21 @@
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router";
-import { Auth } from "@supabase/auth-ui-react";
-import { ThemeSupa } from "@supabase/auth-ui-shared";
-import { Sparkles, ArrowLeft } from "lucide-react";
+import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
+import { toast } from "sonner";
 
 export default function AuthPage() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
 
   const [mode, setMode] = useState<"sign_in" | "sign_up">("sign_in");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // If already authenticated, send them where they belong.
   useEffect(() => {
@@ -19,35 +24,36 @@ export default function AuthPage() {
     navigate(user.isAdmin ? "/admin" : "/app", { replace: true });
   }, [user, isLoading, navigate]);
 
-  const appearance = useMemo(
-    () => ({
-      theme: ThemeSupa,
-      variables: {
-        default: {
-          colors: {
-            brand: "#4f46e5",
-            brandAccent: "#4338ca",
-            inputBackground: "#f8fafc",
-            inputBorder: "#e2e8f0",
-            inputBorderHover: "#cbd5e1",
-            inputBorderFocus: "#4f46e5",
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+
+    try {
+      if (mode === "sign_up") {
+        const { error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: { full_name: name },
           },
-          radii: {
-            borderRadiusButton: "14px",
-            buttonBorderRadius: "14px",
-            inputBorderRadius: "14px",
-          },
-        },
-      },
-      className: {
-        container: "w-full",
-        button: "shadow-sm font-semibold",
-        input: "text-gray-900",
-        message: "text-sm",
-      },
-    }),
-    []
-  );
+        });
+        if (signUpError) throw signUpError;
+        toast.success("Check your email for the confirmation link!");
+      } else {
+        const { error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) throw signInError;
+        // Navigation will happen via the auth state listener in AuthProvider
+      }
+    } catch (err: any) {
+      setError(err.message || "An error occurred");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50 flex items-center justify-center px-4 py-10">
@@ -79,56 +85,97 @@ export default function AuthPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-gray-100 p-6">
           <div className="flex items-center gap-2 mb-5">
             <button
-              onClick={() => setMode("sign_in")}
+              onClick={() => { setMode("sign_in"); setError(null); }}
               className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                mode === "sign_in" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                mode === "sign_in" ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               Log In
             </button>
             <button
-              onClick={() => setMode("sign_up")}
+              onClick={() => { setMode("sign_up"); setError(null); }}
               className={`flex-1 px-4 py-2 rounded-xl text-sm font-semibold transition-colors ${
-                mode === "sign_up" ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                mode === "sign_up" ? "bg-indigo-600 text-white shadow-sm" : "bg-slate-100 text-slate-700 hover:bg-slate-200"
               }`}
             >
               Sign Up
             </button>
           </div>
 
-          <Auth
-            supabaseClient={supabase}
-            providers={[]}
-            view={mode}
-            appearance={appearance}
-            theme="light"
-            redirectTo={window.location.origin + "/app"}
-            showLinks={true}
-            magicLink={false}
-            additionalData={
-              mode === "sign_up"
-                ? {
-                    full_name: "",
-                  }
-                : undefined
-            }
-            localization={{
-              variables: {
-                sign_in: {
-                  email_label: "Email Address",
-                  password_label: "Password",
-                  button_label: "Mag-Log In",
-                },
-                sign_up: {
-                  email_label: "Email Address",
-                  password_label: "Password",
-                  button_label: "Mag-Sign Up",
-                  link_text: "Wala pang account? Mag-Sign Up",
-                  confirmation_text: "Check your email for the confirmation link",
-                },
-              },
-            }}
-          />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === "sign_up" && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Juan Dela Cruz"
+                  required
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  required
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder={mode === "sign_up" ? "At least 6 characters" : "Your password"}
+                  required
+                  minLength={6}
+                  className="w-full pl-10 pr-10 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && (
+              <div className="rounded-xl bg-red-50 border border-red-200 p-3">
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+            >
+              {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
+              {mode === "sign_in" ? "Mag-Log In" : "Mag-Sign Up"}
+            </button>
+          </form>
 
           <div className="mt-4 rounded-xl bg-indigo-50 border border-indigo-100 p-3">
             <p className="text-xs text-indigo-900">
