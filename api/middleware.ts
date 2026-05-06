@@ -27,16 +27,16 @@ export const authedQuery = t.procedure.use(
     try {
       const supabase = getSupabaseClient();
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .select("is_admin, is_active")
-        .eq("id", ctx.user.userId)
+        .eq("email", ctx.user.email)
         .single();
 
       if (error || !data) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "User not found in database" });
       }
 
-      const profile = data as unknown as { is_admin: boolean; is_active: boolean };
+      const profile = data as unknown as { is_admin: number; is_active: number };
 
       if (!profile.is_active) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "Account deactivated" });
@@ -47,7 +47,7 @@ export const authedQuery = t.procedure.use(
           ...ctx,
           user: {
             ...ctx.user,
-            isAdmin: !!profile.is_admin,
+            isAdmin: profile.is_admin === 1,
           },
         },
       });
@@ -72,12 +72,12 @@ export const adminQuery = t.procedure.use(
 
     try {
       const supabase = getSupabaseClient();
-      console.log("[middleware] adminQuery: querying user", ctx.user.userId);
+      console.log("[middleware] adminQuery: querying user", ctx.user.email);
 
       const { data, error } = await supabase
-        .from("profiles")
+        .from("users")
         .select("is_admin, is_active")
-        .eq("id", ctx.user.userId)
+        .eq("email", ctx.user.email)
         .single();
 
       if (error) {
@@ -85,9 +85,9 @@ export const adminQuery = t.procedure.use(
         throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database error. Please try again." });
       }
 
-      const profile = data as unknown as { is_admin: boolean; is_active: boolean } | null;
+      const profile = data as unknown as { is_admin: number; is_active: number } | null;
 
-      if (!profile?.is_admin) {
+      if (!profile || profile.is_admin !== 1) {
         console.log("[middleware] adminQuery: user is not admin");
         throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
       }
