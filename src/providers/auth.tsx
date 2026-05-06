@@ -32,16 +32,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Fetch profile fresh from database every time
+    // Fetch profile from the users table using email as the lookup
     const { data, error } = await supabase
-      .from("profiles")
-      .select("full_name, is_admin, plan, is_active")
-      .eq("id", s.user.id)
+      .from("users")
+      .select("name, is_admin, plan, is_active")
+      .eq("email", s.user.email)
       .maybeSingle();
 
     if (error || !data) {
-      console.log("[auth] no profile found for", s.user.email, "error:", error?.message);
-      // If profile is missing due to trigger delay, treat as loading user without admin.
+      // If no matching user in the users table, treat as non-admin
       setUser({
         id: s.user.id,
         email: s.user.email ?? "",
@@ -53,18 +52,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log("[auth] profile found for", s.user.email, "is_admin:", data?.is_admin);
     setUser({
       id: s.user.id,
       email: s.user.email ?? "",
       name:
-        data?.full_name ??
+        data?.name ??
         (s.user.user_metadata as any)?.full_name ??
         (s.user.user_metadata as any)?.name ??
         "",
-      isAdmin: !!data?.is_admin,
+      isAdmin: data?.is_admin === 1,
       plan: (data?.plan as any) ?? "free",
-      isActive: data?.is_active ?? true,
+      isActive: data?.is_active === 1,
     });
   };
 
@@ -75,7 +73,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data } = await supabase.auth.getSession();
         if (!mounted) return;
-        console.log("[auth] initial session:", data.session?.user?.email, "user id:", data.session?.user?.id);
         setSession(data.session);
         await fetchProfile(data.session);
       } catch (err) {
@@ -87,17 +84,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
-      console.log("[auth] event:", event, "email:", newSession?.user?.email);
       setSession(newSession);
       await fetchProfile(newSession);
 
-      // Simple redirects for consistent UX
       if (event === "SIGNED_OUT") {
         window.location.href = "/auth";
       }
     });
 
-    // Re-fetch profile when window gains focus (user comes back to tab)
     const onFocus = () => {
       if (session) {
         fetchProfile(session);
