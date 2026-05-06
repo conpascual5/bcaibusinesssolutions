@@ -32,13 +32,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    console.log("[auth] Fetching profile for user:", s.user.id, s.user.email);
+
     const { data, error } = await supabase
       .from("profiles")
       .select("full_name, is_admin, plan, is_active")
       .eq("id", s.user.id)
       .maybeSingle();
 
+    console.log("[auth] Profile query result:", { data, error });
+
     if (error) {
+      console.log("[auth] Profile query error, falling back to defaults");
       // If profile is missing due to trigger delay, treat as loading user without admin.
       setUser({
         id: s.user.id,
@@ -50,6 +55,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
+
+    console.log("[auth] Setting user with isAdmin:", !!data?.is_admin);
 
     setUser({
       id: s.user.id,
