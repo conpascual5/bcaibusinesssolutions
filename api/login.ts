@@ -15,10 +15,14 @@ loginApp.post("/api/login", async (c) => {
     const { env } = await import("./lib/env.js");
     const { getDbReady, getRawDb } = await import("./queries/connection.js");
     const { verifyPassword } = await import("./auth-utils.js");
+    
+    console.log("[login] Starting login for:", email);
     await getDbReady();
+    console.log("[login] getDbReady completed");
 
     // Get the raw SQL.js database for direct queries
     const sqlJsDb = await getRawDb();
+    console.log("[login] getRawDb returned:", !!sqlJsDb);
     if (!sqlJsDb) {
       return c.json({ error: "Database not initialized" }, 500);
     }
