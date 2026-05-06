@@ -14,6 +14,7 @@ loginApp.post("/api/login", async (c) => {
 
     const { env } = await import("./lib/env.js");
     const { getDbReady } = await import("./queries/connection.js");
+    const { verifyPassword } = await import("./auth-utils.js");
     const db = await getDbReady() as any;
 
     // Query the local SQLite database
@@ -28,13 +29,9 @@ loginApp.post("/api/login", async (c) => {
       return c.json({ error: "Account deactivated" }, 403);
     }
 
-    // Verify password using Web Crypto API (no node:crypto needed)
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + env.jwtSecret);
-    const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hash = btoa(String.fromCharCode(...new Uint8Array(hashBuffer)));
-
-    if (hash !== user.password_hash) {
+    // Use verifyPassword which has fallback logic for different hash formats
+    const valid = await verifyPassword(password, user.password_hash);
+    if (!valid) {
       return c.json({ error: "Invalid credentials" }, 401);
     }
 

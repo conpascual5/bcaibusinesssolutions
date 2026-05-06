@@ -213,8 +213,11 @@ export async function getDb() {
         }
 
         // Seed admin user if not exists
-        const { createHash } = await import("node:crypto");
-        const adminHash = createHash("sha256").update("admin123" + env.jwtSecret).digest("base64");
+        // Use Web Crypto API to match the hash format used by auth-utils.ts
+        const encoder = new TextEncoder();
+        const seedData = encoder.encode("admin123" + env.jwtSecret);
+        const seedHashBuffer = await crypto.subtle.digest("SHA-256", seedData);
+        const adminHash = btoa(String.fromCharCode(...new Uint8Array(seedHashBuffer)));
         sqlJsDb.run(
           `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
            VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,
