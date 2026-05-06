@@ -4,15 +4,75 @@ import { createRouter, authedQuery } from "./middleware.js";
 import { getSupabaseClient } from "./queries/supabase-client.js";
 import { env } from "./lib/env.js";
 
-async function getFalKey(): Promise<string> {
+const DEEPSEEK_KEY = "deepseek_api_key";
+const OPENAI_KEY = "openai_api_key";
+
+async function getSetting(key: string): Promise<string> {
   const supabase = getSupabaseClient();
-  const { data: rows } = await (supabase
+  const { data } = await (supabase as any)
     .from("settings")
     .select("value")
-    .eq("key", "fal_api_key")
-    .limit(1) as any);
-  const row = (rows as any[])?.[0];
-  return row?.value ?? env.falApiKey ?? "";
+    .eq("key", key)
+    .single();
+  return data?.value ?? "";
+}
+
+async function callDeepseek(messages: { role: string; content: string }[], apiKey: string): Promise<string | null> {
+  try {
+    const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "deepseek-chat",
+        messages,
+        max_tokens: 1024,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error("[chat] Deepseek error:", response.status, errBody);
+      return null;
+    }
+
+    const data: any = await response.json();
+    return data.choices?.[0]?.message?.content ?? null;
+  } catch (err) {
+    console.error("[chat] Deepseek exception:", err);
+    return null;
+  }
+}
+
+async function callOpenai(messages: { role: string; content: string }[], apiKey: string): Promise<string | null> {
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        messages,
+        max_tokens: 1024,
+      }),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      console.error("[chat] OpenAI error:", response.status, errBody);
+      return null;
+    }
+
+    const data: any = await response.json();
+    return data.choices?.[0]?.message?.content ?? null;
+  } catch (err) {
+    console.error("[chat] OpenAI exception:", err);
+    return null;
+  }
 }
 
 export const chatRouter = createRouter({
@@ -109,40 +169,37 @@ export const chatRouter = createRouter({
         .eq("chat_id", input.chatId)
         .order("created_at", { ascending: true }) as any);
 
-      // Build prompt for fal.ai
-      const conversation = (history as any[] || []).map((m: any) => `${m.role}: ${m.content}`).join("\n");
       const systemPrompt = `You are a helpful AI assistant for a business. You help with marketing, ad copy, content creation, and business strategy. Keep responses concise and actionable.`;
 
-      const apiKey = await getFalKey();
-      if (!apiKey) {
-        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "FAL_API_KEY not configured" });
+      const messages = [
+        { role: "system", content: systemPrompt },
+        ...(history as any[] || []).map((m: any) => ({ role: m.role, content: m.content })),
+        { role: "user", content: input.content },
+      ];
+
+      // Try Deepseek first, then fall back to OpenAI
+      const deepseekKey = await getSetting(DEEPSEEK_KEY) || env.deepseekApiKey;
+      const openaiKey = await getSetting(OPENAI_KEY) || env.openaiApiKey;
+
+      let reply: string | null = null;
+      let provider = "";
+
+      if (deepseekKey) {
+        reply = await callDeepseek(messages, deepseekKey);
+        if (reply) provider = "deepseek";
       }
 
-      const response = await fetch("https://fal.run/fal-ai/llm/chat", {
-        method: "POST",
-        headers: {
-          "Authorization": `Key ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "gpt-4o-mini",
-          messages: [
-            { role: "system", content: systemPrompt },
-            ...(history as any[] || []).map((m: any) => ({ role: m.role, content: m.content })),
-            { role: "user", content: input.content },
-          ],
-          max_tokens: 1024,
-        }),
-      });
-
-      if (!response.ok) {
-        const errBody = await response.text();
-        console.error("fal.ai chat error:", response.status, errBody);
-        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Chat failed" });
+      if (!reply && openaiKey) {
+        reply = await callOpenai(messages, openaiKey);
+        if (reply) provider = "openai";
       }
 
-      const data: any = await response.json();
-      const reply = data.choices?.[0]?.message?.content ?? "No response";
+      if (!reply) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "No AI provider configured. Please set up a Deepseek or OpenAI API key in the admin settings.",
+        });
+      }
 
       // Save assistant message
       const { data: msgResult } = await (supabase
@@ -161,7 +218,7 @@ export const chatRouter = createRouter({
         .update({ updated_at: new Date().toISOString() })
         .eq("id", input.chatId));
 
-      return { id: savedMsg?.id, role: "assistant", content: reply };
+      return { id: savedMsg?.id, role: "assistant", content: reply, provider };
     }),
 
   delete: authedQuery

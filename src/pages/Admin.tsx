@@ -4,8 +4,154 @@ import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
 import {
   Users, Settings, Shield, CheckCircle, XCircle,
-  Star, Crown, Sparkles, X, Clock, History,
+  Star, Crown, Sparkles, X, Clock, History, Key, Eye, EyeOff, Check, AlertCircle,
 } from 'lucide-react';
+
+function ApiKeySettings() {
+  const [deepseekKey, setDeepseekKey] = useState('');
+  const [openaiKey, setOpenaiKey] = useState('');
+  const [showDeepseek, setShowDeepseek] = useState(false);
+  const [showOpenai, setShowOpenai] = useState(false);
+  const [deepseekSaved, setDeepseekSaved] = useState(false);
+  const [openaiSaved, setOpenaiSaved] = useState(false);
+
+  const { data: existingDeepseek, refetch: refetchDeepseek } = trpc.settings.getDeepseekKey.useQuery();
+  const { data: existingOpenai, refetch: refetchOpenai } = trpc.settings.getOpenaiKey.useQuery();
+  const setDeepseekMutation = trpc.settings.setDeepseekKey.useMutation({
+    onSuccess: () => { setDeepseekSaved(true); setTimeout(() => setDeepseekSaved(false), 2000); refetchDeepseek(); },
+  });
+  const setOpenaiMutation = trpc.settings.setOpenaiKey.useMutation({
+    onSuccess: () => { setOpenaiSaved(true); setTimeout(() => setOpenaiSaved(false), 2000); refetchOpenai(); },
+  });
+
+  useEffect(() => {
+    if (existingDeepseek?.apiKey) setDeepseekKey(existingDeepseek.apiKey);
+  }, [existingDeepseek]);
+
+  useEffect(() => {
+    if (existingOpenai?.apiKey) setOpenaiKey(existingOpenai.apiKey);
+  }, [existingOpenai]);
+
+  const handleSaveDeepseek = () => {
+    if (deepseekKey.trim()) setDeepseekMutation.mutate({ apiKey: deepseekKey.trim() });
+  };
+
+  const handleSaveOpenai = () => {
+    if (openaiKey.trim()) setOpenaiMutation.mutate({ apiKey: openaiKey.trim() });
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5 mb-1">
+          <Key className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
+          API Keys
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">
+          Configure AI provider API keys. The chat will use <strong>Deepseek</strong> as the primary provider and fall back to <strong>OpenAI</strong> if Deepseek is unavailable.
+        </p>
+
+        {/* Deepseek */}
+        <div className="mb-6 p-4 rounded-xl border border-border bg-accent/30">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500" />
+            <h3 className="text-sm font-semibold text-foreground">Deepseek API Key</h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Primary</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type={showDeepseek ? 'text' : 'password'}
+                value={deepseekKey}
+                onChange={(e) => setDeepseekKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowDeepseek(!showDeepseek)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showDeepseek ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <button
+              onClick={handleSaveDeepseek}
+              disabled={!deepseekKey.trim() || setDeepseekMutation.isPending}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              {setDeepseekMutation.isPending ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : deepseekSaved ? (
+                <Check className="w-4 h-4" />
+              ) : null}
+              {deepseekSaved ? 'Saved' : 'Save'}
+            </button>
+          </div>
+          {existingDeepseek?.apiKey && (
+            <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Key is configured
+            </p>
+          )}
+        </div>
+
+        {/* OpenAI */}
+        <div className="p-4 rounded-xl border border-border bg-accent/30">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-2 h-2 rounded-full bg-amber-500" />
+            <h3 className="text-sm font-semibold text-foreground">OpenAI API Key</h3>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Fallback</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <input
+                type={showOpenai ? 'text' : 'password'}
+                value={openaiKey}
+                onChange={(e) => setOpenaiKey(e.target.value)}
+                placeholder="sk-..."
+                className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowOpenai(!showOpenai)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showOpenai ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
+            <button
+              onClick={handleSaveOpenai}
+              disabled={!openaiKey.trim() || setOpenaiMutation.isPending}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+            >
+              {setOpenaiMutation.isPending ? (
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : openaiSaved ? (
+                <Check className="w-4 h-4" />
+              ) : null}
+              {openaiSaved ? 'Saved' : 'Save'}
+            </button>
+          </div>
+          {existingOpenai?.apiKey && (
+            <p className="text-xs text-emerald-600 mt-2 flex items-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Key is configured
+            </p>
+          )}
+        </div>
+
+        {/* Info notice */}
+        <div className="mt-6 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
+          <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+          <p className="text-xs text-amber-800">
+            At least one API key is required for the chat to work. Deepseek is tried first; if it fails, OpenAI is used as fallback. Keys are stored securely in the database.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const PLAN_OPTIONS = [
   { value: 'free', label: 'Free', icon: Sparkles },
@@ -260,9 +406,7 @@ export default function Admin() {
         )}
 
         {activeSection === 'settings' && (
-          <div className="bg-card rounded-2xl border border-border p-6 text-sm text-muted-foreground">
-            Settings have been moved under the new Supabase-backed admin controls. (We can add API key management here next.)
-          </div>
+          <ApiKeySettings />
         )}
       </div>
     </div>
