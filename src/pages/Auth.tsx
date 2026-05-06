@@ -5,7 +5,6 @@ import { ThemeSupa } from "@supabase/auth-ui-shared";
 import { Sparkles, ArrowLeft } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
-import { toast } from "sonner";
 
 export default function AuthPage() {
   const navigate = useNavigate();
@@ -20,7 +19,6 @@ export default function AuthPage() {
     navigate(user.isAdmin ? "/admin" : "/app", { replace: true });
   }, [user, isLoading, navigate]);
 
-  // Keep the UI a bit more “BC AI” and less default.
   const appearance = useMemo(
     () => ({
       theme: ThemeSupa,
@@ -144,14 +142,3 @@ export default function AuthPage() {
     </div>
   );
 }
-
-// Small helper: surface auth errors consistently
-supabase.auth.onAuthStateChange((_event, _session) => {
-  // no-op; provider handles redirects
-});
-
-// Handle Auth UI errors by listening to auth events is limited; we can at least toast on failures from API errors.
-// (Auth UI itself shows inline errors.)
-void supabase.auth.getSession().catch((e) => {
-  toast.error(e?.message ?? "Auth error");
-});
