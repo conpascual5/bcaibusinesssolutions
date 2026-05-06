@@ -6,12 +6,14 @@ import { createContext } from "./context.js";
 import { env } from "./lib/env.js";
 import salesWizard from "./sales-wizard.js";
 import loginApp from "./login.js";
+import registerApp from "./register.js";
 
 const app = new Hono();
 
-// Mount standalone login endpoint FIRST — minimal imports, fast cold start
-// This ensures login works even when the full app hasn't loaded yet
+// Mount standalone login and register endpoints FIRST — minimal imports, fast cold start
+// This ensures auth works even when the full app hasn't loaded yet
 app.route("/", loginApp);
+app.route("/", registerApp);
 
 // Warm up the database connection on boot so first request doesn't timeout
 // This starts SQL.js WASM loading + table creation in the background

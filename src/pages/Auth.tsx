@@ -71,20 +71,18 @@ export default function Auth() {
         }
       }
     } else {
-      // Register via fetch to /api/trpc (bypasses tRPC client for cold start)
+      // Register via standalone /api/register endpoint (bypasses tRPC for cold start)
       try {
-        const res = await fetch('/api/trpc/auth.register', {
+        const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ 0: { email, password, name, isExistingCustomer } }),
+          body: JSON.stringify({ email, password, name, isExistingCustomer }),
         });
         const json = await res.json();
-        if (json.error) throw new Error(json.error.message || 'Registration failed');
-        const data = json.result?.data;
-        if (!data) throw new Error('Registration failed');
+        if (!res.ok) throw new Error(json.error || 'Registration failed');
         setIsSubmitting(false);
         retryCountRef.current = 0;
-        setAuth(data.token, data.user);
+        setAuth(json.token, json.user);
         navigate('/app');
       } catch (err: any) {
         console.error('[auth] Register error:', err);
