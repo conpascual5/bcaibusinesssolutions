@@ -7,8 +7,8 @@ export const userRouter = createRouter({
   list: adminQuery.query(async () => {
     const supabase = getSupabaseClient();
     const { data, error } = await (supabase as any)
-      .from("profiles")
-      .select("id, email, full_name, is_admin, plan, is_active, activated_at, created_at")
+      .from("users")
+      .select("id, email, name, is_admin, plan, is_active, activated_at, created_at")
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -17,12 +17,12 @@ export const userRouter = createRouter({
     }
 
     return (data ?? []).map((u: any) => ({
-      id: u.id,
+      id: String(u.id),
       email: u.email ?? "",
-      fullName: u.full_name ?? "",
-      isAdmin: !!u.is_admin,
+      fullName: u.name ?? "",
+      isAdmin: u.is_admin === 1,
       plan: u.plan ?? "free",
-      isActive: u.is_active ?? true,
+      isActive: u.is_active === 1,
       activatedAt: u.activated_at,
       createdAt: u.created_at,
     }));
@@ -33,12 +33,12 @@ export const userRouter = createRouter({
     .mutation(async ({ input }) => {
       const supabase = getSupabaseClient();
       const { error } = await (supabase as any)
-        .from("profiles")
+        .from("users")
         .update({
-          is_active: input.isActive,
+          is_active: input.isActive ? 1 : 0,
           activated_at: input.isActive ? new Date().toISOString() : null,
         })
-        .eq("id", input.userId);
+        .eq("id", Number(input.userId));
 
       if (error) {
         console.error("[user.toggleActive] error:", error.message);
@@ -54,9 +54,9 @@ export const userRouter = createRouter({
 
       // Get current plan before updating
       const { data: current, error: fetchError } = await (supabase as any)
-        .from("profiles")
+        .from("users")
         .select("plan")
-        .eq("id", input.userId)
+        .eq("id", Number(input.userId))
         .single();
 
       if (fetchError) {
@@ -68,13 +68,13 @@ export const userRouter = createRouter({
 
       // Update user plan
       const { error: updateError } = await (supabase as any)
-        .from("profiles")
+        .from("users")
         .update({
           plan: input.plan,
           activated_at: new Date().toISOString(),
-          is_active: true,
+          is_active: 1,
         })
-        .eq("id", input.userId);
+        .eq("id", Number(input.userId));
 
       if (updateError) {
         console.error("[user.setPlan] update error:", updateError.message);
@@ -129,9 +129,9 @@ export const userRouter = createRouter({
   profile: authedQuery.query(async ({ ctx }) => {
     const supabase = getSupabaseClient();
     const { data, error } = await (supabase as any)
-      .from("profiles")
-      .select("id, email, full_name, is_admin, plan, is_active")
-      .eq("id", ctx.user.userId)
+      .from("users")
+      .select("id, email, name, is_admin, plan, is_active")
+      .eq("email", ctx.user.email)
       .single();
 
     if (error || !data) {
@@ -139,11 +139,11 @@ export const userRouter = createRouter({
     }
 
     return {
-      id: data.id,
+      id: String(data.id),
       email: data.email ?? "",
-      name: data.full_name ?? "",
-      isActive: data.is_active ?? true,
-      isAdmin: !!data.is_admin,
+      name: data.name ?? "",
+      isActive: data.is_active === 1,
+      isAdmin: data.is_admin === 1,
       plan: data.plan ?? "free",
     };
   }),
