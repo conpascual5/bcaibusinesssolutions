@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "node scripts/setup-db.mjs && npm run build",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "env": {
     "APP_SECRET": "4hQ0T1VwbgkK9NCRZfpEMnyTb3jY88wr",
