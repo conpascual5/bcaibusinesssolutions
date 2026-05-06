@@ -28,9 +28,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (s: Session | null) => {
     if (!s?.user) {
+      console.log("[auth] fetchProfile: no session user, clearing user");
       setUser(null);
       return;
     }
+
+    console.log("[auth] fetchProfile: fetching for email:", s.user.email);
 
     // Fetch profile from the users table using email as the lookup
     const { data, error } = await supabase
@@ -39,7 +42,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .eq("email", s.user.email)
       .maybeSingle();
 
+    console.log("[auth] fetchProfile: result", { data, error });
+
     if (error || !data) {
+      console.log("[auth] fetchProfile: no matching user in users table, using defaults", { error });
       // If no matching user in the users table, treat as non-admin
       setUser({
         id: s.user.id,
@@ -51,6 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
+
+    console.log("[auth] fetchProfile: found user in users table", data);
 
     setUser({
       id: s.user.id,
@@ -83,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      console.log("[auth] onAuthStateChange event:", event, "session:", !!newSession);
       if (!mounted) return;
       setSession(newSession);
       await fetchProfile(newSession);
