@@ -26,7 +26,13 @@ export default function AuthPage() {
 
   // Force clear session if stuck
   const forceLogout = async () => {
-    localStorage.removeItem("supabase.auth.token");
+    // Clear all Supabase-related localStorage items
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key.includes("supabase") || key.includes("auth-token") || key.includes("sb-"))) {
+        localStorage.removeItem(key);
+      }
+    }
     await supabase.auth.signOut();
     window.location.reload();
   };
