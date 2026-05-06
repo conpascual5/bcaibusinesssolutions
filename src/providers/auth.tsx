@@ -40,6 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .maybeSingle();
 
     if (error || !data) {
+      console.log("[auth] no profile found for", s.user.email, "error:", error?.message);
       // If profile is missing due to trigger delay, treat as loading user without admin.
       setUser({
         id: s.user.id,
@@ -52,6 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    console.log("[auth] profile found for", s.user.email, "is_admin:", data?.is_admin);
     setUser({
       id: s.user.id,
       email: s.user.email ?? "",
@@ -73,6 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data } = await supabase.auth.getSession();
         if (!mounted) return;
+        console.log("[auth] initial session:", data.session?.user?.email, "user id:", data.session?.user?.id);
         setSession(data.session);
         await fetchProfile(data.session);
       } catch (err) {
@@ -84,6 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
+      console.log("[auth] event:", event, "email:", newSession?.user?.email);
       setSession(newSession);
       await fetchProfile(newSession);
 
