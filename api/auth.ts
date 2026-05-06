@@ -111,7 +111,7 @@ export const authRouter = createRouter({
           }
         }
         
-        const token = signJWT({ userId, email: input.email, name: input.name, isAdmin: !!isAdmin });
+        const token = signJWT({ userId, email: input.email, isAdmin: !!isAdmin });
         return { token, user: { id: userId, email: input.email, name: input.name, isAdmin: !!isAdmin } };
       } catch (err: any) {
         console.error("[auth.register] error:", err?.message ?? err);
