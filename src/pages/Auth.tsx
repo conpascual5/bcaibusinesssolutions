@@ -31,20 +31,23 @@ export default function AuthPage() {
 
     try {
       if (mode === "sign_up") {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: name },
           },
         });
+        console.log("[Auth] signUp result", { signUpData, signUpError });
         if (signUpError) throw signUpError;
         toast.success("Check your email for the confirmation link!");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        console.log("[Auth] attempting sign in with", { email });
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        console.log("[Auth] signIn result", { signInData, signInError });
         if (signInError) throw signInError;
         // Navigation will happen via the auth state listener in AuthProvider
       }
