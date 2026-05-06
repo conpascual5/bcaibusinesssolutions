@@ -68,29 +68,15 @@ const trpcClient = trpc.createClient({
     httpLink({
       url: "/api/trpc",
       transformer: superjson,
-      headers() {
+      async headers() {
         // Use Supabase session access token
-        const supabaseToken = (() => {
-          try {
-            // Supabase v2 stores the session in localStorage under sb-<project-ref>-auth-token
-            // Try all possible keys
-            for (let i = 0; i < localStorage.length; i++) {
-              const key = localStorage.key(i);
-              if (key && key.includes("auth-token")) {
-                const raw = localStorage.getItem(key);
-                if (raw) {
-                  const parsed = JSON.parse(raw);
-                  // Try different formats
-                  if (parsed?.access_token) return parsed.access_token;
-                  if (parsed?.currentSession?.access_token) return parsed.currentSession.access_token;
-                }
-              }
-            }
-          } catch {}
-          return null;
-        })();
+        let token: string | null = null;
+        try {
+          const { data } = await supabase.auth.getSession();
+          token = data.session?.access_token ?? null;
+        } catch {}
         
-        return supabaseToken ? { Authorization: `Bearer ${supabaseToken}` } : {};
+        return token ? { Authorization: `Bearer ${token}` } : {};
       },
       fetch: trpcFetch as typeof fetch,
     }),
