@@ -12,17 +12,21 @@ async function getSetting(key: string): Promise<string> {
     .from("settings")
     .select("value")
     .eq("key", key)
-    .single();
+    .maybeSingle();
   return data?.value ?? "";
 }
 
 async function upsertSetting(key: string, value: string): Promise<void> {
   const supabase = getSupabaseClient();
-  const { data: existing } = await (supabase as any)
+  const { data: existing, error } = await (supabase as any)
     .from("settings")
     .select("id")
     .eq("key", key)
-    .single();
+    .maybeSingle();
+
+  if (error) {
+    console.error("[settings] upsertSetting select error:", error.message);
+  }
 
   if (existing) {
     await (supabase as any)

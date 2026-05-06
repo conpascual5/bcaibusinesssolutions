@@ -13,7 +13,7 @@ async function getSetting(key: string): Promise<string> {
     .from("settings")
     .select("value")
     .eq("key", key)
-    .single();
+    .maybeSingle();
   return data?.value ?? "";
 }
 
