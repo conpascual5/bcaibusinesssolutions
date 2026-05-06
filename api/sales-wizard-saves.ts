@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, authedQuery } from "./middleware.ts";
-import { getSupabaseClient } from "./queries/supabase-client.ts";
+import { createRouter, authedQuery } from "./middleware.js";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const salesWizardSaveRouter = createRouter({
   save: authedQuery

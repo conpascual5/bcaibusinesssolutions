@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { env } from "./lib/env.ts";
+import { env } from "./lib/env.js";
 import { streamSSE } from "hono/streaming";
 
 const app = new Hono();
@@ -16,7 +16,7 @@ app.post("/api/fb-ads-targeting", async (c) => {
     let apiKey = env.deepseekApiKey;
     if (!apiKey) {
       try {
-        const { getSupabaseClient } = await import("./queries/supabase-client.ts");
+        const { getSupabaseClient } = await import("./queries/supabase-client.js");
         const supabase = getSupabaseClient();
         const { data } = await supabase
           .from("settings")

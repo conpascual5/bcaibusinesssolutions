@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, publicQuery } from "./middleware.ts";
-import { getSupabaseClient } from "./queries/supabase-client.ts";
+import { createRouter, publicQuery } from "./middleware.js";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const authRouter = createRouter({
   me: publicQuery.query(async ({ ctx }) => {

@@ -1,6 +1,6 @@
 // Vercel serverless entry point
 // Direct import — Vercel's esbuild will bundle everything into a single file
-import app from "./boot";
+import app from "./boot.js";
 
 export const config = {
   runtime: "nodejs",

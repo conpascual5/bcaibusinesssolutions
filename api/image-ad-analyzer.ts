@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { env } from "./lib/env.ts";
+import { env } from "./lib/env.js";
 import { streamSSE } from "hono/streaming";
 
 const app = new Hono();
@@ -11,7 +11,7 @@ async function getApiKey(keyName: string): Promise<string> {
 
   // Fall back to Supabase settings
   try {
-    const { getSupabaseClient } = await import("./queries/supabase-client.ts");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
     const { data } = await supabase
       .from("settings")

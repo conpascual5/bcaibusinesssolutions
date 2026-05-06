@@ -4,7 +4,7 @@ const debugUsersApp = new Hono();
 
 debugUsersApp.get("/api/debug/users", async (c) => {
   try {
-    const { getSupabaseClient } = await import("./queries/supabase-client.ts");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from("profiles")

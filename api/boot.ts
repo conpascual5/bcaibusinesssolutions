@@ -1,12 +1,12 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
-import { appRouter } from "./router";
-import { createContext } from "./context";
-import { env } from "./lib/env";
-import salesWizard from "./sales-wizard";
-import loginApp from "./login";
-import registerApp from "./register";
+import { appRouter } from "./router.js";
+import { createContext } from "./context.js";
+import { env } from "./lib/env.js";
+import salesWizard from "./sales-wizard.js";
+import loginApp from "./login.js";
+import registerApp from "./register.js";
 
 const app = new Hono();
 

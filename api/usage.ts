@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { getSupabaseClient } from "./queries/supabase-client.ts";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 const app = new Hono();
 

@@ -1,5 +1,5 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import { getSupabaseClient } from "./queries/supabase-client.ts";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export type TrpcContext = {
   req: Request;

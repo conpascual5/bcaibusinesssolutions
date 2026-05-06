@@ -13,7 +13,7 @@ registerApp.post("/api/register", async (c) => {
       return c.json({ error: "Password must be at least 6 characters" }, 400);
     }
 
-    const { getSupabaseClient } = await import("./queries/supabase-client.ts");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
 
     // Sign up with Supabase Auth

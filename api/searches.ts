@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createRouter, authedQuery } from "./middleware.ts";
-import { getSupabaseClient } from "./queries/supabase-client.ts";
+import { createRouter, authedQuery } from "./middleware.js";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const searchRouter = createRouter({
   save: authedQuery
