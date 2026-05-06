@@ -67,17 +67,12 @@ registerApp.post("/api/register", async (c) => {
     }
 
     // Generate JWT
-    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
-    const payload = {
+    // (Use the shared signer so we don't accidentally create non-standard tokens)
+    const token = await signJWT({
       userId: Number(userId),
-      email: email,
+      email: String(email),
       isAdmin: !!isAdmin,
-      iat: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 86400 * 7,
-    };
-    const body = Buffer.from(JSON.stringify(payload)).toString("base64url");
-    const signature = Buffer.from(env.jwtSecret).toString("base64url");
-    const token = `${header}.${body}.${signature}`;
+    });
 
     return c.json({
       token,
