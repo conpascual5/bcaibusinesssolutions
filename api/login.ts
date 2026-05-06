@@ -12,9 +12,8 @@ loginApp.post("/api/login", async (c) => {
       return c.json({ error: "Email and password required" }, 400);
     }
 
-    const { env } = await import("./lib/env.js");
     const { getDbReady, getRawDb } = await import("./queries/connection.js");
-    const { verifyPassword } = await import("./auth-utils.js");
+    const { verifyPassword, signJWT } = await import("./auth-utils.js");
     
     console.log("[login] Starting login for:", email);
     await getDbReady();
@@ -52,8 +51,6 @@ loginApp.post("/api/login", async (c) => {
     }
 
     // Generate JWT
-    // (Use the shared signer so we don't accidentally create non-standard tokens)
-    const { signJWT } = await import("./auth-utils.js");
     const token = await signJWT({
       userId: Number(user.id),
       email: String(user.email),

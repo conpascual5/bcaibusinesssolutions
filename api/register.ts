@@ -15,7 +15,6 @@ registerApp.post("/api/register", async (c) => {
       return c.json({ error: "Password must be at least 6 characters" }, 400);
     }
 
-    const { env } = await import("./lib/env.js");
     const { hashPassword, signJWT } = await import("./auth-utils.js");
 
     // Use the local SQLite database (same as the rest of the app)

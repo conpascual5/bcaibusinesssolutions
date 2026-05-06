@@ -1,9 +1,9 @@
 import { env } from "../lib/env.js";
 
-// On Vercel, use Supabase (Postgres via JS client) for fast cold starts
-// Falls back to Neon when DATABASE_URL is set (local dev with Postgres)
-// Falls back to SQLite when nothing is configured (local dev only)
-const useSupabase = !!env.isVercel;
+// In this app we primarily use SQL.js-backed SQLite for development/preview.
+// Supabase/Neon paths exist for deployments, but in the Dyad preview environment
+// we want deterministic local behavior.
+const useSupabase = false;
 const useNeon = !env.isVercel && !!env.databaseUrl && (env.databaseUrl.startsWith("postgres://") || env.databaseUrl.startsWith("postgresql://"));
 
 async function getSupabaseDbReady() {
