@@ -5,7 +5,7 @@ export async function hashPassword(password: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + env.jwtSecret);
   const hash = await crypto.subtle.digest("SHA-256", data);
-  return btoa(String.fromCharCode(...new Uint8Array(hash)));
+  return Buffer.from(new Uint8Array(hash)).toString("base64");
 }
 
 export async function verifyPassword(password: string, hash: string): Promise<boolean> {
@@ -112,9 +112,9 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
 
 // JWT-like token using base64 encoding (simple, no external deps)
 export function signJWT(payload: { userId: number; email: string; isAdmin: boolean }): string {
-  const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
-  const body = btoa(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 7 }));
-  const signature = btoa(env.jwtSecret);
+  const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url");
+  const body = Buffer.from(JSON.stringify({ ...payload, iat: Math.floor(Date.now() / 1000), exp: Math.floor(Date.now() / 1000) + 86400 * 7 })).toString("base64url");
+  const signature = Buffer.from(env.jwtSecret).toString("base64url");
   return `${header}.${body}.${signature}`;
 }
 
@@ -122,7 +122,8 @@ export function verifyJWT(token: string): { userId: number; email: string; isAdm
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    const body = JSON.parse(atob(parts[1]));
+    const bodyJson = Buffer.from(parts[1], "base64").toString("utf8");
+    const body = JSON.parse(bodyJson);
     if (body.exp && body.exp < Math.floor(Date.now() / 1000)) return null;
     return { userId: body.userId, email: body.email, isAdmin: body.isAdmin };
   } catch {
