@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, adminQuery, authedQuery } from "./middleware.js";
-import { getSupabaseClient } from "./queries/supabase-client.js";
+import { createRouter, adminQuery, authedQuery } from "./middleware.ts";
+import { getSupabaseClient } from "./queries/supabase-client.ts";
 
 export const userRouter = createRouter({
   list: adminQuery.query(async () => {

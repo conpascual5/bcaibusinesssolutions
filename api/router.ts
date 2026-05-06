@@ -1,12 +1,12 @@
-import { createRouter, publicQuery, adminQuery, authedQuery } from "./middleware.js";
-import { searchRouter } from "./searches.js";
-import { authRouter } from "./auth.js";
-import { userRouter } from "./users.js";
-import { settingsRouter } from "./settings.js";
-import { imageRouter } from "./images.js";
-import { chatRouter } from "./chat.js";
-import { setupRouter } from "./setup.js";
-import { salesWizardSaveRouter } from "./sales-wizard-saves.js";
+import { createRouter, publicQuery, adminQuery, authedQuery } from "./middleware.ts";
+import { searchRouter } from "./searches.ts";
+import { authRouter } from "./auth.ts";
+import { userRouter } from "./users.ts";
+import { settingsRouter } from "./settings.ts";
+import { imageRouter } from "./images.ts";
+import { chatRouter } from "./chat.ts";
+import { setupRouter } from "./setup.ts";
+import { salesWizardSaveRouter } from "./sales-wizard-saves.ts";
 
 export const appRouter = createRouter({
   ping: publicQuery.query(() => ({ ok: true, ts: Date.now() })),

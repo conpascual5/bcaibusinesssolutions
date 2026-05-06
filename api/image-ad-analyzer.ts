@@ -11,7 +11,7 @@ async function getApiKey(keyName: string): Promise<string> {
 
   // Fall back to Supabase settings
   try {
-    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const { getSupabaseClient } = await import("./queries/supabase-client.ts");
     const supabase = getSupabaseClient();
     const { data } = await supabase
       .from("settings")

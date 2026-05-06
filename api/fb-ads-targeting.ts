@@ -16,7 +16,7 @@ app.post("/api/fb-ads-targeting", async (c) => {
     let apiKey = env.deepseekApiKey;
     if (!apiKey) {
       try {
-        const { getSupabaseClient } = await import("./queries/supabase-client.js");
+        const { getSupabaseClient } = await import("./queries/supabase-client.ts");
         const supabase = getSupabaseClient();
         const { data } = await supabase
           .from("settings")

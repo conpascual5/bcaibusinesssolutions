@@ -1,6 +1,6 @@
 import { z } from "zod";
-import { createRouter, adminQuery } from "./middleware.js";
-import { getSupabaseClient } from "./queries/supabase-client.js";
+import { createRouter, adminQuery } from "./middleware.ts";
+import { getSupabaseClient } from "./queries/supabase-client.ts";
 
 const FAL_KEY = "fal_api_key";
 const DEEPSEEK_KEY = "deepseek_api_key";

@@ -1,6 +1,6 @@
 // Build API server for Vercel deployment
 // Bundles all TypeScript files into a single output file
-// This avoids module resolution issues with .js → .ts imports on Vercel
+// This avoids module resolution issues with .ts imports on Vercel
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";

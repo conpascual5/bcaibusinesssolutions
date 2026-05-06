@@ -10,7 +10,7 @@ loginApp.post("/api/login", async (c) => {
       return c.json({ error: "Email and password required" }, 400);
     }
 
-    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const { getSupabaseClient } = await import("./queries/supabase-client.ts");
     const supabase = getSupabaseClient();
 
     const { data, error } = await supabase.auth.signInWithPassword({

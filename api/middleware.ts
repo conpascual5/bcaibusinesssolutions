@@ -1,6 +1,6 @@
 import { initTRPC, TRPCError } from "@trpc/server";
-import type { TrpcContext } from "./context.js";
-import { getSupabaseClient } from "./queries/supabase-client.js";
+import type { TrpcContext } from "./context.ts";
+import { getSupabaseClient } from "./queries/supabase-client.ts";
 import superjson from "superjson";
 
 const t = initTRPC.context<TrpcContext>().create({
