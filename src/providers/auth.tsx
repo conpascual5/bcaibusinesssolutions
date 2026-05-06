@@ -32,18 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log("[auth] Fetching profile for user:", s.user.id, s.user.email);
-
+    // Fetch profile fresh from database every time
     const { data, error } = await supabase
       .from("profiles")
       .select("full_name, is_admin, plan, is_active")
       .eq("id", s.user.id)
       .maybeSingle();
 
-    console.log("[auth] Profile query result:", { data, error });
-
-    if (error) {
-      console.log("[auth] Profile query error, falling back to defaults");
+    if (error || !data) {
       // If profile is missing due to trigger delay, treat as loading user without admin.
       setUser({
         id: s.user.id,
@@ -55,8 +51,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-
-    console.log("[auth] Setting user with isAdmin:", !!data?.is_admin);
 
     setUser({
       id: s.user.id,
@@ -99,9 +93,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    // Re-fetch profile when window gains focus (user comes back to tab)
+    const onFocus = () => {
+      if (session) {
+        fetchProfile(session);
+      }
+    };
+    window.addEventListener("focus", onFocus);
+
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
+      window.removeEventListener("focus", onFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
