@@ -1,5 +1,6 @@
-// Build the API server for Vercel deployment
-// Compiles TypeScript files in api/ to JavaScript in dist/api/
+// Build API server for Vercel deployment
+// Bundles all TypeScript files into a single output file
+// This avoids module resolution issues with .js → .ts imports on Vercel
 import { execSync } from "child_process";
 import { fileURLToPath } from "url";
 import { dirname, resolve } from "path";
@@ -9,11 +10,26 @@ const root = resolve(__dirname, "..");
 
 console.log("=== Building API server for Vercel ===");
 
-// Use esbuild to compile the API TypeScript files
+// Use esbuild to bundle api/index.ts into a single file
+// --bundle: resolve all imports into a single output file
+// --platform=node: target Node.js runtime
+// --target=node20: match Vercel's Node.js version
+// --format=esm: use ES modules
+// --outfile=api/index.js: output to api/index.js (Vercel looks for this)
+// --external: don't bundle node_modules (Vercel provides them)
 try {
   execSync(
-    `npx esbuild api/index.ts --bundle --platform=node --target=node20 --outfile=dist/api/index.js --external:@hono/node-server --external:@trpc/server --external:@supabase/supabase-js --external:hono --external:zod --external:superjson --external:openai --external:@fal-ai/client --external:bcryptjs --external:dotenv --external:drizzle-orm --external:@libsql/client --external:@neondatabase/serverless --external:postgres --external:mysql2 --external:better-sqlite3 --external:sql.js --external:html2canvas --external:jspdf --external:recharts --external:date-fns --external:react --external:react-dom --format=esm`,
-    { cwd: root, stdio: "inherit" }
+    `npx esbuild api/index.ts --bundle --platform=node --target=node20 --format=esm --outfile=api/index.js ` +
+    `--external:hono ` +
+    `--external:@trpc/server ` +
+    `--external:@supabase/supabase-js ` +
+    `--external:zod ` +
+    `--external:superjson ` +
+    `--external:openai ` +
+    `--external:@fal-ai/client ` +
+    `--external:bcryptjs ` +
+    `--external:dotenv`,
+    { cwd: root, stdio: "inherit", shell: true }
   );
   console.log("API server built successfully!");
 } catch (err) {
