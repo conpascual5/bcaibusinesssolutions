@@ -1,16 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, authedQuery } from "./middleware.js";
-import { getDbReady } from "./queries/connection.js";
-import { images, settings } from "../db/schema.js";
-import { eq, desc } from "drizzle-orm";
-import { env } from "./lib/env.js";
-
-async function getFalKey(): Promise<string> {
-  const db = await getDbReady() as any;
-  const [row] = await db.select().from(settings).where(eq(settings.key, "fal_api_key")).limit(1);
-  return row?.value ?? env.falApiKey ?? "";
-}
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const imageRouter = createRouter({
   generate: authedQuery
@@ -23,7 +14,14 @@ export const imageRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const apiKey = await getFalKey();
+      const supabase = getSupabaseClient();
+      const { data: falSetting } = await supabase
+        .from("settings")
+        .select("value")
+        .eq("key", "fal_api_key")
+        .single();
+      const apiKey = falSetting?.value ?? "";
+
       if (!apiKey) {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "FAL_API_KEY not configured. Ask an admin to set it in Settings." });
       }
@@ -51,21 +49,26 @@ export const imageRouter = createRouter({
 
       const data: any = await response.json();
 
-      // Save images to DB
-      const db = await getDbReady() as any;
+      // Save images to Supabase
       const savedImages: any[] = [];
       if (data.images) {
         for (const img of data.images) {
-          const imgResult = await db.insert(images).values({
-            userId: ctx.user.userId,
-            url: img.url,
-            prompt: input.prompt,
-            width: img.width ?? 0,
-            height: img.height ?? 0,
-            contentType: img.content_type ?? "image/jpeg",
-          }).returning({ id: images.id });
-          const saved = imgResult[0];
-          savedImages.push({ id: saved.id, url: img.url, width: img.width, height: img.height, contentType: img.content_type });
+          const { data: inserted, error } = await supabase
+            .from("images")
+            .insert({
+              user_id: ctx.user.userId,
+              url: img.url,
+              prompt: input.prompt,
+              width: img.width ?? 0,
+              height: img.height ?? 0,
+              content_type: img.content_type ?? "image/jpeg",
+            })
+            .select("id, url, width, height, content_type")
+            .single();
+
+          if (!error && inserted) {
+            savedImages.push(inserted);
+          }
         }
       }
 
@@ -77,26 +80,49 @@ export const imageRouter = createRouter({
     }),
 
   list: authedQuery.query(async ({ ctx }) => {
-    const db = await getDbReady() as any;
-    return db
-      .select()
-      .from(images)
-      .where(eq(images.userId, ctx.user.userId))
-      .orderBy(desc(images.createdAt))
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("images")
+      .select("*")
+      .eq("user_id", ctx.user.userId)
+      .order("created_at", { ascending: false })
       .limit(100);
+
+    if (error) {
+      console.error("[images.list] error:", error.message);
+      throw new Error("Failed to fetch images");
+    }
+
+    return (data ?? []).map((img: any) => ({
+      id: img.id,
+      userId: img.user_id,
+      url: img.url,
+      prompt: img.prompt,
+      width: img.width,
+      height: img.height,
+      contentType: img.content_type,
+      createdAt: img.created_at,
+    }));
   }),
 
   delete: authedQuery
     .input(z.object({ imageId: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady() as any;
-      const [img] = await db.select().from(images).where(eq(images.id, input.imageId)).limit(1);
-      if (!img) throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
-      if (img.userId !== ctx.user.userId && !ctx.user.isAdmin) {
+      const supabase = getSupabaseClient();
+      const { data: img, error: fetchError } = await supabase
+        .from("images")
+        .select("id, user_id")
+        .eq("id", input.imageId)
+        .single();
+
+      if (fetchError || !img) throw new TRPCError({ code: "NOT_FOUND", message: "Image not found" });
+      if (img.user_id !== ctx.user.userId && !ctx.user.isAdmin) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your image" });
       }
-      await db.delete(images).where(eq(images.id, input.imageId));
+
+      const { error } = await supabase.from("images").delete().eq("id", input.imageId);
+      if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete image" });
+
       return { success: true };
     }),
 });
-

@@ -9,15 +9,17 @@ async function getApiKey(keyName: string): Promise<string> {
   if (keyName === "openai_api_key" && env.openaiApiKey) return env.openaiApiKey;
   if (keyName === "deepseek_api_key" && env.deepseekApiKey) return env.deepseekApiKey;
 
-  // Fall back to database setting
+  // Fall back to Supabase settings
   try {
-    const { getDbReady } = await import("./queries/connection.js");
-    const { settings } = await import("../db/schema.js");
-    const { eq } = await import("drizzle-orm");
-    const db = await getDbReady();
-    const [row] = await db.select().from(settings).where(eq(settings.key, keyName)).limit(1);
-    console.log(`[image-ad-analyzer] getApiKey(${keyName}):`, row ? `found (len=${row.value?.length})` : "not found");
-    return row?.value ?? "";
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const supabase = getSupabaseClient();
+    const { data } = await supabase
+      .from("settings")
+      .select("value")
+      .eq("key", keyName)
+      .single();
+    console.log(`[image-ad-analyzer] getApiKey(${keyName}):`, data ? `found (len=${data.value?.length})` : "not found");
+    return data?.value ?? "";
   } catch (err) {
     console.error(`[image-ad-analyzer] getApiKey(${keyName}) error:`, err);
     return "";

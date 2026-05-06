@@ -1,6 +1,4 @@
-// Standalone login endpoint — minimal imports for fast cold starts
-// This bypasses the full tRPC pipeline so login is instant even on cold starts
-
+// Standalone login endpoint — uses Supabase Auth
 import { Hono } from "hono";
 
 const loginApp = new Hono();
@@ -12,58 +10,41 @@ loginApp.post("/api/login", async (c) => {
       return c.json({ error: "Email and password required" }, 400);
     }
 
-    const { getDbReady, getRawDb } = await import("./queries/connection.js");
-    const { verifyPassword, signJWT } = await import("./auth-utils.js");
-    
-    console.log("[login] Starting login for:", email);
-    await getDbReady();
-    console.log("[login] getDbReady completed");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const supabase = getSupabaseClient();
 
-    // Get the raw SQL.js database for direct queries
-    const sqlJsDb = await getRawDb();
-    console.log("[login] getRawDb returned:", !!sqlJsDb);
-    if (!sqlJsDb) {
-      return c.json({ error: "Database not initialized" }, 500);
-    }
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
 
-    // Query using SQL.js prepare API
-    const stmt = sqlJsDb.prepare(
-      "SELECT id, email, name, password_hash, is_active, is_admin FROM users WHERE email = ?"
-    );
-    stmt.bind([email]);
-    let user: any = null;
-    if (stmt.step()) {
-      user = stmt.getAsObject();
-    }
-    stmt.free();
-
-    if (!user) {
+    if (error) {
+      console.error("[login] Supabase auth error:", error.message);
       return c.json({ error: "Invalid credentials" }, 401);
     }
-    if (!user.is_active) {
+
+    if (!data.user || !data.session) {
+      return c.json({ error: "Login failed" }, 500);
+    }
+
+    // Get profile info
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, is_admin, is_active")
+      .eq("id", data.user.id)
+      .single();
+
+    if (profile && !profile.is_active) {
       return c.json({ error: "Account deactivated" }, 403);
     }
 
-    // Use verifyPassword which has fallback logic for different hash formats
-    const valid = await verifyPassword(password, user.password_hash);
-    if (!valid) {
-      return c.json({ error: "Invalid credentials" }, 401);
-    }
-
-    // Generate JWT
-    const token = await signJWT({
-      userId: Number(user.id),
-      email: String(user.email),
-      isAdmin: !!user.is_admin,
-    });
-
     return c.json({
-      token,
+      token: data.session.access_token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: !!user.is_admin,
+        id: data.user.id,
+        email: data.user.email,
+        name: profile?.full_name ?? data.user.email?.split("@")[0] ?? "User",
+        isAdmin: !!profile?.is_admin,
       },
     });
   } catch (err: any) {

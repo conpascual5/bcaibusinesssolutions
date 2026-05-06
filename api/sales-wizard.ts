@@ -200,16 +200,18 @@ app.post("/api/sales-wizard", async (c) => {
       return c.json({ error: "Missing required fields: productName, targetAudience, contentType, framework" }, 400);
     }
 
-    // Try env var first, then fall back to database setting
+    // Try env var first, then fall back to Supabase settings
     let apiKey = env.deepseekApiKey;
     if (!apiKey) {
       try {
-        const { getDbReady } = await import("./queries/connection.js");
-        const { settings } = await import("../db/schema.js");
-        const { eq } = await import("drizzle-orm");
-        const db = await getDbReady();
-        const [row] = await db.select().from(settings).where(eq(settings.key, "deepseek_api_key")).limit(1);
-        apiKey = row?.value ?? "";
+        const { getSupabaseClient } = await import("./queries/supabase-client.js");
+        const supabase = getSupabaseClient();
+        const { data } = await supabase
+          .from("settings")
+          .select("value")
+          .eq("key", "deepseek_api_key")
+          .single();
+        apiKey = data?.value ?? "";
       } catch {
         // DB lookup failed
       }

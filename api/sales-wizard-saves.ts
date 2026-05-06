@@ -1,9 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, authedQuery } from "./middleware.js";
-import { getDbReady } from "./queries/connection.js";
-import { salesWizardSaves } from "../db/schema.js";
-import { eq, desc } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const salesWizardSaveRouter = createRouter({
   save: authedQuery
@@ -20,60 +18,107 @@ export const salesWizardSaveRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady() as any;
-      const result = await db.insert(salesWizardSaves).values({
-        userId: ctx.user.userId,
-        title: input.title,
-        productName: input.productName,
-        targetAudience: input.targetAudience,
-        messageContext: input.messageContext || null,
-        contentType: input.contentType,
-        framework: input.framework,
-        frameworkName: input.frameworkName,
-        output: input.output,
-      }).returning({ id: salesWizardSaves.id });
-      return { id: result[0].id };
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("sales_wizard_saves")
+        .insert({
+          user_id: ctx.user.userId,
+          title: input.title,
+          product_name: input.productName,
+          target_audience: input.targetAudience,
+          message_context: input.messageContext || null,
+          content_type: input.contentType,
+          framework: input.framework,
+          framework_name: input.frameworkName,
+          output: input.output,
+        })
+        .select("id")
+        .single();
+
+      if (error) {
+        console.error("[sales-wizard-saves.save] error:", error.message);
+        throw new Error("Failed to save");
+      }
+
+      return { id: data.id };
     }),
 
   list: authedQuery.query(async ({ ctx }) => {
-    const db = await getDbReady() as any;
-    return db
-      .select()
-      .from(salesWizardSaves)
-      .where(eq(salesWizardSaves.userId, ctx.user.userId))
-      .orderBy(desc(salesWizardSaves.createdAt));
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("sales_wizard_saves")
+      .select("*")
+      .eq("user_id", ctx.user.userId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[sales-wizard-saves.list] error:", error.message);
+      throw new Error("Failed to fetch saves");
+    }
+
+    return (data ?? []).map((s: any) => ({
+      id: s.id,
+      userId: s.user_id,
+      title: s.title,
+      productName: s.product_name,
+      targetAudience: s.target_audience,
+      messageContext: s.message_context,
+      contentType: s.content_type,
+      framework: s.framework,
+      frameworkName: s.framework_name,
+      output: s.output,
+      createdAt: s.created_at,
+    }));
   }),
 
   get: authedQuery
     .input(z.object({ id: z.number() }))
     .query(async ({ input, ctx }) => {
-      const db = await getDbReady() as any;
-      const [row] = await db
-        .select()
-        .from(salesWizardSaves)
-        .where(eq(salesWizardSaves.id, input.id))
-        .limit(1);
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Save not found" });
-      if (row.userId !== ctx.user.userId && !ctx.user.isAdmin) {
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("sales_wizard_saves")
+        .select("*")
+        .eq("id", input.id)
+        .single();
+
+      if (error || !data) throw new TRPCError({ code: "NOT_FOUND", message: "Save not found" });
+      if (data.user_id !== ctx.user.userId && !ctx.user.isAdmin) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your save" });
       }
-      return row;
+
+      return {
+        id: data.id,
+        userId: data.user_id,
+        title: data.title,
+        productName: data.product_name,
+        targetAudience: data.target_audience,
+        messageContext: data.message_context,
+        contentType: data.content_type,
+        framework: data.framework,
+        frameworkName: data.framework_name,
+        output: data.output,
+        createdAt: data.created_at,
+      };
     }),
 
   delete: authedQuery
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady() as any;
-      const [row] = await db
-        .select()
-        .from(salesWizardSaves)
-        .where(eq(salesWizardSaves.id, input.id))
-        .limit(1);
-      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Save not found" });
-      if (row.userId !== ctx.user.userId && !ctx.user.isAdmin) {
+      const supabase = getSupabaseClient();
+      const { data: row, error: fetchError } = await supabase
+        .from("sales_wizard_saves")
+        .select("id, user_id")
+        .eq("id", input.id)
+        .single();
+
+      if (fetchError || !row) throw new TRPCError({ code: "NOT_FOUND", message: "Save not found" });
+      if (row.user_id !== ctx.user.userId && !ctx.user.isAdmin) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your save" });
       }
-      await db.delete(salesWizardSaves).where(eq(salesWizardSaves.id, input.id));
+
+      const { error } = await supabase.from("sales_wizard_saves").delete().eq("id", input.id);
+      if (error) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to delete" });
+
       return { success: true };
     }),
 });

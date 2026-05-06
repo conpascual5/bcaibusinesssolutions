@@ -1,8 +1,5 @@
 import { Hono } from "hono";
-import { verifyJWT } from "./auth-utils.js";
-import { getDbReady } from "./queries/connection.js";
-import { users } from "../db/schema.js";
-import { eq, sql } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 const app = new Hono();
 
@@ -22,6 +19,23 @@ function getMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
+async function getUserFromToken(token: string) {
+  const supabase = getSupabaseClient();
+  const { data: { user }, error } = await supabase.auth.getUser(token);
+  if (error || !user) return null;
+  return user;
+}
+
+async function getUserPlan(userId: string): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data } = await supabase
+    .from("profiles")
+    .select("plan")
+    .eq("id", userId)
+    .single();
+  return data?.plan ?? "free";
+}
+
 // Check if user has remaining usage for a feature
 app.get("/api/usage/:feature", async (c) => {
   try {
@@ -29,8 +43,8 @@ app.get("/api/usage/:feature", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = verifyJWT(token);
-    if (!payload) return c.json({ error: "Invalid token" }, 401);
+    const supaUser = await getUserFromToken(token);
+    if (!supaUser) return c.json({ error: "Invalid token" }, 401);
 
     const feature = c.req.param("feature");
     const limit = FREE_LIMITS[feature];
@@ -39,12 +53,7 @@ app.get("/api/usage/:feature", async (c) => {
     }
 
     const month = getMonth();
-    const db = await getDbReady() as any;
-
-    // Get user's plan from local SQLite
-    const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-    const plan = user?.plan || "free";
-
+    const plan = await getUserPlan(supaUser.id);
     const isPro = plan === "pro";
     const isVip = plan === "vip";
 
@@ -59,14 +68,18 @@ app.get("/api/usage/:feature", async (c) => {
       });
     }
 
+    const supabase = getSupabaseClient();
+
     // VIP: 100 uses per month across all features
     const vipLimit = 100;
     if (isVip) {
-      // Get total usage across all features for this month from local DB
-      const [totalRow] = await db.execute(
-        sql`SELECT COALESCE(SUM(count), 0) as total FROM user_usage WHERE user_id = ${payload.userId} AND month = ${month}`
-      );
-      const totalUsed = Number(totalRow?.total ?? 0);
+      const { data: totalRows } = await supabase
+        .from("user_usage")
+        .select("count")
+        .eq("user_id", supaUser.id)
+        .eq("month", month);
+
+      const totalUsed = (totalRows ?? []).reduce((sum: number, r: any) => sum + (r.count ?? 0), 0);
       const remaining = Math.max(0, vipLimit - totalUsed);
 
       return c.json({
@@ -81,9 +94,14 @@ app.get("/api/usage/:feature", async (c) => {
     }
 
     // Free: get current usage count for this feature
-    const [usageRow] = await db.execute(
-      sql`SELECT COALESCE(count, 0) as count FROM user_usage WHERE user_id = ${payload.userId} AND feature = ${feature} AND month = ${month}`
-    );
+    const { data: usageRow } = await supabase
+      .from("user_usage")
+      .select("count")
+      .eq("user_id", supaUser.id)
+      .eq("feature", feature)
+      .eq("month", month)
+      .single();
+
     const used = Number(usageRow?.count ?? 0);
     const remaining = Math.max(0, limit - used);
 
@@ -109,8 +127,8 @@ app.post("/api/usage/:feature/increment", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
 
     const token = authHeader.replace("Bearer ", "");
-    const payload = verifyJWT(token);
-    if (!payload) return c.json({ error: "Invalid token" }, 401);
+    const supaUser = await getUserFromToken(token);
+    if (!supaUser) return c.json({ error: "Invalid token" }, 401);
 
     const feature = c.req.param("feature");
     const limit = FREE_LIMITS[feature];
@@ -119,12 +137,7 @@ app.post("/api/usage/:feature/increment", async (c) => {
     }
 
     const month = getMonth();
-    const db = await getDbReady() as any;
-
-    // Get user's plan from local SQLite
-    const [user] = await db.select().from(users).where(eq(users.id, payload.userId)).limit(1);
-    const plan = user?.plan || "free";
-
+    const plan = await getUserPlan(supaUser.id);
     const isPro = plan === "pro";
     const isVip = plan === "vip";
 
@@ -132,13 +145,18 @@ app.post("/api/usage/:feature/increment", async (c) => {
       return c.json({ success: true, isPro: true, plan: "pro" });
     }
 
+    const supabase = getSupabaseClient();
+
     // VIP: check total monthly usage across all features
     const vipLimit = 100;
     if (isVip) {
-      const [totalRow] = await db.execute(
-        sql`SELECT COALESCE(SUM(count), 0) as total FROM user_usage WHERE user_id = ${payload.userId} AND month = ${month}`
-      );
-      const totalUsed = Number(totalRow?.total ?? 0);
+      const { data: totalRows } = await supabase
+        .from("user_usage")
+        .select("count")
+        .eq("user_id", supaUser.id)
+        .eq("month", month);
+
+      const totalUsed = (totalRows ?? []).reduce((sum: number, r: any) => sum + (r.count ?? 0), 0);
 
       if (totalUsed >= vipLimit) {
         return c.json({
@@ -151,18 +169,23 @@ app.post("/api/usage/:feature/increment", async (c) => {
       }
 
       // Upsert usage
-      const [existing] = await db.execute(
-        sql`SELECT id, count FROM user_usage WHERE user_id = ${payload.userId} AND feature = ${feature} AND month = ${month}`
-      );
+      const { data: existing } = await supabase
+        .from("user_usage")
+        .select("id, count")
+        .eq("user_id", supaUser.id)
+        .eq("feature", feature)
+        .eq("month", month)
+        .single();
 
       if (existing) {
-        await db.execute(
-          sql`UPDATE user_usage SET count = count + 1, updated_at = datetime('now') WHERE id = ${existing.id}`
-        );
+        await supabase
+          .from("user_usage")
+          .update({ count: (existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
+          .eq("id", existing.id);
       } else {
-        await db.execute(
-          sql`INSERT INTO user_usage (user_id, feature, month, count) VALUES (${payload.userId}, ${feature}, ${month}, 1)`
-        );
+        await supabase
+          .from("user_usage")
+          .insert({ user_id: supaUser.id, feature, month, count: 1 });
       }
 
       return c.json({
@@ -177,9 +200,14 @@ app.post("/api/usage/:feature/increment", async (c) => {
     }
 
     // Free: check current usage
-    const [existing] = await db.execute(
-      sql`SELECT id, count FROM user_usage WHERE user_id = ${payload.userId} AND feature = ${feature} AND month = ${month}`
-    );
+    const { data: existing } = await supabase
+      .from("user_usage")
+      .select("id, count")
+      .eq("user_id", supaUser.id)
+      .eq("feature", feature)
+      .eq("month", month)
+      .single();
+
     const used = Number(existing?.count ?? 0);
 
     if (used >= limit) {
@@ -194,13 +222,14 @@ app.post("/api/usage/:feature/increment", async (c) => {
 
     // Increment
     if (existing) {
-      await db.execute(
-        sql`UPDATE user_usage SET count = count + 1, updated_at = datetime('now') WHERE id = ${existing.id}`
-      );
+      await supabase
+        .from("user_usage")
+        .update({ count: (existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
+        .eq("id", existing.id);
     } else {
-      await db.execute(
-        sql`INSERT INTO user_usage (user_id, feature, month, count) VALUES (${payload.userId}, ${feature}, ${month}, 1)`
-      );
+      await supabase
+        .from("user_usage")
+        .insert({ user_id: supaUser.id, feature, month, count: 1 });
     }
 
     return c.json({

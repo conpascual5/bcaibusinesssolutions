@@ -1,6 +1,4 @@
-// Standalone register endpoint — minimal imports for fast cold starts
-// This bypasses the full tRPC pipeline so registration is instant even on cold starts
-
+// Standalone register endpoint — uses Supabase Auth
 import { Hono } from "hono";
 
 const registerApp = new Hono();
@@ -15,71 +13,75 @@ registerApp.post("/api/register", async (c) => {
       return c.json({ error: "Password must be at least 6 characters" }, 400);
     }
 
-    const { hashPassword, signJWT } = await import("./auth-utils.js");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const supabase = getSupabaseClient();
 
-    // Use the local SQLite database (same as the rest of the app)
-    const { getDbReady, getRawDb, saveDb } = await import("./queries/connection.js");
-    await getDbReady();
-    const sqlJsDb = await getRawDb();
-    if (!sqlJsDb) {
-      return c.json({ error: "Database not initialized" }, 500);
-    }
-
-    // Check if email already exists in local DB
-    const existingStmt = sqlJsDb.prepare("SELECT id FROM users WHERE email = ?");
-    existingStmt.bind([email]);
-    if (existingStmt.step()) {
-      existingStmt.free();
-      return c.json({ error: "Email already registered" }, 409);
-    }
-    existingStmt.free();
-
-    const passwordHash = await hashPassword(password);
-
-    // Check if this is the first user — make them admin
-    const countStmt = sqlJsDb.prepare("SELECT COUNT(*) as cnt FROM users");
-    countStmt.step();
-    const countResult = countStmt.getAsObject() as { cnt: number };
-    countStmt.free();
-    const isAdmin = countResult.cnt === 0 ? 1 : 0;
-
-    // Insert the user into local SQLite DB
-    sqlJsDb.run(
-      "INSERT INTO users (email, password_hash, name, is_active, is_admin) VALUES (?, ?, ?, 1, ?)",
-      [email, passwordHash, name, isAdmin]
-    );
-    const userId = Number(sqlJsDb.exec("SELECT last_insert_rowid()")[0]?.values?.[0]?.[0] ?? 0);
-    await saveDb();
-
-    // If existing customer, auto-create VIP subscription
-    if (isExistingCustomer) {
-      try {
-        sqlJsDb.run(
-          "INSERT INTO subscriptions (user_id, plan, status) VALUES (?, 'vip', 'active')",
-          [userId]
-        );
-        await saveDb();
-        console.log(`[register] VIP subscription created for user ${userId} (${email})`);
-      } catch (subErr: any) {
-        console.error("[register] Failed to create VIP subscription:", subErr?.message ?? subErr);
-      }
-    }
-
-    // Generate JWT
-    // (Use the shared signer so we don't accidentally create non-standard tokens)
-    const token = await signJWT({
-      userId: Number(userId),
-      email: String(email),
-      isAdmin: !!isAdmin,
+    // Sign up with Supabase Auth
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: name,
+        },
+      },
     });
 
+    if (error) {
+      console.error("[register] Supabase auth error:", error.message);
+      if (error.message.includes("already")) {
+        return c.json({ error: "Email already registered" }, 409);
+      }
+      return c.json({ error: error.message }, 400);
+    }
+
+    if (!data.user) {
+      return c.json({ error: "Registration failed" }, 500);
+    }
+
+    // The trigger handle_new_user() should have created the profile.
+    // If not (e.g. email confirmation is on), create it manually.
+    const { data: existingProfile } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("id", data.user.id)
+      .single();
+
+    if (!existingProfile) {
+      await supabase.from("profiles").insert({
+        id: data.user.id,
+        email: data.user.email,
+        full_name: name,
+        is_active: true,
+        is_admin: false,
+        plan: "free",
+      });
+    }
+
+    // If existing customer, update plan to VIP
+    if (isExistingCustomer) {
+      await supabase
+        .from("profiles")
+        .update({ plan: "vip" })
+        .eq("id", data.user.id);
+      console.log(`[register] VIP plan set for user ${data.user.id} (${email})`);
+    }
+
+    // If email confirmation is required, tell the user
+    if (!data.session) {
+      return c.json({
+        message: "Registration successful! Please check your email to confirm your account.",
+        requiresConfirmation: true,
+      });
+    }
+
     return c.json({
-      token,
+      token: data.session.access_token,
       user: {
-        id: Number(userId),
-        email: email,
+        id: data.user.id,
+        email: data.user.email,
         name: name,
-        isAdmin: !!isAdmin,
+        isAdmin: false,
       },
     });
   } catch (err: any) {

@@ -4,21 +4,19 @@ const debugUsersApp = new Hono();
 
 debugUsersApp.get("/api/debug/users", async (c) => {
   try {
-    const { getDbReady, getRawDb } = await import("./queries/connection.js");
-    await getDbReady();
-    const raw = await getRawDb();
-    if (!raw) return c.json({ error: "Database not initialized" }, 500);
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, is_admin, is_active, plan, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
 
-    const users: any[] = [];
-    const stmt = raw.prepare(
-      "SELECT id, email, name, is_admin, is_active, plan, created_at FROM users ORDER BY id DESC LIMIT 50"
-    );
-    while (stmt.step()) {
-      users.push(stmt.getAsObject());
+    if (error) {
+      return c.json({ error: error.message }, 500);
     }
-    stmt.free();
 
-    return c.json({ count: users.length, users });
+    return c.json({ count: data?.length ?? 0, users: data ?? [] });
   } catch (err: any) {
     return c.json({ error: err?.message ?? String(err) }, 500);
   }
