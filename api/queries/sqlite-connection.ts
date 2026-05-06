@@ -222,7 +222,7 @@ export async function getDb() {
         const encoder = new TextEncoder();
         const seedData = encoder.encode("admin123" + env.jwtSecret);
         const seedHashBuffer = await crypto.subtle.digest("SHA-256", seedData);
-        const adminHash = btoa(String.fromCharCode(...new Uint8Array(seedHashBuffer)));
+        const adminHash = Buffer.from(new Uint8Array(seedHashBuffer)).toString("base64");
         sqlJsDb.run(
           `INSERT OR IGNORE INTO users (email, password_hash, name, is_active, is_admin)
            VALUES ('conpascual5@gmail.com', ?, 'BC AI Admin', 1, 1)`,

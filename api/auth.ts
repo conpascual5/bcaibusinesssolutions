@@ -140,7 +140,7 @@ export const authRouter = createRouter({
         if (!user) {
           return { success: true, message: "If that email is registered, a password reset link has been sent." };
         }
-        const resetToken = btoa(`${user.id}:${user.email}:${Date.now()}`);
+        const resetToken = Buffer.from(`${user.id}:${user.email}:${Date.now()}`).toString("base64");
         console.log(`[forgot-password] Reset token for ${input.email}: ${resetToken}`);
         return { success: true, message: "If that email is registered, a password reset link has been sent." };
       } catch (err: any) {

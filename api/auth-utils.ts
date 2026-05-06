@@ -122,7 +122,13 @@ export function verifyJWT(token: string): { userId: number; email: string; isAdm
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    const bodyJson = Buffer.from(parts[1], "base64").toString("utf8");
+    // Try base64url first, fall back to base64 (for old tokens)
+    let bodyJson: string;
+    try {
+      bodyJson = Buffer.from(parts[1], "base64url").toString("utf8");
+    } catch {
+      bodyJson = Buffer.from(parts[1], "base64").toString("utf8");
+    }
     const body = JSON.parse(bodyJson);
     if (body.exp && body.exp < Math.floor(Date.now() / 1000)) return null;
     return { userId: body.userId, email: body.email, isAdmin: body.isAdmin };
