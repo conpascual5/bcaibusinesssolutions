@@ -1,84 +1,111 @@
-import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
-import { trpc } from "./trpc";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/integrations/supabase/client";
 
 export type AuthUser = {
-  id: number;
+  id: string;
   email: string;
   name: string;
   isAdmin: boolean;
+  plan: "free" | "pro" | "vip";
+  isActive: boolean;
 };
 
 type AuthContextType = {
   user: AuthUser | null;
   isLoading: boolean;
-  token: string | null;
-  setAuth: (token: string, user: AuthUser) => void;
-  logout: () => void;
+  session: Session | null;
+  logout: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [token, setToken] = useState<string | null>(() => localStorage.getItem("auth-token"));
+  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [ready, setReady] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const utils = trpc.useUtils();
+  const fetchProfile = async (s: Session | null) => {
+    if (!s?.user) {
+      setUser(null);
+      return;
+    }
 
-  const meQuery = trpc.auth.me.useQuery(undefined, {
-    enabled: !!token,
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
-  });
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("full_name, is_admin, plan, is_active")
+      .eq("id", s.user.id)
+      .maybeSingle();
+
+    if (error) {
+      // If profile is missing due to trigger delay, treat as loading user without admin.
+      setUser({
+        id: s.user.id,
+        email: s.user.email ?? "",
+        name: (s.user.user_metadata as any)?.full_name ?? (s.user.user_metadata as any)?.name ?? "",
+        isAdmin: false,
+        plan: "free",
+        isActive: true,
+      });
+      return;
+    }
+
+    setUser({
+      id: s.user.id,
+      email: s.user.email ?? "",
+      name:
+        data?.full_name ??
+        (s.user.user_metadata as any)?.full_name ??
+        (s.user.user_metadata as any)?.name ??
+        "",
+      isAdmin: !!data?.is_admin,
+      plan: (data?.plan as any) ?? "free",
+      isActive: data?.is_active ?? true,
+    });
+  };
 
   useEffect(() => {
-    if (meQuery.data) {
-      setUser(meQuery.data);
-      setReady(true);
-    } else if (meQuery.isError) {
-      localStorage.removeItem("auth-token");
-      setToken(null);
-      setUser(null);
-      setReady(true);
-    } else if (meQuery.isSuccess && meQuery.data === null) {
-      localStorage.removeItem("auth-token");
-      setToken(null);
-      setUser(null);
-      setReady(true);
-    } else if (!token) {
-      setReady(true);
-    }
-  }, [meQuery.data, meQuery.isError, meQuery.isSuccess, token]);
+    let mounted = true;
 
-  const setAuth = useCallback((newToken: string, newUser: AuthUser) => {
-    localStorage.setItem("auth-token", newToken);
-    setToken(newToken);
-    setUser(newUser);
-    setReady(true);
-    utils.auth.me.invalidate();
-  }, [utils]);
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      if (!mounted) return;
+      setSession(data.session);
+      await fetchProfile(data.session);
+      setIsLoading(false);
+    })();
 
-  const logout = useCallback(() => {
-    localStorage.removeItem("auth-token");
-    setToken(null);
-    setUser(null);
-    utils.auth.me.invalidate();
-    window.location.href = "/auth";
-  }, [utils]);
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mounted) return;
+      setSession(newSession);
+      await fetchProfile(newSession);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading: !ready,
-        token,
-        setAuth,
-        logout,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+      // Simple redirects for consistent UX
+      if (event === "SIGNED_OUT") {
+        window.location.href = "/auth";
+      }
+    });
+
+    return () => {
+      mounted = false;
+      sub.subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const value = useMemo(
+    () => ({
+      user,
+      isLoading,
+      session,
+      logout: async () => {
+        await supabase.auth.signOut();
+      },
+    }),
+    [user, isLoading, session]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
 export function useAuth() {
