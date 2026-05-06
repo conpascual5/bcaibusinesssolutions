@@ -7,6 +7,7 @@ import { env } from "./lib/env.js";
 import salesWizard from "./sales-wizard.js";
 import loginApp from "./login.js";
 import registerApp from "./register.js";
+import debugUsersApp from "./debug-users.js";
 
 const app = new Hono();
 
@@ -14,6 +15,7 @@ const app = new Hono();
 // This ensures auth works even when the full app hasn't loaded yet
 app.route("/", loginApp);
 app.route("/", registerApp);
+app.route("/", debugUsersApp);
 
 // Warm up the database connection on boot so first request doesn't timeout
 // This starts SQL.js WASM loading + table creation in the background
