@@ -1,103 +1,96 @@
 import { z } from "zod";
 import { createRouter, adminQuery } from "./middleware.js";
-import { getDbReady, saveDb } from "./queries/connection.js";
-import { settings } from "../db/schema.js";
-import { eq } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 const FAL_KEY = "fal_api_key";
 const DEEPSEEK_KEY = "deepseek_api_key";
 const OPENAI_KEY = "openai_api_key";
 
+async function getSetting(key: string): Promise<string> {
+  const supabase = getSupabaseClient();
+  const { data } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", key)
+    .single();
+  return data?.value ?? "";
+}
+
+async function upsertSetting(key: string, value: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { data: existing } = await supabase
+    .from("settings")
+    .select("id")
+    .eq("key", key)
+    .single();
+
+  if (existing) {
+    await supabase
+      .from("settings")
+      .update({ value, updated_at: new Date().toISOString() })
+      .eq("key", key);
+  } else {
+    await supabase
+      .from("settings")
+      .insert({ key, value, updated_at: new Date().toISOString() });
+  }
+}
+
 export const settingsRouter = createRouter({
   getApiKey: adminQuery.query(async () => {
-    const db = await getDbReady() as any;
-    const [row] = await db.select().from(settings).where(eq(settings.key, FAL_KEY)).limit(1);
-    return { apiKey: row?.value ?? "" };
+    const apiKey = await getSetting(FAL_KEY);
+    return { apiKey };
   }),
 
   setApiKey: adminQuery
     .input(z.object({ apiKey: z.string().min(1) }))
     .mutation(async ({ input }) => {
-      const db = await getDbReady() as any;
-      const [existing] = await db.select().from(settings).where(eq(settings.key, FAL_KEY)).limit(1);
-      if (existing) {
-        await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, FAL_KEY));
-      } else {
-        await db.insert(settings).values({ key: FAL_KEY, value: input.apiKey });
-      }
-      await saveDb();
+      await upsertSetting(FAL_KEY, input.apiKey);
       return { success: true };
     }),
 
   hasApiKey: adminQuery.query(async () => {
-    const db = await getDbReady() as any;
-    const [row] = await db.select().from(settings).where(eq(settings.key, FAL_KEY)).limit(1);
-    return { hasKey: !!row?.value && row.value.length > 0 };
+    const apiKey = await getSetting(FAL_KEY);
+    return { hasKey: apiKey.length > 0 };
   }),
 
   getDeepseekKey: adminQuery.query(async () => {
     console.log("[settings] getDeepseekKey called");
-    const db = await getDbReady() as any;
-    const [row] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
-    console.log("[settings] getDeepseekKey result:", row ? `found (value length: ${row.value?.length})` : "not found");
-    return { apiKey: row?.value ?? "" };
+    const apiKey = await getSetting(DEEPSEEK_KEY);
+    console.log("[settings] getDeepseekKey result:", apiKey ? `found (value length: ${apiKey.length})` : "not found");
+    return { apiKey };
   }),
 
   setDeepseekKey: adminQuery
     .input(z.object({ apiKey: z.string().min(1) }))
     .mutation(async ({ input }) => {
       console.log("[settings] setDeepseekKey called with key length:", input.apiKey.length);
-      const db = await getDbReady() as any;
-      console.log("[settings] db ready, querying existing...");
-      const [existing] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
-      console.log("[settings] existing row:", existing ? JSON.stringify({ key: existing.key, valueLength: existing.value?.length }) : "none");
-      if (existing) {
-        await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, DEEPSEEK_KEY));
-        console.log("[settings] updated existing row");
-      } else {
-        await db.insert(settings).values({ key: DEEPSEEK_KEY, value: input.apiKey });
-        console.log("[settings] inserted new row");
-      }
-      await saveDb();
+      await upsertSetting(DEEPSEEK_KEY, input.apiKey);
       return { success: true };
     }),
 
   hasDeepseekKey: adminQuery.query(async () => {
-    const db = await getDbReady() as any;
-    const [row] = await db.select().from(settings).where(eq(settings.key, DEEPSEEK_KEY)).limit(1);
-    return { hasKey: !!row?.value && row.value.length > 0 };
+    const apiKey = await getSetting(DEEPSEEK_KEY);
+    return { hasKey: apiKey.length > 0 };
   }),
 
   getOpenaiKey: adminQuery.query(async () => {
     console.log("[settings] getOpenaiKey called");
-    const db = await getDbReady() as any;
-    const [row] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
-    console.log("[settings] getOpenaiKey result:", row ? `found (value length: ${row.value?.length})` : "not found");
-    return { apiKey: row?.value ?? "" };
+    const apiKey = await getSetting(OPENAI_KEY);
+    console.log("[settings] getOpenaiKey result:", apiKey ? `found (value length: ${apiKey.length})` : "not found");
+    return { apiKey };
   }),
 
   setOpenaiKey: adminQuery
     .input(z.object({ apiKey: z.string().min(1) }))
     .mutation(async ({ input }) => {
       console.log("[settings] setOpenaiKey called with key length:", input.apiKey.length);
-      const db = await getDbReady() as any;
-      console.log("[settings] db ready, querying existing...");
-      const [existing] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
-      console.log("[settings] existing row:", existing ? JSON.stringify({ key: existing.key, valueLength: existing.value?.length }) : "none");
-      if (existing) {
-        await db.update(settings).set({ value: input.apiKey }).where(eq(settings.key, OPENAI_KEY));
-        console.log("[settings] updated existing row");
-      } else {
-        await db.insert(settings).values({ key: OPENAI_KEY, value: input.apiKey });
-        console.log("[settings] inserted new row");
-      }
-      await saveDb();
+      await upsertSetting(OPENAI_KEY, input.apiKey);
       return { success: true };
     }),
 
   hasOpenaiKey: adminQuery.query(async () => {
-    const db = await getDbReady() as any;
-    const [row] = await db.select().from(settings).where(eq(settings.key, OPENAI_KEY)).limit(1);
-    return { hasKey: !!row?.value && row.value.length > 0 };
+    const apiKey = await getSetting(OPENAI_KEY);
+    return { hasKey: apiKey.length > 0 };
   }),
 });

@@ -1,87 +1,149 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { createRouter, adminQuery, authedQuery } from "./middleware.js";
-import { getDbReady, saveDb } from "./queries/connection.js";
-import { users, planHistory } from "../db/schema.js";
-import { desc, eq } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const userRouter = createRouter({
   list: adminQuery.query(async () => {
-    const db = await getDbReady() as any;
-    const userList = await db.select().from(users).orderBy(desc(users.createdAt));
-    return userList.map((u: any) => ({
-      ...u,
-      plan: u.plan || "free",
-      subscriptionStatus: null,
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, is_admin, plan, is_active, activated_at, created_at")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("[user.list] error:", error.message);
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch users" });
+    }
+
+    return (data ?? []).map((u: any) => ({
+      id: u.id,
+      email: u.email ?? "",
+      fullName: u.full_name ?? "",
+      isAdmin: !!u.is_admin,
+      plan: u.plan ?? "free",
+      isActive: u.is_active ?? true,
+      activatedAt: u.activated_at,
+      createdAt: u.created_at,
     }));
   }),
 
   toggleActive: adminQuery
-    .input(z.object({ userId: z.number(), isActive: z.boolean() }))
+    .input(z.object({ userId: z.string(), isActive: z.boolean() }))
     .mutation(async ({ input }) => {
-      const db = await getDbReady() as any;
-      const now = new Date().toISOString();
-      await db.update(users).set({
-        isActive: input.isActive ? 1 : 0,
-        activatedAt: input.isActive ? now : undefined,
-      }).where(eq(users.id, input.userId));
-      await saveDb();
+      const supabase = getSupabaseClient();
+      const { error } = await supabase
+        .from("profiles")
+        .update({
+          is_active: input.isActive,
+          activated_at: input.isActive ? new Date().toISOString() : null,
+        })
+        .eq("id", input.userId);
+
+      if (error) {
+        console.error("[user.toggleActive] error:", error.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update user" });
+      }
       return { success: true };
     }),
 
   setPlan: adminQuery
-    .input(z.object({ userId: z.number(), plan: z.enum(["free", "pro", "vip"]) }))
+    .input(z.object({ userId: z.string(), plan: z.enum(["free", "pro", "vip"]) }))
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady() as any;
-      const now = new Date().toISOString();
+      const supabase = getSupabaseClient();
 
       // Get current plan before updating
-      const [currentUser] = await db.select().from(users).where(eq(users.id, input.userId)).limit(1);
-      const previousPlan = currentUser?.plan || "free";
+      const { data: current, error: fetchError } = await supabase
+        .from("profiles")
+        .select("plan")
+        .eq("id", input.userId)
+        .single();
+
+      if (fetchError) {
+        console.error("[user.setPlan] fetch error:", fetchError.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch current plan" });
+      }
+
+      const previousPlan = current?.plan ?? "free";
 
       // Update user plan
-      await db.update(users).set({
-        plan: input.plan,
-        activatedAt: now,
-        isActive: 1,
-      }).where(eq(users.id, input.userId));
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({
+          plan: input.plan,
+          activated_at: new Date().toISOString(),
+          is_active: true,
+        })
+        .eq("id", input.userId);
+
+      if (updateError) {
+        console.error("[user.setPlan] update error:", updateError.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to update plan" });
+      }
 
       // Log plan change to history
-      await db.insert(planHistory).values({
-        userId: input.userId,
+      const { error: insertError } = await supabase.from("plan_history").insert({
+        user_id: input.userId,
         plan: input.plan,
-        previousPlan: previousPlan,
-        setBy: ctx.user?.email || "Admin",
+        previous_plan: previousPlan,
+        set_by: ctx.user?.email ?? "Admin",
         notes: "",
-        createdAt: now,
+        created_at: new Date().toISOString(),
       });
 
-      await saveDb();
+      if (insertError) {
+        console.error("[user.setPlan] history insert error:", insertError.message);
+        // Non-fatal: plan was updated, history logging failed
+      }
+
       return { success: true, plan: input.plan };
     }),
 
   planHistory: adminQuery
-    .input(z.object({ userId: z.number() }))
+    .input(z.object({ userId: z.string() }))
     .query(async ({ input }) => {
-      const db = await getDbReady() as any;
-      const history = await db.select()
-        .from(planHistory)
-        .where(eq(planHistory.userId, input.userId))
-        .orderBy(desc(planHistory.createdAt));
-      return history;
+      const supabase = getSupabaseClient();
+      const { data, error } = await supabase
+        .from("plan_history")
+        .select("*")
+        .eq("user_id", input.userId)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("[user.planHistory] error:", error.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to fetch plan history" });
+      }
+
+      return (data ?? []).map((h: any) => ({
+        id: h.id,
+        userId: h.user_id,
+        plan: h.plan,
+        previousPlan: h.previous_plan,
+        setBy: h.set_by,
+        notes: h.notes,
+        createdAt: h.created_at,
+      }));
     }),
 
   profile: authedQuery.query(async ({ ctx }) => {
-    const db = await getDbReady() as any;
-    const [user] = await db.select().from(users).where(eq(users.id, ctx.user.userId)).limit(1);
-    if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, email, full_name, is_admin, plan, is_active")
+      .eq("id", ctx.user.userId)
+      .single();
+
+    if (error || !data) {
+      throw new TRPCError({ code: "NOT_FOUND", message: "User not found" });
+    }
+
     return {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      isActive: user.isActive,
-      isAdmin: user.isAdmin,
-      plan: user.plan || "free",
+      id: data.id,
+      email: data.email ?? "",
+      name: data.full_name ?? "",
+      isActive: data.is_active ?? true,
+      isAdmin: !!data.is_admin,
+      plan: data.plan ?? "free",
     };
   }),
 });

@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import superjson from "superjson";
 import type { AppRouter } from "../../api/router";
 import type { ReactNode } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export const trpc = createTRPCReact<AppRouter>();
 
@@ -68,8 +69,26 @@ const trpcClient = trpc.createClient({
       url: "/api/trpc",
       transformer: superjson,
       headers() {
-        const token = localStorage.getItem("auth-token");
-        return token ? { Authorization: `Bearer ${token}` } : {};
+        // Use Supabase session access token
+        const session = supabase.auth.getSession();
+        // We need to get the token synchronously from storage
+        const supabaseToken = (() => {
+          try {
+            // Supabase stores the session in localStorage
+            const raw = localStorage.getItem("supabase.auth.token");
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              const currentSession = parsed?.currentSession;
+              if (currentSession?.access_token) return currentSession.access_token;
+              // Try the new format
+              const token = parsed?.access_token;
+              if (token) return token;
+            }
+          } catch {}
+          return null;
+        })();
+        
+        return supabaseToken ? { Authorization: `Bearer ${supabaseToken}` } : {};
       },
       fetch: trpcFetch as typeof fetch,
     }),

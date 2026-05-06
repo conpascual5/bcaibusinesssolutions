@@ -1,10 +1,10 @@
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
-import { verifyJWT } from "./auth-utils.js";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export type TrpcContext = {
   req: Request;
   resHeaders: Headers;
-  user: { userId: number; email: string; isAdmin: boolean } | null;
+  user: { userId: string; email: string; isAdmin: boolean } | null;
 };
 
 export async function createContext(
@@ -27,11 +27,18 @@ export async function createContext(
     }
   }
 
-  let user: { userId: number; email: string; isAdmin: boolean } | null = null;
+  let user: { userId: string; email: string; isAdmin: boolean } | null = null;
   if (token) {
-    const payload = verifyJWT(token);
-    if (payload) {
-      user = { userId: payload.userId, email: payload.email, isAdmin: payload.isAdmin };
+    // Verify the token with Supabase
+    const supabase = getSupabaseClient();
+    const { data: { user: supaUser }, error } = await supabase.auth.getUser(token);
+
+    if (!error && supaUser) {
+      user = {
+        userId: supaUser.id,
+        email: supaUser.email ?? "",
+        isAdmin: false, // Will be checked in middleware
+      };
     }
   }
 

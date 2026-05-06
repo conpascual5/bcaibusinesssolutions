@@ -1,8 +1,6 @@
 import { z } from "zod";
 import { createRouter, authedQuery } from "./middleware.js";
-import { getDbReady } from "./queries/connection.js";
-import { searches } from "../db/schema.js";
-import { desc } from "drizzle-orm";
+import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const searchRouter = createRouter({
   save: authedQuery
@@ -12,28 +10,47 @@ export const searchRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const db = await getDbReady() as any;
+      const supabase = getSupabaseClient();
       const forwarded = ctx.req.headers.get("x-forwarded-for");
       const realIp = ctx.req.headers.get("x-real-ip");
       const ipAddress = forwarded?.split(",")[0]?.trim() || realIp || "unknown";
       const userAgent = ctx.req.headers.get("user-agent") ?? undefined;
-      
-      await db.insert(searches).values({
-        userId: ctx.user.userId,
-        productQuery: input.productQuery,
-        ipAddress: ipAddress.length > 100 ? ipAddress.slice(0, 100) : ipAddress,
-        userAgent: userAgent ?? null,
+
+      const { error } = await supabase.from("searches").insert({
+        user_id: ctx.user.userId,
+        product_query: input.productQuery,
+        ip_address: ipAddress.length > 100 ? ipAddress.slice(0, 100) : ipAddress,
+        user_agent: userAgent ?? null,
       });
+
+      if (error) {
+        console.error("[search.save] error:", error.message);
+        throw new Error("Failed to save search");
+      }
+
       return { success: true };
     }),
 
   list: authedQuery.query(async () => {
-    const db = await getDbReady() as any;
-    const results = await db
-      .select()
-      .from(searches)
-      .orderBy(desc(searches.createdAt))
+    const supabase = getSupabaseClient();
+    const { data, error } = await supabase
+      .from("searches")
+      .select("*")
+      .order("created_at", { ascending: false })
       .limit(200);
-    return results;
+
+    if (error) {
+      console.error("[search.list] error:", error.message);
+      throw new Error("Failed to fetch searches");
+    }
+
+    return (data ?? []).map((s: any) => ({
+      id: s.id,
+      userId: s.user_id,
+      productQuery: s.product_query,
+      ipAddress: s.ip_address,
+      userAgent: s.user_agent,
+      createdAt: s.created_at,
+    }));
   }),
 });

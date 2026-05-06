@@ -1,5 +1,5 @@
 // Supabase client for server-side use in the API
-// Uses the service role key for admin access (bypasses RLS)
+// Uses the service role key for admin operations (bypasses RLS)
 // Falls back to anon key if service role key is not available
 
 import { createClient } from "@supabase/supabase-js";
@@ -11,6 +11,7 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
 let supabase: ReturnType<typeof createClient> | null = null;
+let anonSupabase: ReturnType<typeof createClient> | null = null;
 
 export function getSupabaseClient() {
   if (!supabase) {
@@ -19,4 +20,12 @@ export function getSupabaseClient() {
     console.log("[supabase-client] Created Supabase client" + (serviceRoleKey ? " (service role)" : " (anon)"));
   }
   return supabase;
+}
+
+/** Get an anon-key client (respects RLS) for user-facing queries */
+export function getAnonSupabaseClient() {
+  if (!anonSupabase) {
+    anonSupabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+  return anonSupabase;
 }
