@@ -36,26 +36,33 @@ export default function AuthPage() {
     setError(null);
     setSubmitting(true);
 
+    console.log("[auth] handleSubmit: starting", { mode, email });
+
     try {
       if (mode === "sign_up") {
-        const { error: signUpError } = await supabase.auth.signUp({
+        console.log("[auth] handleSubmit: signing up");
+        const { data, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: name },
           },
         });
+        console.log("[auth] handleSubmit: signUp result", { data, error: signUpError });
         if (signUpError) throw signUpError;
         toast.success("Check your email for the confirmation link!");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        console.log("[auth] handleSubmit: signing in");
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        console.log("[auth] handleSubmit: signIn result", { data, error: signInError });
         if (signInError) throw signInError;
         // Navigation will happen via the auth state listener in AuthProvider
       }
     } catch (err: any) {
+      console.error("[auth] handleSubmit: error", err);
       setError(err.message || "An error occurred");
     } finally {
       setSubmitting(false);
