@@ -1,27 +1,4 @@
-import { getDbReady } from "../api/queries/connection.js";
-import { users } from "./schema.js";
-import { eq } from "drizzle-orm";
-import { hashPassword } from "../api/auth-utils.js";
-
-async function seed() {
-  const db = await getDbReady();
-
-  const existing = await db.select().from(users).where(eq(users.email, "conpascual5@gmail.com")).limit(1);
-  if (existing.length > 0) {
-    console.log("Admin user already exists");
-    return;
-  }
-
-  const passwordHash = await hashPassword("admin123");
-  await db.insert(users).values({
-    email: "conpascual5@gmail.com",
-    passwordHash,
-    name: "BC AI Admin",
-    isActive: true,
-    isAdmin: true,
-  });
-
-  console.log("Admin user created: conpascual5@gmail.com / admin123");
-}
-
-seed().catch(console.error);
+// Seed script — no longer needed since we use Supabase Auth and profiles
+// Admin user conpascual5@gmail.com is already set up in Supabase
+console.log("Seeding is handled via Supabase Auth and profiles table.");
+console.log("Admin user conpascual5@gmail.com is already configured.");
