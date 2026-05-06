@@ -16,62 +16,41 @@ registerApp.post("/api/register", async (c) => {
     }
 
     const { env } = await import("./lib/env.js");
-    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const { hashPassword, signJWT } = await import("./auth-utils.js");
 
-    const supabase = getSupabaseClient();
+    // Use the local SQLite database (same as the rest of the app)
+    const { getDbReady, saveDb } = await import("./queries/connection.js");
+    const db = await getDbReady() as any;
 
-    // Check if email already exists
-    const { data: existing } = await supabase
-      .from("users")
-      .select("id")
-      .eq("email", email)
-      .limit(1);
-
-    if ((existing as any[])?.length) {
+    // Check if email already exists in local DB
+    const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);
+    if (existing) {
       return c.json({ error: "Email already registered" }, 409);
     }
 
     const passwordHash = await hashPassword(password);
 
     // Check if this is the first user — make them admin
-    const { count } = await supabase
-      .from("users")
-      .select("*", { count: "exact", head: true });
+    const countResult = db.prepare("SELECT COUNT(*) as cnt FROM users").get();
+    const isAdmin = (countResult?.cnt || 0) === 0 ? 1 : 0;
 
-    const isAdmin = count === 0 ? 1 : 0;
+    // Insert the user into local SQLite DB
+    const stmt = db.prepare(
+      "INSERT INTO users (email, password_hash, name, is_active, is_admin) VALUES (?, ?, ?, 1, ?)"
+    );
+    const result = stmt.run(email, passwordHash, name, isAdmin);
+    await saveDb();
 
-    // Insert the user
-    const { data: newUsers, error: insertError } = await supabase
-      .from("users")
-      .insert({
-        email,
-        password_hash: passwordHash,
-        name,
-        is_active: 1,
-        is_admin: isAdmin,
-      } as any)
-      .select();
-
-    if (insertError) {
-      console.error("[register] insert error:", insertError.message);
-      return c.json({ error: "Failed to create account. Please try again." }, 500);
-    }
-
-    const user = (newUsers as any[])?.[0];
-    if (!user) {
-      return c.json({ error: "Failed to create account." }, 500);
-    }
+    const userId = result.lastInsertRowid;
 
     // If existing customer, auto-create VIP subscription
     if (isExistingCustomer) {
       try {
-        await (supabase.from("subscriptions") as any).insert({
-          user_id: user.id,
-          plan: "vip",
-          status: "active",
-        });
-        console.log(`[register] VIP subscription created for user ${user.id} (${email})`);
+        db.prepare(
+          "INSERT INTO subscriptions (user_id, plan, status) VALUES (?, 'vip', 'active')"
+        ).run(userId);
+        await saveDb();
+        console.log(`[register] VIP subscription created for user ${userId} (${email})`);
       } catch (subErr: any) {
         console.error("[register] Failed to create VIP subscription:", subErr?.message ?? subErr);
       }
@@ -80,9 +59,9 @@ registerApp.post("/api/register", async (c) => {
     // Generate JWT
     const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
     const payload = {
-      userId: user.id,
-      email: user.email,
-      isAdmin: !!user.is_admin,
+      userId: Number(userId),
+      email: email,
+      isAdmin: !!isAdmin,
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 86400 * 7,
     };
@@ -93,10 +72,10 @@ registerApp.post("/api/register", async (c) => {
     return c.json({
       token,
       user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        isAdmin: !!user.is_admin,
+        id: Number(userId),
+        email: email,
+        name: name,
+        isAdmin: !!isAdmin,
       },
     });
   } catch (err: any) {

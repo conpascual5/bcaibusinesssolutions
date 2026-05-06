@@ -13,22 +13,14 @@ loginApp.post("/api/login", async (c) => {
     }
 
     const { env } = await import("./lib/env.js");
-    const { getSupabaseClient } = await import("./queries/supabase-client.js");
+    const { getDbReady } = await import("./queries/connection.js");
+    const db = await getDbReady() as any;
 
-    const supabase = getSupabaseClient();
+    // Query the local SQLite database
+    const user = db.prepare(
+      "SELECT id, email, name, password_hash, is_active, is_admin FROM users WHERE email = ?"
+    ).get(email);
 
-    const { data: users, error } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email)
-      .limit(1);
-
-    if (error) {
-      console.error("[login] Supabase query error:", error.message);
-      return c.json({ error: "Database error. Please try again." }, 500);
-    }
-
-    const user = users?.[0];
     if (!user) {
       return c.json({ error: "Invalid credentials" }, 401);
     }
