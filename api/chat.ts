@@ -13,8 +13,9 @@ async function getSetting(key: string): Promise<string> {
     .from("settings")
     .select("value")
     .eq("key", key)
-    .maybeSingle();
-  return data?.value ?? "";
+    .limit(1);
+  const rows = (data as any[]) ?? [];
+  return rows[0]?.value ?? "";
 }
 
 async function callDeepseek(messages: { role: string; content: string }[], apiKey: string): Promise<string | null> {

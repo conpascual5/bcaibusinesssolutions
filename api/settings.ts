@@ -12,31 +12,48 @@ async function getSetting(key: string): Promise<string> {
     .from("settings")
     .select("value")
     .eq("key", key)
-    .maybeSingle();
-  return data?.value ?? "";
+    .limit(1);
+  const rows = (data as any[]) ?? [];
+  return rows[0]?.value ?? "";
 }
 
 async function upsertSetting(key: string, value: string): Promise<void> {
   const supabase = getSupabaseClient();
-  const { data: existing, error } = await (supabase as any)
+  
+  // Try update first
+  const { data: existing, error: selectError } = await (supabase as any)
     .from("settings")
     .select("id")
     .eq("key", key)
-    .maybeSingle();
+    .limit(1);
 
-  if (error) {
-    console.error("[settings] upsertSetting select error:", error.message);
+  if (selectError) {
+    console.error("[settings] upsertSetting select error:", selectError.message);
   }
 
-  if (existing) {
-    await (supabase as any)
+  const existingRow = (existing as any[])?.[0];
+
+  if (existingRow) {
+    const { error: updateError } = await (supabase as any)
       .from("settings")
       .update({ value, updated_at: new Date().toISOString() })
       .eq("key", key);
+    
+    if (updateError) {
+      console.error("[settings] upsertSetting update error:", updateError.message);
+      throw new Error(`Failed to update setting: ${updateError.message}`);
+    }
+    console.log("[settings] upsertSetting updated key:", key);
   } else {
-    await (supabase as any)
+    const { error: insertError } = await (supabase as any)
       .from("settings")
       .insert({ key, value, updated_at: new Date().toISOString() });
+    
+    if (insertError) {
+      console.error("[settings] upsertSetting insert error:", insertError.message);
+      throw new Error(`Failed to insert setting: ${insertError.message}`);
+    }
+    console.log("[settings] upsertSetting inserted key:", key);
   }
 }
 
