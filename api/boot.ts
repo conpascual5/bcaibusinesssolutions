@@ -18,15 +18,15 @@ app.route("/", registerApp);
 app.route("/", salesWizard);
 
 // Mount FB Ads Targeting routes
-import fbAdsTargeting from "./fb-ads-targeting";
+import fbAdsTargeting from "./fb-ads-targeting.js";
 app.route("/", fbAdsTargeting);
 
 // Mount Image Ad Analyzer routes
-import imageAdAnalyzer from "./image-ad-analyzer";
+import imageAdAnalyzer from "./image-ad-analyzer.js";
 app.route("/", imageAdAnalyzer);
 
 // Mount Usage tracking routes
-import usageApp from "./usage";
+import usageApp from "./usage.js";
 app.route("/", usageApp);
 
 // Global error handler — ensures all errors return JSON

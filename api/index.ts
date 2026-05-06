@@ -1,5 +1,7 @@
 // Vercel serverless entry point
-// Direct import — Vercel's esbuild will bundle everything into a single file
+// This file is bundled by esbuild (scripts/build-api.mjs) into api/index.js
+// esbuild resolves all .ts imports and bundles everything into a single file
+
 import app from "./boot.js";
 
 export const config = {
