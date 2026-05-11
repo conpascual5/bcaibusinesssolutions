@@ -79,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
+        console.log("[auth] initial getSession:", { hasSession: !!data.session });
         if (!mounted) return;
         setSession(data.session);
         await fetchProfile(data.session);
@@ -94,6 +95,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       setSession(newSession);
       await fetchProfile(newSession);
+
+      if (event === "INITIAL_SESSION" && !newSession) {
+        console.log("[auth] INITIAL_SESSION had no session; attempting refreshSession() once");
+        const { data } = await supabase.auth.refreshSession();
+        console.log("[auth] refreshSession result:", { hasSession: !!data.session });
+        setSession(data.session);
+        await fetchProfile(data.session);
+      }
 
       if (event === "SIGNED_OUT") {
         window.location.href = "/auth";
