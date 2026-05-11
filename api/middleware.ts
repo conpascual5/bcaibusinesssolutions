@@ -25,7 +25,7 @@ export const authedQuery = t.procedure.use(
     }
 
     try {
-      const supabase = getSupabaseClient();
+      const supabase = getSupabaseClient(ctx.token);
       const { data, error } = await supabase
         .from("profiles")
         .select("is_admin, is_active")
@@ -71,7 +71,7 @@ export const adminQuery = t.procedure.use(
     }
 
     try {
-      const supabase = getSupabaseClient();
+      const supabase = getSupabaseClient(ctx.token);
       console.log("[middleware] adminQuery: querying profile", ctx.user.userId);
 
       const { data, error } = await supabase

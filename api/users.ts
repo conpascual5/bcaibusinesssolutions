@@ -4,8 +4,8 @@ import { createRouter, adminQuery, authedQuery } from "./middleware.js";
 import { getSupabaseClient } from "./queries/supabase-client.js";
 
 export const userRouter = createRouter({
-  list: adminQuery.query(async () => {
-    const supabase = getSupabaseClient();
+  list: adminQuery.query(async ({ ctx }) => {
+    const supabase = getSupabaseClient(ctx.token);
     const { data, error } = await (supabase as any)
       .from("profiles")
       .select("id, email, full_name, is_admin, plan, is_active, activated_at, created_at")
@@ -30,8 +30,8 @@ export const userRouter = createRouter({
 
   toggleActive: adminQuery
     .input(z.object({ userId: z.string(), isActive: z.boolean() }))
-    .mutation(async ({ input }) => {
-      const supabase = getSupabaseClient();
+    .mutation(async ({ input, ctx }) => {
+      const supabase = getSupabaseClient(ctx.token);
       const { error } = await (supabase as any)
         .from("profiles")
         .update({
@@ -50,7 +50,7 @@ export const userRouter = createRouter({
   setPlan: adminQuery
     .input(z.object({ userId: z.string(), plan: z.enum(["free", "pro", "vip"]) }))
     .mutation(async ({ input, ctx }) => {
-      const supabase = getSupabaseClient();
+      const supabase = getSupabaseClient(ctx.token);
 
       // Get current plan before updating
       const { data: current, error: fetchError } = await (supabase as any)
@@ -102,8 +102,8 @@ export const userRouter = createRouter({
 
   planHistory: adminQuery
     .input(z.object({ userId: z.string() }))
-    .query(async ({ input }) => {
-      const supabase = getSupabaseClient();
+    .query(async ({ input, ctx }) => {
+      const supabase = getSupabaseClient(ctx.token);
       const { data, error } = await (supabase as any)
         .from("plan_history")
         .select("*")
@@ -127,7 +127,7 @@ export const userRouter = createRouter({
     }),
 
   profile: authedQuery.query(async ({ ctx }) => {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseClient(ctx.token);
     const { data, error } = await (supabase as any)
       .from("profiles")
       .select("id, email, full_name, is_admin, plan, is_active")

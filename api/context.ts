@@ -4,6 +4,7 @@ import { getSupabaseClient } from "./queries/supabase-client.js";
 export type TrpcContext = {
   req: Request;
   resHeaders: Headers;
+  token: string | null;
   user: { userId: string; email: string; isAdmin: boolean } | null;
 };
 
@@ -35,8 +36,8 @@ export async function createContext(
 
   let user: { userId: string; email: string; isAdmin: boolean } | null = null;
   if (token) {
-    // Verify the token with Supabase
-    const supabase = getSupabaseClient();
+    // Verify the token with Supabase using a client that acts as this user
+    const supabase = getSupabaseClient(token);
     const { data: { user: supaUser }, error } = await supabase.auth.getUser(token);
 
     if (error) {
@@ -57,5 +58,5 @@ export async function createContext(
     console.log("[context] no token found");
   }
 
-  return { req: opts.req, resHeaders: opts.resHeaders, user };
+  return { req: opts.req, resHeaders: opts.resHeaders, token, user };
 }
