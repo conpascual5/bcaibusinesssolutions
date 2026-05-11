@@ -100,10 +100,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    const onFocus = () => {
-      if (session) {
-        fetchProfile(session);
-      }
+    const onFocus = async () => {
+      // session in this closure may be stale; re-read it from Supabase to keep admin flag accurate
+      const { data } = await supabase.auth.getSession();
+      setSession(data.session);
+      await fetchProfile(data.session);
     };
     window.addEventListener("focus", onFocus);
 
