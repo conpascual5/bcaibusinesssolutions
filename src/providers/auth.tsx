@@ -33,20 +33,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log("[auth] fetchProfile: fetching for email:", s.user.email);
+    console.log("[auth] fetchProfile: fetching for id:", s.user.id);
 
-    // Fetch profile from the users table using email as the lookup
+    // Fetch profile from the profiles table using the user's UUID
     const { data, error } = await supabase
-      .from("users")
-      .select("name, is_admin, plan, is_active")
-      .eq("email", s.user.email)
+      .from("profiles")
+      .select("full_name, is_admin, plan, is_active")
+      .eq("id", s.user.id)
       .maybeSingle();
 
     console.log("[auth] fetchProfile: result", { data, error });
 
     if (error || !data) {
-      console.log("[auth] fetchProfile: no matching user in users table, using defaults", { error });
-      // If no matching user in the users table, treat as non-admin
+      console.log("[auth] fetchProfile: no matching profile, using defaults", { error });
       setUser({
         id: s.user.id,
         email: s.user.email ?? "",
@@ -58,19 +57,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    console.log("[auth] fetchProfile: found user in users table", data);
+    console.log("[auth] fetchProfile: found profile", data);
 
     setUser({
       id: s.user.id,
       email: s.user.email ?? "",
       name:
-        data?.name ??
+        data?.full_name ??
         (s.user.user_metadata as any)?.full_name ??
         (s.user.user_metadata as any)?.name ??
         "",
-      isAdmin: data?.is_admin === 1,
+      isAdmin: !!data?.is_admin,
       plan: (data?.plan as any) ?? "free",
-      isActive: data?.is_active === 1,
+      isActive: data?.is_active ?? true,
     });
   };
 
