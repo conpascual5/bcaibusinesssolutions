@@ -3,14 +3,11 @@ import { getSupabaseClient } from "./queries/supabase-client.js";
 
 const app = new Hono();
 
-// Feature limits for free users
-const FREE_LIMITS: Record<string, number> = {
-  "image-ad-analyzer": 5,
-  "sales-wizard": 3,
-  "fb-ads-targeting": 5,
-  "captions-video-script": 5,
-  "ad-analyzer": 3,
-  "invoices": 3,
+// Per-plan generation limits (across all features)
+const PLAN_LIMITS: Record<string, number> = {
+  free: 3, // one-time trial
+  pro: 500,
+  vip: 100,
 };
 
 // Get current month as YYYY-MM
@@ -20,14 +17,14 @@ function getMonth(): string {
 }
 
 async function getUserFromToken(token: string) {
-  const supabase = getSupabaseClient();
+  const supabase = getSupabaseClient(token);
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) return null;
   return user;
 }
 
-async function getUserPlan(userId: string): Promise<string> {
-  const supabase = getSupabaseClient();
+async function getUserPlan(userId: string, token: string): Promise<string> {
+  const supabase = getSupabaseClient(token);
   const { data } = await (supabase as any)
     .from("profiles")
     .select("plan")
@@ -47,78 +44,78 @@ app.get("/api/usage/:feature", async (c) => {
     if (!supaUser) return c.json({ error: "Invalid token" }, 401);
 
     const feature = c.req.param("feature");
-    const limit = FREE_LIMITS[feature];
-    if (limit === undefined) {
-      return c.json({ error: "Unknown feature" }, 400);
-    }
 
     const month = getMonth();
-    const plan = await getUserPlan(supaUser.id);
-    const isPro = plan === "pro";
-    const isVip = plan === "vip";
+    const plan = await getUserPlan(supaUser.id, token);
+    const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
-    if (isPro) {
-      return c.json({
-        feature,
-        used: 0,
-        limit: -1,
-        remaining: 999,
-        isPro: true,
-        plan: "pro",
-      });
-    }
+    const supabase = getSupabaseClient(token);
 
-    const supabase = getSupabaseClient();
-
-    // VIP: 100 uses per month across all features
-    const vipLimit = 100;
-    if (isVip) {
-      const { data: totalRows } = await (supabase as any)
-        .from("user_usage")
-        .select("count")
-        .eq("user_id", supaUser.id)
-        .eq("month", month);
-
-      const totalUsed = (totalRows ?? []).reduce((sum: number, r: any) => sum + (r.count ?? 0), 0);
-      const remaining = Math.max(0, vipLimit - totalUsed);
-
-      return c.json({
-        feature,
-        used: totalUsed,
-        limit: vipLimit,
-        remaining,
-        isPro: false,
-        isVip: true,
-        plan: "vip",
-      });
-    }
-
-    // Free: get current usage count for this feature
-    const { data: usageRow } = await (supabase as any)
+    // Count total usage for this month across all features
+    const { data: rows } = await (supabase as any)
       .from("user_usage")
       .select("count")
       .eq("user_id", supaUser.id)
-      .eq("feature", feature)
-      .eq("month", month)
-      .single();
+      .eq("month", month);
 
-    const used = Number(usageRow?.count ?? 0);
-    const remaining = Math.max(0, limit - used);
+    const used = (rows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
+
+    // Free is a one-time trial: after 3 total generations ever, block.
+    if (plan === "free") {
+      const { data: allRows } = await (supabase as any)
+        .from("user_usage")
+        .select("count")
+        .eq("user_id", supaUser.id);
+      const totalEverUsed = (allRows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
+
+      return c.json({
+        feature,
+        used: totalEverUsed,
+        limit,
+        remaining: Math.max(0, limit - totalEverUsed),
+        isPro: false,
+        isVip: false,
+        plan: "free",
+      });
+    }
 
     return c.json({
       feature,
       used,
       limit,
-      remaining,
-      isPro: false,
-      isVip: false,
-      plan: "free",
+      remaining: Math.max(0, limit - used),
+      isPro: plan === "pro",
+      isVip: plan === "vip",
+      plan,
     });
   } catch (err: any) {
     console.error("[usage] Error:", err);
     return c.json({ error: err.message }, 500);
   }
 });
+
+async function upsertUsage(opts: { supabase: any; userId: string; feature: string; month: string }) {
+  const { supabase, userId, feature, month } = opts;
+
+  const { data: existing } = await (supabase as any)
+    .from("user_usage")
+    .select("id, count")
+    .eq("user_id", userId)
+    .eq("feature", feature)
+    .eq("month", month)
+    .single();
+
+  if (existing) {
+    await (supabase as any)
+      .from("user_usage")
+      .update({ count: Number(existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
+      .eq("id", existing.id);
+  } else {
+    await (supabase as any)
+      .from("user_usage")
+      .insert({ user_id: userId, feature, month, count: 1 });
+  }
+}
 
 // Increment usage count for a feature
 app.post("/api/usage/:feature/increment", async (c) => {
@@ -131,115 +128,74 @@ app.post("/api/usage/:feature/increment", async (c) => {
     if (!supaUser) return c.json({ error: "Invalid token" }, 401);
 
     const feature = c.req.param("feature");
-    const limit = FREE_LIMITS[feature];
-    if (limit === undefined) {
-      return c.json({ error: "Unknown feature" }, 400);
-    }
 
     const month = getMonth();
-    const plan = await getUserPlan(supaUser.id);
-    const isPro = plan === "pro";
-    const isVip = plan === "vip";
+    const plan = await getUserPlan(supaUser.id, token);
+    const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
-    if (isPro) {
-      return c.json({ success: true, isPro: true, plan: "pro" });
-    }
+    const supabase = getSupabaseClient(token);
 
-    const supabase = getSupabaseClient();
-
-    // VIP: check total monthly usage across all features
-    const vipLimit = 100;
-    if (isVip) {
-      const { data: totalRows } = await (supabase as any)
+    // Free is a one-time trial: max 3 total generations ever.
+    if (plan === "free") {
+      const { data: allRows } = await (supabase as any)
         .from("user_usage")
         .select("count")
-        .eq("user_id", supaUser.id)
-        .eq("month", month);
+        .eq("user_id", supaUser.id);
+      const totalEverUsed = (allRows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
 
-      const totalUsed = (totalRows ?? []).reduce((sum: number, r: any) => sum + (r.count ?? 0), 0);
-
-      if (totalUsed >= vipLimit) {
+      if (totalEverUsed >= limit) {
         return c.json({
           error: "limit_reached",
-          message: `You've reached your VIP monthly limit of ${vipLimit} uses. Please wait until next month.`,
+          message: `Free trial used up (${limit} generations total). Upgrade to Pro to get ${PLAN_LIMITS.pro} generations.`,
           feature,
-          limit: vipLimit,
-          used: totalUsed,
+          limit,
+          used: totalEverUsed,
         }, 403);
       }
 
-      // Upsert usage
-      const { data: existing } = await (supabase as any)
-        .from("user_usage")
-        .select("id, count")
-        .eq("user_id", supaUser.id)
-        .eq("feature", feature)
-        .eq("month", month)
-        .single();
-
-      if (existing) {
-        await (supabase as any)
-          .from("user_usage")
-          .update({ count: (existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
-          .eq("id", existing.id);
-      } else {
-        await (supabase as any)
-          .from("user_usage")
-          .insert({ user_id: supaUser.id, feature, month, count: 1 });
-      }
+      await upsertUsage({ supabase, userId: supaUser.id, feature, month });
+      const nextUsed = totalEverUsed + 1;
 
       return c.json({
         success: true,
         feature,
-        used: totalUsed + 1,
-        remaining: vipLimit - (totalUsed + 1),
+        used: nextUsed,
+        remaining: Math.max(0, limit - nextUsed),
         isPro: false,
-        isVip: true,
-        plan: "vip",
+        isVip: false,
+        plan: "free",
       });
     }
 
-    // Free: check current usage
-    const { data: existing } = await (supabase as any)
+    // Pro / VIP: monthly cap across all features
+    const { data: rows } = await (supabase as any)
       .from("user_usage")
-      .select("id, count")
+      .select("count")
       .eq("user_id", supaUser.id)
-      .eq("feature", feature)
-      .eq("month", month)
-      .single();
+      .eq("month", month);
 
-    const used = Number(existing?.count ?? 0);
+    const totalUsedThisMonth = (rows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
 
-    if (used >= limit) {
+    if (totalUsedThisMonth >= limit) {
       return c.json({
         error: "limit_reached",
-        message: `You've reached your free limit of ${limit} ${feature.replace(/-/g, " ")} this month. Upgrade to Pro for unlimited access!`,
+        message: `You've reached your ${plan.toUpperCase()} limit of ${limit} generations this month.`,
         feature,
         limit,
-        used,
+        used: totalUsedThisMonth,
       }, 403);
     }
 
-    // Increment
-    if (existing) {
-      await (supabase as any)
-        .from("user_usage")
-        .update({ count: (existing.count ?? 0) + 1, updated_at: new Date().toISOString() })
-        .eq("id", existing.id);
-    } else {
-      await (supabase as any)
-        .from("user_usage")
-        .insert({ user_id: supaUser.id, feature, month, count: 1 });
-    }
+    await upsertUsage({ supabase, userId: supaUser.id, feature, month });
 
     return c.json({
       success: true,
       feature,
-      used: used + 1,
-      remaining: limit - (used + 1),
-      isPro: false,
-      isVip: false,
-      plan: "free",
+      used: totalUsedThisMonth + 1,
+      remaining: Math.max(0, limit - (totalUsedThisMonth + 1)),
+      isPro: plan === "pro",
+      isVip: plan === "vip",
+      plan,
     });
   } catch (err: any) {
     console.error("[usage] Increment error:", err);

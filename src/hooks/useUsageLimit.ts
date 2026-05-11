@@ -92,12 +92,12 @@ export function getFeatureName(feature: string): string {
   return FEATURE_NAMES[feature] || feature.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Free limits display info
+// Legacy per-feature free limits are no longer used; the API enforces per-plan caps.
 export const FREE_LIMITS: Record<string, number> = {
-  "image-ad-analyzer": 5,
+  "image-ad-analyzer": 3,
   "sales-wizard": 3,
-  "fb-ads-targeting": 5,
-  "captions-video-script": 5,
+  "fb-ads-targeting": 3,
+  "captions-video-script": 3,
   "ad-analyzer": 3,
   "invoices": 3,
 };

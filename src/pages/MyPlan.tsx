@@ -36,11 +36,12 @@ const FEATURES = [
   { key: 'invoices', label: 'Invoices' },
 ];
 
+// Per-feature limits are no longer used; usage is capped per plan across all tools.
 const FREE_LIMITS: Record<string, number> = {
-  'image-ad-analyzer': 5,
+  'image-ad-analyzer': 3,
   'sales-wizard': 3,
-  'fb-ads-targeting': 5,
-  'captions-video-script': 5,
+  'fb-ads-targeting': 3,
+  'captions-video-script': 3,
   'ad-analyzer': 3,
   'invoices': 3,
 };
@@ -90,10 +91,10 @@ export default function MyPlan() {
             </div>
             <p className="text-sm text-muted-foreground mt-1">
               {plan === 'vip'
-                ? 'VIP access — 100 uses per month across all tools'
+                ? 'VIP access — 100 generations per month across all tools'
                 : plan === 'pro'
-                ? 'Pro access — unlimited usage on all tools'
-                : 'Free tier — limited monthly usage'}
+                ? 'Pro access — 500 generations per month across all tools'
+                : 'Free trial — 3 total generations (one-time)'}
             </p>
           </div>
           <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${planInfo.bg} ${planInfo.color} border ${planInfo.border}`}>
@@ -119,7 +120,7 @@ export default function MyPlan() {
             const isPro = usage?.isPro;
             const isVip = usage?.isVip;
             const used = usage?.used ?? 0;
-            const limit = usage?.limit ?? FREE_LIMITS[feat.key] ?? 0;
+            const limit = usage?.limit ?? (plan === 'pro' ? 500 : plan === 'vip' ? 100 : 3);
             const remaining = usage?.remaining ?? limit;
             const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
@@ -128,17 +129,17 @@ export default function MyPlan() {
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-sm font-medium text-foreground">{feat.label}</span>
                   {isPro ? (
-                    <span className="text-xs font-semibold text-amber-500 flex items-center gap-1">
+                    <span className="text-xs font-semibold text-amber-600 flex items-center gap-1">
                       <Crown className="w-3.5 h-3.5" />
-                      Unlimited
+                      {remaining} / 500 remaining
                     </span>
                   ) : isVip ? (
-                    <span className="text-xs font-semibold text-purple-500">
+                    <span className="text-xs font-semibold text-purple-600">
                       {remaining} / 100 remaining
                     </span>
                   ) : (
                     <span className="text-xs font-semibold text-muted-foreground">
-                      {remaining} / {limit} remaining
+                      {remaining} / 3 remaining
                     </span>
                   )}
                 </div>

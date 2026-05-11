@@ -93,7 +93,8 @@ export default function Landing() {
       popular: false,
       features: [
         "Exclusive for existing buyers of Static Images, Cinematic Ads & Website Creation",
-        "100 uses per month across all AI tools",
+        "100 generations per month across all AI tools",
+
         "Advanced buyer personas with deep targeting",
         "Priority invoice generation",
         "Priority ad analysis",
@@ -156,7 +157,7 @@ export default function Landing() {
           <AnimatedSection delay={100}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 border border-white/20 rounded-full mb-6 backdrop-blur">
               <Zap className="w-4 h-4 text-amber-300" />
-              <span className="text-sm text-white font-medium">Marketing Tool Kit — All-in-One AI Suite</span>
+              <span className="text-sm text-white font-medium">Marketing Tool Kit — All-in-One AI Suite (3 free trial generations)</span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={200}>
