@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/providers/auth';
-import { trpc } from '@/providers/trpc';
 import { Crown, Star, Sparkles, Shield, CheckCircle, XCircle, BarChart3, RefreshCw } from 'lucide-react';
 
 const PLAN_INFO = {
@@ -48,29 +47,24 @@ const FREE_LIMITS: Record<string, number> = {
 
 export default function MyPlan() {
   const { user } = useAuth();
-  const { data: profile } = trpc.user.profile.useQuery();
   const [usageData, setUsageData] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
 
-  const plan = (profile?.plan || 'free') as keyof typeof PLAN_INFO;
+  const plan = ((user?.plan || 'free') as keyof typeof PLAN_INFO);
   const planInfo = PLAN_INFO[plan];
   const PlanIcon = planInfo.icon;
 
   useEffect(() => {
     async function fetchUsage() {
       setLoading(true);
-      const token = localStorage.getItem('auth-token');
-      if (!token) { setLoading(false); return; }
+      // Usage endpoints were previously served via Vercel /api; removed during Supabase migration.
+      setLoading(false);
+      return;
 
       const results: Record<string, any> = {};
       for (const feat of FEATURES) {
         try {
-          const res = await fetch(`/api/usage/${feat.key}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (res.ok) {
-            results[feat.key] = await res.json();
-          }
+          // no-op
         } catch {}
       }
       setUsageData(results);
@@ -165,11 +159,11 @@ export default function MyPlan() {
         <div className="space-y-2 text-sm">
           <div className="flex justify-between">
             <span className="text-muted-foreground">Name</span>
-            <span className="text-foreground font-medium">{user?.name || profile?.name || '—'}</span>
+            <span className="text-foreground font-medium">{user?.name || '—'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Email</span>
-            <span className="text-foreground font-medium">{user?.email || profile?.email || '—'}</span>
+            <span className="text-foreground font-medium">{user?.email || '—'}</span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Role</span>
@@ -183,10 +177,10 @@ export default function MyPlan() {
           <div className="flex justify-between">
             <span className="text-muted-foreground">Status</span>
             <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-              profile?.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
+              user?.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
             }`}>
-              {profile?.isActive ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-              {profile?.isActive ? 'Active' : 'Inactive'}
+              {user?.isActive ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+              {user?.isActive ? 'Active' : 'Inactive'}
             </span>
           </div>
         </div>

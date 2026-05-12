@@ -225,23 +225,8 @@ function CaptionsAndScripts() {
             ))}
           </div>
 
-          {/* Recent Searches */}
-          {searches && searches.length > 0 && (
-            <div className="mt-12">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">Recent Searches</h3>
-              <div className="flex flex-wrap gap-2">
-                {searches.slice(0, 8).map((s) => (
-                  <button
-                    key={s.id}
-                    onClick={() => setQuery(s.productQuery)}
-                    className="px-3 py-1.5 bg-card border border-border rounded-lg text-sm text-muted-foreground hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-                  >
-                    {s.productQuery}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Recent Searches (disabled during Supabase migration) */}
+
         </div>
       )}
     </>
