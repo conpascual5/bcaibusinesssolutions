@@ -21,7 +21,9 @@ const queryClient = new QueryClient({
 });
 
 function fetchWithTimeout(url: string, options?: RequestInit & { timeout?: number }): Promise<Response> {
-  const { timeout = 180000, ...fetchOptions } = options || {};
+  // Vercel functions can be cold and may return 504s if we wait too long.
+  // Keep this reasonably short so the UI can retry and show a clear error.
+  const { timeout = 25000, ...fetchOptions } = options || {};
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeout);
 
