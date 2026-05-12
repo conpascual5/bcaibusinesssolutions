@@ -1,48 +1,145 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/providers/auth";
-import { Sparkles, Loader2, Copy, Check, Wand2 } from "lucide-react";
 import { aiChat } from "@/lib/aiClient";
+import { SALES_FRAMEWORKS, type SalesFrameworkId } from "@/lib/salesFrameworks";
+import { useUsageLimit } from "@/hooks/useUsageLimit";
+import UpgradePrompt from "@/components/UpgradePrompt";
+import {
+  Wand2,
+  Sparkles,
+  Loader2,
+  Copy,
+  Check,
+  LayoutTemplate,
+  Hash,
+  FileText,
+  Facebook,
+  PenLine,
+} from "lucide-react";
+
+function FrameworkCard({
+  id,
+  title,
+  subtitle,
+  emoji,
+  description,
+  active,
+  onSelect,
+}: {
+  id: SalesFrameworkId;
+  title: string;
+  subtitle: string;
+  emoji: string;
+  description: string;
+  active: boolean;
+  onSelect: (id: SalesFrameworkId) => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(id)}
+      className={`text-left rounded-3xl border p-4 transition-all ${
+        active
+          ? "border-indigo-300 bg-indigo-50 shadow-sm"
+          : "border-slate-200 bg-white hover:border-indigo-200 hover:shadow-sm"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">{subtitle}</p>
+          <h3 className="mt-1 text-sm font-extrabold text-slate-900 leading-snug">{title}</h3>
+        </div>
+        <div className={`shrink-0 w-10 h-10 rounded-2xl flex items-center justify-center ${active ? "bg-white" : "bg-slate-50"}`}>
+          <span className="text-lg" aria-hidden>
+            {emoji}
+          </span>
+        </div>
+      </div>
+      <p className="mt-2 text-sm text-slate-600 leading-relaxed">{description}</p>
+    </button>
+  );
+}
 
 export default function SalesWizard() {
   const { token } = useAuth();
-  const [productName, setProductName] = useState("");
-  const [targetAudience, setTargetAudience] = useState("");
-  const [messageContext, setMessageContext] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [product, setProduct] = useState("");
+  const [message, setMessage] = useState("");
+  const [frameworkId, setFrameworkId] = useState<SalesFrameworkId>("aida");
+
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState("");
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  const { usage, loading: usageLoading, increment } = useUsageLimit("sales-wizard");
 
   const canSubmit = useMemo(
-    () => !!token && productName.trim().length > 0 && targetAudience.trim().length > 0,
-    [token, productName, targetAudience]
+    () => !!token && businessName.trim().length > 0 && product.trim().length > 0,
+    [token, businessName, product]
+  );
+
+  const selectedFramework = useMemo(
+    () => SALES_FRAMEWORKS.find((f) => f.id === frameworkId)!,
+    [frameworkId]
   );
 
   const generate = async () => {
+    setError(null);
+
     if (!canSubmit || !token) return;
+
+    const incResult = await increment();
+    if (!incResult.success) {
+      if (incResult.limitReached) {
+        setShowUpgrade(true);
+        return;
+      }
+      setError(incResult.error || "Failed to check usage");
+      return;
+    }
+
     setLoading(true);
     setOutput("");
 
     try {
       const content = await aiChat({
         token,
+        temperature: 0.7,
+        max_tokens: 1400,
         messages: [
           {
             role: "system",
-            content:
-              "You are a high-converting sales copywriter. Produce structured output with clear sections, bullets, and CTA. Taglish is allowed if it fits.",
+            content: [
+              "You are a Filipino social media copywriter.",
+              "Write in Taglish unless the user’s message clearly asks for English only.",
+              "Output must be structured and easy to copy.",
+              "Do not mention any AI provider names.",
+              "Return EXACTLY these sections:",
+              "1) FB CAPTION (1)\n2) BLOG POST (1)\n3) HASHTAGS (10-18 hashtags)",
+            ].join("\n"),
           },
           {
             role: "user",
-            content: `Product: ${productName}\nTarget Audience: ${targetAudience}\nContext: ${messageContext}\n\nCreate: (1) Short caption, (2) Messenger/DM script, (3) Objection-handling replies, (4) 3 hooks, (5) 3 CTAs.`,
+            content: [
+              `Business Name: ${businessName}`,
+              `Product: ${product}`,
+              `What I want to say (notes): ${message || "(none)"}`,
+              "",
+              `Framework to follow: ${selectedFramework.title}`,
+              `Framework description: ${selectedFramework.description}`,
+              `Framework guidance: ${selectedFramework.promptHint}`,
+              "",
+              "Now create: (a) the best FB caption, (b) a short blog post, (c) hashtags.",
+            ].join("\n"),
           },
         ],
-        max_tokens: 1800,
-        temperature: 0.7,
       });
 
       setOutput(content || "No output");
     } catch (e: any) {
-      setOutput(`❌ ${e?.message || "Generation failed"}`);
+      setError(e?.message || "Generation failed");
     } finally {
       setLoading(false);
     }
@@ -56,75 +153,151 @@ export default function SalesWizard() {
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
-      <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+    <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
+      <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-            <Wand2 className="w-5 h-5 text-white" />
+            <LayoutTemplate className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-gray-900">Sales Wizard</h1>
-            <p className="text-sm text-gray-500">AI-powered.</p>
+            <h1 className="text-2xl font-extrabold text-slate-900">Sales Wizard</h1>
+            <p className="text-sm text-slate-500">Generate captions + blog posts using proven frameworks.</p>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Product</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Business Name</label>
             <input
-              value={productName}
-              onChange={(e) => setProductName(e.target.value)}
-              className="mt-2 w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="e.g., Whitening Soap"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="e.g., Con's Online Store"
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Target Audience</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Product</label>
             <input
-              value={targetAudience}
-              onChange={(e) => setTargetAudience(e.target.value)}
-              className="mt-2 w-full px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="e.g., Busy moms, students, online sellers"
+              value={product}
+              onChange={(e) => setProduct(e.target.value)}
+              className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="e.g., Whitening Soap"
             />
           </div>
         </div>
 
         <div className="mt-4">
-          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Context (optional)</label>
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Anything you want to say (optional)</label>
           <textarea
-            value={messageContext}
-            onChange={(e) => setMessageContext(e.target.value)}
-            className="mt-2 w-full min-h-[120px] px-4 py-3 rounded-2xl border border-gray-200 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            placeholder="e.g., Promo details, price, unique benefits, delivery, etc."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="mt-2 w-full min-h-[120px] px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            placeholder="e.g., May promo, COD available, free shipping, limited stocks, benefits, ingredients, etc."
           />
         </div>
+
+        <div className="mt-6">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-2">
+              <Wand2 className="w-4 h-4 text-indigo-600" />
+              <h2 className="text-sm font-extrabold text-slate-900">Choose a framework</h2>
+            </div>
+            {!usageLoading && usage && (
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-700">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                {usage.remaining} left
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {SALES_FRAMEWORKS.map((f) => (
+              <FrameworkCard
+                key={f.id}
+                id={f.id}
+                title={f.title}
+                subtitle={f.subtitle}
+                emoji={f.emoji}
+                description={f.description}
+                active={f.id === frameworkId}
+                onSelect={setFrameworkId}
+              />
+            ))}
+          </div>
+        </div>
+
+        {error && (
+          <div className="mt-4 p-3 rounded-2xl border border-red-200 bg-red-50 text-sm text-red-700">{error}</div>
+        )}
 
         <button
           onClick={generate}
           disabled={!canSubmit || loading}
-          className="mt-4 w-full px-5 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+          className="mt-6 w-full px-5 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
           {loading ? "Generating…" : "Generate"}
         </button>
 
-        {!token && <div className="mt-4 text-sm text-gray-500">Please log in to use this tool.</div>}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-indigo-50 flex items-center justify-center">
+              <Facebook className="w-4 h-4 text-indigo-700" />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold text-slate-900">FB Caption</p>
+              <p className="text-[11px] text-slate-500">Ready-to-post</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-purple-50 flex items-center justify-center">
+              <FileText className="w-4 h-4 text-purple-700" />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold text-slate-900">Blog Post</p>
+              <p className="text-[11px] text-slate-500">Short + structured</p>
+            </div>
+          </div>
+          <div className="rounded-2xl border border-slate-200 bg-white p-3 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-2xl bg-emerald-50 flex items-center justify-center">
+              <Hash className="w-4 h-4 text-emerald-700" />
+            </div>
+            <div>
+              <p className="text-xs font-extrabold text-slate-900">Hashtags</p>
+              <p className="text-[11px] text-slate-500">10–18 tags</p>
+            </div>
+          </div>
+        </div>
       </div>
 
       {output && (
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm font-extrabold text-gray-900">Output</p>
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
+          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <PenLine className="w-4 h-4 text-indigo-600" />
+              <p className="text-sm font-extrabold text-slate-900">Output</p>
+            </div>
             <button
               onClick={copy}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-xs font-bold"
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
               {copied ? "Copied" : "Copy"}
             </button>
           </div>
-          <pre className="p-4 text-sm whitespace-pre-wrap text-gray-900 leading-relaxed">{output}</pre>
+          <pre className="p-5 text-sm whitespace-pre-wrap text-slate-900 leading-relaxed">{output}</pre>
         </div>
+      )}
+
+      {showUpgrade && (
+        <UpgradePrompt
+          feature="sales-wizard"
+          used={usage?.used ?? 0}
+          limit={usage?.limit ?? 3}
+          plan={usage?.plan}
+          isVip={usage?.isVip}
+          onClose={() => setShowUpgrade(false)}
+        />
       )}
     </div>
   );
