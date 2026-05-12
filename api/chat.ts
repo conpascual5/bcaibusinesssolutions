@@ -5,10 +5,9 @@ import { getSupabaseClient } from "./queries/supabase-client.js";
 import { env } from "./lib/env.js";
 
 const DEEPSEEK_KEY = "deepseek_api_key";
-const OPENAI_KEY = "openai_api_key";
 
-async function getSetting(key: string): Promise<string> {
-  const supabase = getSupabaseClient();
+async function getSetting(key: string, token?: string | null): Promise<string> {
+  const supabase = getSupabaseClient(token);
   const { data } = await (supabase as any)
     .from("settings")
     .select("value")
@@ -23,7 +22,7 @@ async function callDeepseek(messages: { role: string; content: string }[], apiKe
     const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${apiKey}`,
+        Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -47,40 +46,11 @@ async function callDeepseek(messages: { role: string; content: string }[], apiKe
   }
 }
 
-async function callOpenai(messages: { role: string; content: string }[], apiKey: string): Promise<string | null> {
-  try {
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o-mini",
-        messages,
-        max_tokens: 1024,
-      }),
-    });
-
-    if (!response.ok) {
-      const errBody = await response.text();
-      console.error("[chat] OpenAI error:", response.status, errBody);
-      return null;
-    }
-
-    const data: any = await response.json();
-    return data.choices?.[0]?.message?.content ?? null;
-  } catch (err) {
-    console.error("[chat] OpenAI exception:", err);
-    return null;
-  }
-}
-
 export const chatRouter = createRouter({
   create: authedQuery
     .input(z.object({ title: z.string().min(1).max(200).default("New Chat") }))
     .mutation(async ({ input, ctx }) => {
-      const supabase = getSupabaseClient();
+      const supabase = getSupabaseClient(ctx.token);
       const { data: newChats, error } = await (supabase
         .from("chats")
         .insert({
@@ -97,7 +67,7 @@ export const chatRouter = createRouter({
     }),
 
   list: authedQuery.query(async ({ ctx }) => {
-    const supabase = getSupabaseClient();
+    const supabase = getSupabaseClient(ctx.token);
     const { data: chats, error } = await (supabase
       .from("chats")
       .select("*")
@@ -113,7 +83,7 @@ export const chatRouter = createRouter({
   getMessages: authedQuery
     .input(z.object({ chatId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const supabase = getSupabaseClient();
+      const supabase = getSupabaseClient(ctx.token);
       const { data: chatRows } = await (supabase
         .from("chats")
         .select("*")
@@ -137,12 +107,14 @@ export const chatRouter = createRouter({
     }),
 
   sendMessage: authedQuery
-    .input(z.object({
-      chatId: z.number(),
-      content: z.string().min(1).max(10000),
-    }))
+    .input(
+      z.object({
+        chatId: z.number(),
+        content: z.string().min(1).max(10000),
+      })
+    )
     .mutation(async ({ input, ctx }) => {
-      const supabase = getSupabaseClient();
+      const supabase = getSupabaseClient(ctx.token);
       const { data: chatRows } = await (supabase
         .from("chats")
         .select("*")
@@ -154,7 +126,6 @@ export const chatRouter = createRouter({
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
       }
 
-      // Save user message
       await (supabase
         .from("messages")
         .insert({
@@ -163,23 +134,22 @@ export const chatRouter = createRouter({
           content: input.content,
         } as any) as any);
 
-      // Get conversation history
       const { data: history } = await (supabase
         .from("messages")
         .select("*")
         .eq("chat_id", input.chatId)
         .order("created_at", { ascending: true }) as any);
 
-      const systemPrompt = `You are a helpful AI assistant for a business. You help with marketing, ad copy, content creation, and business strategy. Keep responses concise and actionable.`;
+      const systemPrompt =
+        "You are a helpful AI assistant for a business. You help with marketing, ad copy, content creation, and business strategy. Keep responses concise and actionable.";
 
       const messages = [
         { role: "system", content: systemPrompt },
-        ...(history as any[] || []).map((m: any) => ({ role: m.role, content: m.content })),
+        ...(history as any[] | undefined)?.map((m: any) => ({ role: m.role, content: m.content })) ?? [],
         { role: "user", content: input.content },
       ];
 
-      // Use Deepseek only (no OpenAI fallback)
-      const deepseekKey = await getSetting(DEEPSEEK_KEY) || env.deepseekApiKey;
+      const deepseekKey = (await getSetting(DEEPSEEK_KEY, ctx.token)) || env.deepseekApiKey;
 
       if (!deepseekKey) {
         throw new TRPCError({
@@ -196,7 +166,6 @@ export const chatRouter = createRouter({
         });
       }
 
-      // Save assistant message
       const { data: msgResult } = await (supabase
         .from("messages")
         .insert({
@@ -207,31 +176,11 @@ export const chatRouter = createRouter({
         .select("id") as any);
       const savedMsg = (msgResult as any[])?.[0];
 
-      // Update chat timestamp
       await ((supabase as any)
         .from("chats")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", input.chatId));
 
       return { id: savedMsg?.id, role: "assistant", content: reply, provider: "deepseek" };
-    }),
-
-  delete: authedQuery
-    .input(z.object({ chatId: z.number() }))
-    .mutation(async ({ input, ctx }) => {
-      const supabase = getSupabaseClient();
-      const { data: chatRows } = await (supabase
-        .from("chats")
-        .select("*")
-        .eq("id", input.chatId)
-        .limit(1) as any);
-      const chat = (chatRows as any[])?.[0];
-      if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
-      if (chat.user_id !== ctx.user.userId && !ctx.user.isAdmin) {
-        throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
-      }
-      await (supabase.from("messages").delete().eq("chat_id", input.chatId) as any);
-      await (supabase.from("chats").delete().eq("id", input.chatId) as any);
-      return { success: true };
     }),
 });
