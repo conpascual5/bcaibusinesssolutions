@@ -3,17 +3,15 @@ import { useAuth } from "@/providers/auth";
 import { SALES_FRAMEWORKS, type SalesFrameworkId } from "@/lib/salesFrameworks";
 import { useUsageLimit } from "@/hooks/useUsageLimit";
 import UpgradePrompt from "@/components/UpgradePrompt";
+import SocialPostEditor from "@/components/SocialPostEditor";
 import {
   Wand2,
   Sparkles,
   Loader2,
-  Copy,
-  Check,
   LayoutTemplate,
   Hash,
   FileText,
   Facebook,
-  PenLine,
 } from "lucide-react";
 
 function FrameworkCard({
@@ -68,7 +66,6 @@ export default function SalesWizard() {
 
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState("");
-  const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [showUpgrade, setShowUpgrade] = useState(false);
@@ -194,12 +191,6 @@ export default function SalesWizard() {
     }
   };
 
-  const copy = async () => {
-    if (!output) return;
-    await navigator.clipboard.writeText(output);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
 
   return (
     <div className="max-w-6xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
@@ -320,22 +311,12 @@ export default function SalesWizard() {
       </div>
 
       {output && (
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-sm overflow-hidden">
-          <div className="p-4 border-b border-slate-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <PenLine className="w-4 h-4 text-indigo-600" />
-              <p className="text-sm font-extrabold text-slate-900">Output</p>
-            </div>
-            <button
-              onClick={copy}
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold"
-            >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              {copied ? "Copied" : "Copy"}
-            </button>
-          </div>
-          <pre className="p-5 text-sm whitespace-pre-wrap text-slate-900 leading-relaxed">{output}</pre>
-        </div>
+        <SocialPostEditor
+          value={output}
+          onChange={setOutput}
+          title="Generated Facebook post"
+          subtitle="Preview it like a real feed post — then edit + copy"
+        />
       )}
 
       {showUpgrade && (
