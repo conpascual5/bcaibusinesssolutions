@@ -84,6 +84,34 @@ export default function SalesWizard() {
     [frameworkId]
   );
 
+  // Map client framework IDs to API server framework IDs
+  const frameworkToApiId: Record<string, string> = {
+    "six-w": "6-ws",
+    "story-solve-sell": "story-solve-sell",
+    "solution-savings-social-proof": "solution-savings-social-proof",
+    "pain-agitate-relief": "pain-agitate-relief",
+    "friend-expert": "friend-expert",
+    "past-present-future": "past-present-future",
+    "positive-negative": "positive-negative",
+    "exclusive-inclusive": "exclusive-inclusive",
+    "expectation-surprise": "expectation-surprise",
+    "urgency-patience": "urgency-patience",
+    "personal-universal": "personal-universal",
+    "emotion-logic": "emotion-logic",
+    "strong-weak": "strong-weak",
+    "consistent-contrasting": "consistent-contrasting",
+    "five-basic-objections": "5-objections",
+    "awareness-comprehension-conviction-action": "acca",
+    "picture-promise-prove-push": "picture-promise-prove-push",
+    "star-story-solution": "star-story-solution",
+    "problem-agitate-solve": "problem-agitate-solve",
+    "aida": "aida",
+    "before-after-bridge": "before-after-bridge",
+    "pastor": "pastor",
+    "four-c": "four-c",
+    "fab": "features-advantages-benefits",
+  };
+
   const generate = async () => {
     setError(null);
 
@@ -114,7 +142,7 @@ export default function SalesWizard() {
           targetAudience: businessName,
           messageContext: message || "",
           contentType: "caption",
-          framework: frameworkId,
+          framework: frameworkToApiId[frameworkId] || frameworkId,
           language: "taglish",
         }),
       });

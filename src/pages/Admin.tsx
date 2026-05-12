@@ -46,23 +46,28 @@ type PlanHistoryRow = {
 function ApiKeySettings() {
   const [aiKey, setAiKey] = useState("");
   const [openaiKey, setOpenaiKey] = useState("");
+  const [deepseekKey, setDeepseekKey] = useState("");
   const [showAiKey, setShowAiKey] = useState(false);
   const [showOpenai, setShowOpenai] = useState(false);
+  const [showDeepseek, setShowDeepseek] = useState(false);
   const [aiSaved, setAiSaved] = useState(false);
   const [openaiSaved, setOpenaiSaved] = useState(false);
+  const [deepseekSaved, setDeepseekSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [ai, open] = await Promise.all([
+      const [ai, open, ds] = await Promise.all([
         supabase.from("settings").select("value").eq("key", "ai_api_key").maybeSingle(),
         supabase.from("settings").select("value").eq("key", "openai_api_key").maybeSingle(),
+        supabase.from("settings").select("value").eq("key", "deepseek_api_key").maybeSingle(),
       ]);
       if (cancelled) return;
       setAiKey((ai.data as any)?.value ?? "");
       setOpenaiKey((open.data as any)?.value ?? "");
+      setDeepseekKey((ds.data as any)?.value ?? "");
       setLoading(false);
     })();
     return () => {
@@ -86,6 +91,13 @@ function ApiKeySettings() {
     await upsertKey("openai_api_key", openaiKey.trim());
     setOpenaiSaved(true);
     setTimeout(() => setOpenaiSaved(false), 1500);
+  };
+
+  const handleSaveDeepseek = async () => {
+    if (!deepseekKey.trim()) return;
+    await upsertKey("deepseek_api_key", deepseekKey.trim());
+    setDeepseekSaved(true);
+    setTimeout(() => setDeepseekSaved(false), 1500);
   };
 
   return (
@@ -135,7 +147,7 @@ function ApiKeySettings() {
               </div>
             </div>
 
-            <div className="p-4 rounded-xl border border-border bg-accent/30">
+            <div className="mb-6 p-4 rounded-xl border border-border bg-accent/30">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 rounded-full bg-amber-500" />
                 <h3 className="text-sm font-semibold text-foreground">OpenAI API Key</h3>
@@ -165,6 +177,40 @@ function ApiKeySettings() {
                 >
                   {openaiSaved ? <Check className="w-4 h-4" /> : null}
                   {openaiSaved ? "Saved" : "Save"}
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-xl border border-border bg-accent/30">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-2 h-2 rounded-full bg-blue-500" />
+                <h3 className="text-sm font-semibold text-foreground">Deepseek API Key</h3>
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Sales Wizard</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type={showDeepseek ? "text" : "password"}
+                    value={deepseekKey}
+                    onChange={(e) => setDeepseekKey(e.target.value)}
+                    placeholder="Enter key"
+                    className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowDeepseek(!showDeepseek)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showDeepseek ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <button
+                  onClick={handleSaveDeepseek}
+                  disabled={!deepseekKey.trim()}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                >
+                  {deepseekSaved ? <Check className="w-4 h-4" /> : null}
+                  {deepseekSaved ? "Saved" : "Save"}
                 </button>
               </div>
             </div>
