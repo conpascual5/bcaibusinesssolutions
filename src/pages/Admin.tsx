@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
+import AdminSupportInbox from "@/components/AdminSupportInbox";
 import {
   Users,
   Settings,
@@ -20,6 +21,7 @@ import {
   Check,
   AlertCircle,
   ChevronRight,
+  MessageSquare,
 } from "lucide-react";
 
 type ProfileRow = {
@@ -235,7 +237,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"users" | "settings">("users");
+  const [activeSection, setActiveSection] = useState<"users" | "support" | "settings">("users");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -385,6 +387,15 @@ export default function Admin() {
           >
             <Users className="w-4 h-4 stroke-[1.5]" />
             Users
+          </button>
+          <button
+            onClick={() => setActiveSection("support")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "support" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <MessageSquare className="w-4 h-4 stroke-[1.5]" />
+            Support
           </button>
           <button
             onClick={() => setActiveSection("settings")}
@@ -566,6 +577,8 @@ export default function Admin() {
             )}
           </div>
         )}
+
+        {activeSection === "support" && <AdminSupportInbox />}
 
         {activeSection === "settings" && <ApiKeySettings />}
       </div>

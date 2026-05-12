@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { createRouter, authedQuery } from "./middleware.js";
+import { createRouter, authedQuery, adminQuery } from "./middleware.js";
 import { getSupabaseClient } from "./queries/supabase-client.js";
 import { env } from "./lib/env.js";
 
@@ -75,6 +75,19 @@ export const chatRouter = createRouter({
       .order("updated_at", { ascending: false }) as any);
     if (error) {
       console.error("[chat.list] error:", error.message);
+      throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to list chats" });
+    }
+    return chats as any[];
+  }),
+
+  adminList: adminQuery.query(async ({ ctx }) => {
+    const supabase = getSupabaseClient(ctx.token);
+    const { data: chats, error } = await (supabase
+      .from("chats")
+      .select("*")
+      .order("updated_at", { ascending: false }) as any);
+    if (error) {
+      console.error("[chat.adminList] error:", error.message);
       throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to list chats" });
     }
     return chats as any[];
