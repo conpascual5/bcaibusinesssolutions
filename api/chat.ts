@@ -178,27 +178,21 @@ export const chatRouter = createRouter({
         { role: "user", content: input.content },
       ];
 
-      // Try Deepseek first, then fall back to OpenAI
+      // Use Deepseek only (no OpenAI fallback)
       const deepseekKey = await getSetting(DEEPSEEK_KEY) || env.deepseekApiKey;
-      const openaiKey = await getSetting(OPENAI_KEY) || env.openaiApiKey;
 
-      let reply: string | null = null;
-      let provider = "";
-
-      if (deepseekKey) {
-        reply = await callDeepseek(messages, deepseekKey);
-        if (reply) provider = "deepseek";
-      }
-
-      if (!reply && openaiKey) {
-        reply = await callOpenai(messages, openaiKey);
-        if (reply) provider = "openai";
-      }
-
-      if (!reply) {
+      if (!deepseekKey) {
         throw new TRPCError({
           code: "PRECONDITION_FAILED",
-          message: "No AI provider configured. Please set up a Deepseek or OpenAI API key in the admin settings.",
+          message: "Deepseek API key is not configured. Please set it in the admin settings.",
+        });
+      }
+
+      const reply = await callDeepseek(messages, deepseekKey);
+      if (!reply) {
+        throw new TRPCError({
+          code: "BAD_GATEWAY",
+          message: "Deepseek is unavailable right now. Please try again later.",
         });
       }
 
@@ -219,7 +213,7 @@ export const chatRouter = createRouter({
         .update({ updated_at: new Date().toISOString() })
         .eq("id", input.chatId));
 
-      return { id: savedMsg?.id, role: "assistant", content: reply, provider };
+      return { id: savedMsg?.id, role: "assistant", content: reply, provider: "deepseek" };
     }),
 
   delete: authedQuery
