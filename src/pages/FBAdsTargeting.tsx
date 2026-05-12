@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/providers/auth";
-import { aiChat } from "@/lib/aiClient";
 import { useUsageLimit } from "@/hooks/useUsageLimit";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import {
@@ -58,24 +57,55 @@ export default function FBAdsTargeting() {
     setError("");
 
     try {
-      const content = await aiChat({
-        token,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a Filipino Facebook Ads strategist. Output clear, structured targeting suggestions with personas, interests, and actionable recommendations.",
-          },
-          {
-            role: "user",
-            content: `Business: ${businessName}\nProduct: ${product}\n\nGenerate FB Ads targeting: 3 personas, demographics, interests/behaviors, placements, budget, and quick ad angles. Taglish is fine.`,
-          },
-        ],
-        max_tokens: 1400,
-        temperature: 0.7,
+      const res = await fetch("/api/fb-ads-targeting", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ businessName, product }),
       });
 
-      setOutput(content || "No output");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `Server error (${res.status})`);
+      }
+
+      // Handle SSE stream
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6);
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) throw new Error(parsed.error);
+            if (parsed.content) {
+              fullText += parsed.content;
+              setOutput(fullText);
+            }
+          } catch {
+            // Skip malformed JSON chunks
+          }
+        }
+      }
+
+      setOutput(fullText || "No output");
     } catch (e: any) {
       setError(e?.message || "Generation failed");
     } finally {
