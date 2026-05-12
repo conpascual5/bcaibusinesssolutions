@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Upload, Sparkles, Copy, Check, ImageIcon, X, Target, MessageSquare, Eye, Loader2, AlertCircle } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UpgradePrompt from '@/components/UpgradePrompt';
+import { getSupabaseAccessToken } from '@/lib/supabaseAuthToken';
 
 export default function ImageAdAnalyzer() {
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
@@ -49,9 +50,12 @@ export default function ImageAdAnalyzer() {
     setResult('');
 
     try {
-      const response = await fetch('/api/image-ad-analyzer', {
+      const response = await fetch('https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/image-ad-analyzer', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getSupabaseAccessToken() ?? ''}`,
+        },
         body: JSON.stringify({
           imageDescription: imageDescription.trim() || 'a product in an advertisement image',
           imageDataUrl: uploadedImage,
@@ -63,37 +67,8 @@ export default function ImageAdAnalyzer() {
         throw new Error(err.error || 'Failed to analyze image');
       }
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let fullText = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-          const data = trimmed.slice(6);
-
-          try {
-            const parsed = JSON.parse(data);
-            if (parsed.content) {
-              fullText += parsed.content;
-              setResult(fullText);
-            }
-          } catch {
-            // Skip malformed chunks
-          }
-        }
-      }
+      const data = await response.json();
+      setResult(data.content || 'No output');
     } catch (err: any) {
       setResult(`❌ Error: ${err.message}`);
     } finally {

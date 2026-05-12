@@ -1,82 +1,71 @@
-import { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router';
-import { useAuth } from '@/providers/auth';
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate } from "react-router";
 import {
-  SidebarProvider,
   Sidebar,
   SidebarContent,
-  SidebarHeader,
   SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
+  SidebarHeader,
   SidebarInset,
-  SidebarTrigger,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
   SidebarSeparator,
-} from '@/components/ui/sidebar';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+  SidebarTrigger,
+} from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import {
-  Crosshair,
-  Sparkles,
-  User,
-  Target,
-  Loader2,
   AlertCircle,
-  Copy,
   Check,
-  LogOut,
-  Shield,
+  Copy,
+  Crosshair,
+  Crown,
   LayoutDashboard,
+  Loader2,
+  LogOut,
   Menu,
   Moon,
-  Sun,
-  FileSearch,
-  FileText,
-  Wand2,
-  Eye,
-  Crown,
-  Building2,
   Package,
-} from 'lucide-react';
-import { useUsageLimit } from '@/hooks/useUsageLimit';
-import UsageBadge from '@/components/UsageBadge';
-import UpgradePrompt from '@/components/UpgradePrompt';
+  Sparkles,
+  Sun,
+  Target,
+  User,
+  Wand2,
+} from "lucide-react";
+import { useAuth } from "@/providers/auth";
+import { useUsageLimit } from "@/hooks/useUsageLimit";
+import UpgradePrompt from "@/components/UpgradePrompt";
 
 export default function FBAdsTargeting() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
+
   const [darkMode, setDarkMode] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return document.documentElement.classList.contains('dark');
+    if (typeof window !== "undefined") {
+      return document.documentElement.classList.contains("dark");
     }
     return false;
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    if (darkMode) {
-      root.classList.add('dark');
-    } else {
-      root.classList.remove('dark');
-    }
+    if (darkMode) root.classList.add("dark");
+    else root.classList.remove("dark");
   }, [darkMode]);
 
-  const [businessName, setBusinessName] = useState('');
-  const [product, setProduct] = useState('');
+  const [businessName, setBusinessName] = useState("");
+  const [product, setProduct] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [output, setOutput] = useState('');
-  const [error, setError] = useState('');
+  const [output, setOutput] = useState("");
+  const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const outputRef = useRef<HTMLDivElement>(null);
+  const outputRef = useRef<HTMLPreElement>(null);
 
-  const { usage, loading: usageLoading, increment } = useUsageLimit('fb-ads-targeting');
+  const { usage, loading: usageLoading, increment } = useUsageLimit("fb-ads-targeting");
 
   useEffect(() => {
     if (outputRef.current) outputRef.current.scrollTop = outputRef.current.scrollHeight;
@@ -84,118 +73,106 @@ export default function FBAdsTargeting() {
 
   const handleGenerate = async () => {
     if (!businessName || !product) {
-      setError('Please enter your Business Name and Product.');
+      setError("Please enter your Business Name and Product.");
       return;
     }
 
-    // Check usage limit first
-    if (usage && !usage.isPro && usage.remaining <= 0) {
-      setShowUpgrade(true);
+    const incResult = await increment();
+    if (!incResult.success) {
+      if (incResult.limitReached) {
+        setShowUpgrade(true);
+        return;
+      }
+      setError(incResult.error || "Failed to check usage");
       return;
     }
 
     setIsGenerating(true);
-    setOutput('');
-    setError('');
+    setOutput("");
+    setError("");
 
     try {
-      const response = await fetch('/api/fb-ads-targeting', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ businessName, product }),
+      const res = await fetch("https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/deepseek-chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token ?? ""}`,
+        },
+        body: JSON.stringify({
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a Filipino Facebook Ads strategist. Output clear, structured targeting suggestions with personas, interests, and actionable recommendations.",
+            },
+            {
+              role: "user",
+              content: `Business: ${businessName}\nProduct: ${product}\n\nGenerate FB Ads targeting: 3 personas, demographics, interests/behaviors, placements, budget, and quick ad angles. Taglish is fine.`,
+            },
+          ],
+          max_tokens: 1400,
+          temperature: 0.7,
+        }),
       });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || 'Generation failed');
-      }
+      const json = await res.json();
+      if (!res.ok) throw new Error(json?.error || "Generation failed");
 
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error('No response stream');
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data: ')) continue;
-          const dataStr = trimmed.slice(6);
-          if (dataStr === '[DONE]') continue;
-          try {
-            const parsed = JSON.parse(dataStr);
-            if (parsed.content) setOutput((prev) => prev + parsed.content);
-          } catch { /* skip */ }
-        }
-      }
-
-      // Increment usage after successful generation
-      await increment();
-    } catch (err: any) {
-      setError(err.message);
+      setOutput(json.content || "No output");
+    } catch (e: any) {
+      setError(e?.message || "Generation failed");
     } finally {
       setIsGenerating(false);
     }
   };
 
-  const handleCopy = async () => {
+  const copyToClipboard = async () => {
+    if (!output) return;
     await navigator.clipboard.writeText(output);
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setTimeout(() => setCopied(false), 1500);
   };
 
-  const sidebarNavItems = [
-    { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
-    { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
-    { icon: Crosshair, label: 'Captions & Video Script', path: '/app/targeting' },
-    { icon: Target, label: 'FB Ads Targeting', path: '/app/fb-ads-targeting' },
-    { icon: Eye, label: 'Image Ad Analyzer', path: '/app/image-ad-analyzer' },
-    { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
-    { icon: FileText, label: 'Invoices', path: '/app/invoices' },
-  ];
+  if (!user) return null;
+
+  const remaining = usage?.remaining ?? 0;
 
   return (
-    <SidebarProvider defaultOpen={true}>
-      <div className="flex min-h-screen w-full bg-background">
-        <Sidebar variant="sidebar" collapsible="icon">
+    <SidebarProvider defaultOpen>
+      <div className="min-h-screen flex w-full bg-background">
+        <Sidebar className="border-r border-border">
           <SidebarHeader className="p-4">
-            <div className="flex items-center gap-3 px-1">
-              <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/20">
-                <Sparkles className="w-[18px] h-[18px] text-white" />
+            <button
+              onClick={() => navigate("/app")}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent transition-colors text-left"
+            >
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+                <Crosshair className="w-4 h-4 text-white" />
               </div>
-              <span className="font-semibold text-[15px] tracking-tight text-sidebar-foreground truncate group-data-[collapsible=icon]:hidden">
-                BC AI
-              </span>
-              {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} className="group-data-[collapsible=icon]:hidden" />}
-            </div>
+              <div className="flex-1">
+                <p className="text-sm font-extrabold text-foreground leading-none">BC AI</p>
+                <p className="text-[10px] text-muted-foreground">Tool Kit</p>
+              </div>
+            </button>
           </SidebarHeader>
-
-          <SidebarSeparator className="mx-4 w-auto opacity-30" />
 
           <SidebarContent>
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {sidebarNavItems.map((item) => {
-                    const isActive = location.pathname === item.path;
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton
-                          isActive={isActive}
-                          onClick={() => navigate(item.path)}
-                          tooltip={item.label}
-                          className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
-                        >
-                          <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
+                  {[{ icon: LayoutDashboard, label: "Dashboard", path: "/app" }].map((item) => (
+                    <SidebarMenuItem key={item.path}>
+                      <SidebarMenuButton
+                        isActive={location.pathname === item.path}
+                        onClick={() => navigate(item.path)}
+                        tooltip={item.label}
+                        className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
+                      >
+                        <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
+                        <span>{item.label}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
                 </SidebarMenu>
               </SidebarGroupContent>
             </SidebarGroup>
@@ -204,7 +181,16 @@ export default function FBAdsTargeting() {
           <SidebarSeparator className="mx-4 w-auto opacity-30" />
 
           <SidebarFooter className="p-4 space-y-1">
-            {/* Dark mode toggle */}
+            <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-border bg-card group-data-[collapsible=icon]:hidden">
+              <div className="w-8 h-8 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center">
+                <User className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-bold text-foreground leading-none">{user.name || "User"}</p>
+                <p className="text-[10px] text-muted-foreground">{user.email}</p>
+              </div>
+            </div>
+
             <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg group-data-[collapsible=icon]:hidden">
               {darkMode ? (
                 <Moon className="w-[18px] h-[18px] stroke-[1.5] text-sidebar-foreground/60" />
@@ -212,27 +198,10 @@ export default function FBAdsTargeting() {
                 <Sun className="w-[18px] h-[18px] stroke-[1.5] text-sidebar-foreground/60" />
               )}
               <span className="text-sm text-sidebar-foreground/60 flex-1">Dark Mode</span>
-              <Switch
-                checked={darkMode}
-                onCheckedChange={setDarkMode}
-                className="data-[state=checked]:bg-indigo-500"
-              />
+              <Switch checked={darkMode} onCheckedChange={setDarkMode} className="data-[state=checked]:bg-indigo-500" />
             </div>
 
             <SidebarMenu>
-              {user?.isAdmin && (
-                <SidebarMenuItem>
-                  <SidebarMenuButton
-                    isActive={location.pathname === '/admin'}
-                    onClick={() => navigate('/admin')}
-                    tooltip="Admin Panel"
-                    className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
-                  >
-                    <Shield className="w-[18px] h-[18px] stroke-[1.5]" />
-                    <span>Admin Panel</span>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
               <SidebarMenuItem>
                 <SidebarMenuButton
                   onClick={logout}
@@ -248,161 +217,111 @@ export default function FBAdsTargeting() {
         </Sidebar>
 
         <SidebarInset className="flex-1">
-          {/* Top bar */}
           <header className="sticky top-0 z-10 bg-background/80 backdrop-blur-md border-b border-border">
             <div className="flex items-center justify-between px-6 h-16">
               <div className="flex items-center gap-3">
                 <SidebarTrigger className="text-muted-foreground hover:text-foreground">
                   <Menu className="w-5 h-5" />
                 </SidebarTrigger>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2.5 text-sm text-muted-foreground">
-                    <div className="w-7 h-7 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center">
-                      <User className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                    </div>
-                    <span className="hidden sm:inline font-medium">{user?.name}</span>
-                    {usage && <UsageBadge isPro={usage.isPro} isVip={usage.isVip} plan={usage.plan} used={usage.used} limit={usage.limit} />}
+                <div className="flex items-center gap-2">
+                  <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+                    <Target className="w-4 h-4 text-white" />
                   </div>
+                  <div>
+                    <p className="text-sm font-extrabold text-foreground leading-none">FB Ads Targeting</p>
+                    <p className="text-[10px] text-muted-foreground">Deepseek-powered</p>
+                  </div>
+                </div>
               </div>
+
+              {!usageLoading && (
+                <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+                  <span className="text-xs font-semibold text-foreground">
+                    {usage?.plan === "pro"
+                      ? `${remaining} / 500 left`
+                      : usage?.plan === "vip"
+                        ? `${remaining} / 100 left`
+                        : `${remaining} / 3 left`}
+                  </span>
+                </div>
+              )}
             </div>
           </header>
 
-          {/* Page content */}
-          <main className="flex-1 p-6 lg:p-8">
-            <div className="max-w-6xl mx-auto">
-              {/* Header */}
-              <div className="mb-8 animate-fade-in">
-                <div className="flex items-center gap-4 mb-2">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                    <Target className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-foreground tracking-tight">FB Ads Targeting</h1>
-                    <p className="text-sm text-muted-foreground">Enter your business name and product — get 3 ready-to-use buyer personas with full Facebook targeting details</p>
-                  </div>
+          <main className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+            <div className="bg-card rounded-3xl border border-border p-6 shadow-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Business Name</label>
+                  <input
+                    value={businessName}
+                    onChange={(e) => setBusinessName(e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-2xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g., Con's Online Store"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Product</label>
+                  <input
+                    value={product}
+                    onChange={(e) => setProduct(e.target.value)}
+                    className="mt-2 w-full px-4 py-3 rounded-2xl border border-border bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    placeholder="e.g., Whitening Soap"
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-                {/* Left Panel — Inputs */}
-                <div className="lg:col-span-2 space-y-6 lg:sticky lg:top-24 lg:self-start">
-                  <div className="bg-card rounded-2xl card-shadow border border-border p-6 space-y-5">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
-                        <Target className="w-4 h-4 text-indigo-600 dark:text-indigo-400 stroke-[1.5]" />
-                      </div>
-                      <div>
-                        <h3 className="text-sm font-semibold text-foreground">Business Details</h3>
-                        <p className="text-xs text-muted-foreground">Tell us about your business</p>
-                      </div>
-                    </div>
-                    <div className="space-y-4">
-                      <div className="space-y-1.5">
-                        <Label htmlFor="fb-business" className="text-xs font-medium text-muted-foreground">Business Name *</Label>
-                        <div className="relative">
-                          <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-                          <Input
-                            id="fb-business"
-                            placeholder="e.g., Glow & Co."
-                            value={businessName}
-                            onChange={(e) => setBusinessName(e.target.value)}
-                            className="pl-9 bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label htmlFor="fb-product" className="text-xs font-medium text-muted-foreground">Product *</Label>
-                        <div className="relative">
-                          <Package className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/50" />
-                          <Input
-                            id="fb-product"
-                            placeholder="e.g., Organic Vitamin C Face Serum"
-                            value={product}
-                            onChange={(e) => setProduct(e.target.value)}
-                            className="pl-9 bg-background/50 border-border/60 focus:border-indigo-400 focus:ring-indigo-400/20 h-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={isGenerating || !businessName || !product}
-                    className="w-full h-13 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-2xl text-sm font-semibold shadow-xl shadow-indigo-600/25 hover:shadow-indigo-600/40 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
-                  >
-                    {isGenerating ? (
-                      <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Generating 3 Personas...</>
-                    ) : (
-                      <><Sparkles className="w-4 h-4 mr-2" /> Generate FB Ads Targeting</>
-                    )}
-                  </Button>
-
-                  {error && (
-                    <div className="flex items-start gap-2.5 p-3.5 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive animate-fade-in">
-                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-                      <span>{error}</span>
-                    </div>
-                  )}
-
-                  {showUpgrade && usage && (
-                    <UpgradePrompt
-                      feature="fb-ads-targeting"
-                      used={usage.used}
-                      limit={usage.limit}
-                      plan={usage.plan}
-                      isVip={usage.isVip}
-                      onClose={() => setShowUpgrade(false)}
-                    />
-                  )}
+              {error && (
+                <div className="mt-4 p-3 rounded-2xl border border-red-200 bg-red-50 text-sm text-red-700 flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 mt-0.5" />
+                  <span>{error}</span>
                 </div>
+              )}
 
-                {/* Right Panel — Output */}
-                <div className="lg:col-span-3">
-                  <div className="bg-card rounded-2xl card-shadow border border-border overflow-hidden animate-fade-in-up">
-                    <div className="p-5 border-b border-border flex items-center justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                          <Target className="w-4 h-4 text-emerald-600 dark:text-emerald-400 stroke-[1.5]" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-semibold text-foreground">FB Ads Targeting Strategy</h3>
-                          <p className="text-xs text-muted-foreground">3 buyer personas with full targeting details</p>
-                        </div>
-                      </div>
-                      {output && (
-                        <Button variant="outline" size="sm" onClick={handleCopy} className="text-xs gap-1.5 rounded-xl border-border/60">
-                          {copied ? <><Check className="w-3.5 h-3.5 text-emerald-500" /> Copied</> : <><Copy className="w-3.5 h-3.5" /> Copy</>}
-                        </Button>
-                      )}
-                    </div>
-                    <div ref={outputRef} className="h-[500px] overflow-y-auto p-6">
-                      {isGenerating && !output ? (
-                        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-                          <Loader2 className="w-8 h-8 animate-spin mb-4 text-indigo-500" />
-                          <p className="text-sm font-medium">Generating 3 buyer personas...</p>
-                          <p className="text-xs text-muted-foreground/70 mt-1">Creating detailed targeting strategy with demographics, interests, and behaviors</p>
-                        </div>
-                      ) : output ? (
-                        <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-[450]">
-                          {output}
-                          {isGenerating && <span className="inline-block w-[3px] h-[18px] bg-indigo-500 animate-pulse ml-0.5 align-text-bottom" />}
-                        </div>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground">
-                          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-                            <Target className="w-7 h-7 text-muted-foreground/50 stroke-[1]" />
-                          </div>
-                          <p className="text-sm font-medium">Your 3 buyer personas will appear here</p>
-                          <p className="text-xs text-muted-foreground/70 mt-1">Enter your business name and product, then click Generate</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <button
+                onClick={handleGenerate}
+                disabled={isGenerating}
+                className="mt-5 w-full px-5 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+              >
+                {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
+                {isGenerating ? "Generating…" : "Generate Targeting"}
+              </button>
             </div>
+
+            {output && (
+              <div className="mt-6 bg-card rounded-3xl border border-border shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4 text-indigo-600" />
+                    <p className="text-sm font-extrabold text-foreground">Results</p>
+                  </div>
+                  <button
+                    onClick={copyToClipboard}
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border border-border bg-background hover:bg-accent text-xs font-bold"
+                  >
+                    {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
+                    {copied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+                <pre ref={outputRef} className="p-4 text-sm whitespace-pre-wrap text-foreground leading-relaxed">
+{output}
+                </pre>
+              </div>
+            )}
+
+            {showUpgrade && (
+              <div className="mt-6">
+                <UpgradePrompt
+                  feature="fb-ads-targeting"
+                  used={usage?.used ?? 0}
+                  limit={usage?.limit ?? 3}
+                  plan={usage?.plan}
+                  isVip={usage?.isVip}
+                  onClose={() => setShowUpgrade(false)}
+                />
+              </div>
+            )}
           </main>
         </SidebarInset>
       </div>

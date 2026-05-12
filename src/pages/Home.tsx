@@ -3,7 +3,6 @@ import { Crosshair, Sparkles, User, MessageSquare, Film, Loader2, Crown } from '
 import { generateTargeting } from '@/lib/targetingEngine';
 import type { TargetingResult } from '@/lib/targetingEngine';
 import { CaptionCard, VideoScriptCard } from '@/components/ResultCards';
-import { trpc } from '@/providers/trpc';
 import { useAuth } from '@/providers/auth';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UpgradePrompt from '@/components/UpgradePrompt';
@@ -47,8 +46,7 @@ function CaptionsAndScripts() {
 
   const { usage, loading: usageLoading, increment } = useUsageLimit('captions-video-script');
 
-  const saveSearch = trpc.search.save.useMutation();
-  const { data: searches } = trpc.search.list.useQuery();
+  // Saved searches were backed by a Vercel API; temporarily disabled during Supabase migration.
 
   useEffect(() => {
     if (result && resultsRef.current) {
@@ -78,11 +76,7 @@ function CaptionsAndScripts() {
       // Increment usage after successful generation
       increment();
 
-      try {
-        saveSearch.mutate({ productQuery: query.trim() });
-      } catch {
-        // silent fail
-      }
+      // Saving is temporarily disabled during Supabase migration.
     }, 1200);
   };
 
