@@ -14,6 +14,34 @@ type MessageRow = {
 
 const SUPPORT_TITLE = "Support";
 
+async function trpcCall<T>(method: "GET" | "POST", path: string, token: string, body?: unknown): Promise<T> {
+  const url = method === "GET"
+    ? `/api/trpc/${path}?input=${encodeURIComponent(JSON.stringify(body ?? {}))}`
+    : `/api/trpc/${path}`;
+
+  const res = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: method === "POST" ? JSON.stringify(body ?? {}) : undefined,
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `HTTP ${res.status}`;
+    try {
+      const json = JSON.parse(text);
+      msg = json?.error?.message ?? json?.error?.[0]?.message ?? msg;
+    } catch {}
+    throw new Error(msg);
+  }
+
+  const json = await res.json();
+  return json?.result?.data as T;
+}
+
 export default function SupportChatWidget() {
   const { token, user } = useAuth();
   const [open, setOpen] = useState(false);
@@ -44,49 +72,21 @@ export default function SupportChatWidget() {
   const ensureSupportChat = async (): Promise<number> => {
     if (!token) throw new Error("Not authenticated");
 
-    // 1) List chats and find existing Support chat
-    const listRes = await fetch("/api/trpc/chat.list", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({}),
-    });
-    const listJson = await listRes.json();
-    const list = (listJson?.result?.data as any[]) ?? [];
-
+    // 1) List chats (GET query) and find existing Support chat
+    const list = await trpcCall<ChatRow[]>("GET", "chat.list", token, {});
     const existing = list.find((c) => String(c.title || "").toLowerCase() === SUPPORT_TITLE.toLowerCase());
     if (existing?.id) return Number(existing.id);
 
-    // 2) Create support chat
-    const createRes = await fetch("/api/trpc/chat.create", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ title: SUPPORT_TITLE }),
-    });
-    const createJson = await createRes.json();
-    const created = createJson?.result?.data as ChatRow | undefined;
+    // 2) Create support chat (POST mutation)
+    const created = await trpcCall<ChatRow>("POST", "chat.create", token, { title: SUPPORT_TITLE });
     if (!created?.id) throw new Error("Failed to create support chat");
     return created.id;
   };
 
   const loadMessages = async (id: number) => {
     if (!token) return;
-    const res = await fetch("/api/trpc/chat.getMessages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ chatId: id }),
-    });
-    const json = await res.json();
-    const data = (json?.result?.data as MessageRow[]) ?? [];
-    setMessages(data);
+    const data = await trpcCall<MessageRow[]>("GET", "chat.getMessages", token, { chatId: id });
+    setMessages(data ?? []);
   };
 
   const openChat = async () => {
@@ -103,16 +103,9 @@ export default function SupportChatWidget() {
   };
 
   const send = async () => {
-    console.log("[SupportChat] send called", { chatId, hasToken: !!token, inputLength: input.trim().length });
-    if (!chatId || !token) {
-      console.log("[SupportChat] send aborted: missing chatId or token", { chatId, hasToken: !!token });
-      return;
-    }
+    if (!chatId || !token) return;
     const content = input.trim();
-    if (!content) {
-      console.log("[SupportChat] send aborted: empty content");
-      return;
-    }
+    if (!content) return;
 
     setInput("");
     setMessages((m) => [
@@ -126,25 +119,10 @@ export default function SupportChatWidget() {
       },
     ]);
 
-    console.log("[SupportChat] sending message to API", { chatId, contentLength: content.length });
     try {
-      const res = await fetch("/api/trpc/chat.sendMessage", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ chatId, content }),
-      });
-
-      console.log("[SupportChat] API response status:", res.status);
-      const json = await res.json();
-      console.log("[SupportChat] API response:", json);
-      const data = json?.result?.data as any;
+      const data = await trpcCall<any>("POST", "chat.sendMessage", token, { chatId, content });
 
       if (data?.saved) {
-        console.log("[SupportChat] message saved successfully", { hasAiReply: !!data?.aiReply?.content });
-        // Message was saved successfully. If there's an AI reply, show it.
         if (data?.aiReply?.content) {
           setMessages((m) => [
             ...m,
@@ -158,29 +136,25 @@ export default function SupportChatWidget() {
           ]);
         }
       } else {
-        // If the backend returns an error, show it as assistant text.
-        const errMsg = json?.error?.message || "Message failed";
-        console.log("[SupportChat] message send failed:", errMsg);
         setMessages((m) => [
           ...m,
           {
             id: Date.now() + 1,
             chat_id: chatId,
             role: "assistant",
-            content: `⚠️ ${errMsg}`,
+            content: "⚠️ Message failed to send",
             created_at: new Date().toISOString(),
           },
         ]);
       }
     } catch (err) {
-      console.error("[SupportChat] send error:", err);
       setMessages((m) => [
         ...m,
         {
           id: Date.now() + 1,
           chat_id: chatId,
           role: "assistant",
-          content: `⚠️ Network error: ${err instanceof Error ? err.message : "Unknown error"}`,
+          content: `⚠️ ${err instanceof Error ? err.message : "Unknown error"}`,
           created_at: new Date().toISOString(),
         },
       ]);
