@@ -57,11 +57,12 @@ export default function Landing() {
       popular: false,
       features: [
         "Access to all 6 AI tools",
-        "3-5 uses per tool per month",
+        "3 total generations (one-time trial)",
         "Basic ad targeting personas",
-        "Invoice generation (3/month)",
-        "Ad copy analysis (3/month)",
+        "Invoice generation",
+        "Ad copy analysis",
         "Live chat support",
+        "Subject to fair usage policy",
       ],
     },
     {
@@ -74,18 +75,18 @@ export default function Landing() {
       gradient: "from-amber-400 to-orange-500",
       popular: true,
       features: [
-        "Unlimited access to all 6 tools",
-        "No usage limits on any feature",
+        "500 generations per month",
+        "All 6 tools included",
         "Full buyer personas with targeting",
         "Unlimited invoice generation",
         "Unlimited ad copy analysis",
         "Priority live chat support",
+        "Subject to fair usage policy",
       ],
     },
     {
       name: "VIP",
-      price: "999",
-      period: "/month",
+      price: "Exclusive",
       icon: Star,
       color: "text-purple-500",
       badge: "bg-purple-100 text-purple-700 border-purple-200",
@@ -94,11 +95,11 @@ export default function Landing() {
       features: [
         "Exclusive for existing buyers of Static Images, Cinematic Ads & Website Creation",
         "100 generations per month across all AI tools",
-
         "Advanced buyer personas with deep targeting",
         "Priority invoice generation",
         "Priority ad analysis",
         "Dedicated live chat support",
+        "Subject to fair usage policy",
       ],
     },
   ];
@@ -250,7 +251,7 @@ export default function Landing() {
                 <Crown className="w-3 h-3" /> Pricing Plans
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Choose Your Plan</h2>
-              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Start free and upgrade when you need more. No credit card required for the Free plan. VIP is exclusive for existing buyers of our ad creatives and website services.</p>
+              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Start free and upgrade when you need more. All plans are subject to a fair usage policy. VIP is exclusive for existing buyers of our ad creatives and website services.</p>
             </div>
           </AnimatedSection>
 
@@ -276,7 +277,7 @@ export default function Landing() {
                       </div>
                       <h3 className="text-2xl font-extrabold text-gray-900">{plan.name}</h3>
                       <div className="flex items-baseline justify-center gap-1 mt-2">
-                        <span className="text-sm text-gray-400">PHP</span>
+                        {plan.name !== "VIP" && <span className="text-sm text-gray-400">PHP</span>}
                         <span className="text-5xl font-extrabold text-gray-900">{plan.price}</span>
                         {plan.period && <span className="text-sm text-gray-400">{plan.period}</span>}
                       </div>
@@ -301,7 +302,7 @@ export default function Landing() {
                           : 'bg-gray-900 text-white hover:bg-gray-800'
                       }`}
                     >
-                      {plan.price === "0" ? "Get Started Free" : "Upgrade Now"}
+                      {plan.price === "0" ? "Get Started Free" : plan.name === "VIP" ? "Request Access" : "Upgrade Now"}
                       <ArrowRight className="w-4 h-4" />
                     </Link>
                   </div>
