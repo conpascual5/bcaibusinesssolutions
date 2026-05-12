@@ -185,10 +185,13 @@ let samplesCache: { images: { url: string; name: string }[]; ts: number } | null
 const SAMPLES_CACHE_TTL = 30_000;
 
 app.get("/api/samples", async (c) => {
+  // On Vercel (serverless) we don't persist uploaded files.
+  // Return immediately to avoid unnecessary work and timeouts.
+  if (env.isVercel) {
+    return c.json({ images: [] });
+  }
+
   try {
-    if (env.isVercel) {
-      return c.json({ images: [] });
-    }
     const now = Date.now();
     if (samplesCache && (now - samplesCache.ts) < SAMPLES_CACHE_TTL) {
       return c.json({ images: samplesCache.images });
