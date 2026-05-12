@@ -1,8 +1,0 @@
-{
-  "rewrites": [
-    { "source": "/api/trpc/(.*)", "destination": "/api/trpc-handler" },
-    { "source": "/api/samples", "destination": "/api/samples" },
-    { "source": "/api/usage/(.*)", "destination": "/api/usage-handler" },
-    { "source": "/api/image-ad-analyzer", "destination": "/api/image-ad-analyzer-handler" }
-  ]
-}
