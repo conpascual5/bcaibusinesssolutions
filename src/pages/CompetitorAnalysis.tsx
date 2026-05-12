@@ -1,14 +1,45 @@
-import { useState } from "react";
-import { Search, Sparkles, Copy, Check, AlertTriangle } from "lucide-react";
+import { useMemo, useState } from "react";
+import { useAuth } from "@/providers/auth";
+import { Search, Sparkles, Loader2, Copy, Check } from "lucide-react";
+import { aiChat } from "@/lib/aiClient";
 
 export default function CompetitorAnalysis() {
+  const { token } = useAuth();
   const [text, setText] = useState("");
   const [type, setType] = useState<"copy" | "url">("copy");
+  const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const canSubmit = useMemo(() => text.trim().length > 0 && !!token, [text, token]);
 
   const analyze = async () => {
-    setOutput("This tool is temporarily unavailable while AI provider integrations are being removed from the UI.");
+    if (!canSubmit || !token) return;
+    setLoading(true);
+    setOutput("");
+
+    try {
+      const content = await aiChat({
+        token,
+        messages: [
+          { role: "system", content: "You are an expert advertising analyst and copywriter. Return actionable, structured analysis." },
+          {
+            role: "user",
+            content:
+              type === "url"
+                ? `Analyze this landing page content (already extracted):\n\n${text}`
+                : `Analyze this competitor ad copy:\n\n${text}`,
+          },
+        ],
+        max_tokens: 1600,
+        temperature: 0.6,
+      });
+
+      setOutput(content || "No output");
+    } catch (e: any) {
+      setOutput(`❌ ${e?.message || "Analysis failed"}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copy = async () => {
@@ -57,21 +88,13 @@ export default function CompetitorAnalysis() {
           placeholder={type === "copy" ? "Paste competitor ad copy here…" : "Paste landing page text here…"}
         />
 
-        <div className="mt-4 p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5" />
-          <div>
-            <p className="text-sm font-bold text-amber-900">Temporarily unavailable</p>
-            <p className="text-sm text-amber-800 mt-1">We’re removing provider-specific AI wiring from the product UI right now.</p>
-          </div>
-        </div>
-
         <button
           onClick={analyze}
-          disabled={!text.trim()}
+          disabled={!canSubmit || loading}
           className="mt-4 w-full px-5 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-rose-600 to-pink-600 hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-rose-500/20"
         >
-          <Sparkles className="w-5 h-5" />
-          Analyze
+          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Sparkles className="w-5 h-5" />}
+          {loading ? "Analyzing…" : "Analyze"}
         </button>
       </div>
 
@@ -90,6 +113,8 @@ export default function CompetitorAnalysis() {
           <pre className="p-4 text-sm whitespace-pre-wrap text-gray-900 leading-relaxed">{output}</pre>
         </div>
       )}
+
+      {!token && <div className="text-sm text-gray-500">Please log in to use this tool.</div>}
     </div>
   );
 }
