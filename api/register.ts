@@ -17,7 +17,7 @@ registerApp.post("/api/register", async (c) => {
     const supabase = getSupabaseClient();
 
     // Sign up with Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
+    const { data, error } = await (supabase as any).auth.signUp({
       email,
       password,
       options: {

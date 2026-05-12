@@ -28,7 +28,7 @@ export const setupRouter = createRouter({
         }
 
         // Sign up with Supabase Auth
-        const { data, error } = await supabase.auth.signUp({
+        const { data, error } = await (supabase as any).auth.signUp({
           email: input.email,
           password: input.password,
           options: {

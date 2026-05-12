@@ -18,7 +18,7 @@ function getMonth(): string {
 
 async function getUserFromToken(token: string) {
   const supabase = getSupabaseClient(token);
-  const { data: { user }, error } = await supabase.auth.getUser(token);
+  const { data: { user }, error } = await (supabase as any).auth.getUser(token);
   if (error || !user) return null;
   return user;
 }

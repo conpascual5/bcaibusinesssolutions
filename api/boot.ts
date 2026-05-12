@@ -45,7 +45,7 @@ app.post("/api/analyze-copy", async (c) => {
     let apiKey = env.deepseekApiKey;
     if (!apiKey) {
       try {
-        const { getSupabaseClient } = await import("./queries/supabase-client");
+        const { getSupabaseClient } = await import("./queries/supabase-client.js");
         const supabase = getSupabaseClient();
         const { data } = await supabase
           .from("settings")
@@ -130,7 +130,7 @@ ${text}`;
 // Health check endpoint
 app.get("/api/health", async (c) => {
   try {
-    const { getSupabaseClient } = await import("./queries/supabase-client");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
     const { error } = await supabase.from("profiles").select("id").limit(1);
     return c.json({
@@ -148,7 +148,7 @@ app.get("/api/fal-debug", async (c) => {
   const apiKey = c.req.query("apiKey");
   if (!apiKey) return c.json({ error: "Missing apiKey query param" }, 400);
 
-  const { testFalEndpoints } = await import("./fal-debug");
+  const { testFalEndpoints } = await import("./fal-debug.js");
   const results = await testFalEndpoints(apiKey);
   return c.json({ results });
 });
@@ -257,7 +257,7 @@ app.post("/api/promote-admin", async (c) => {
   try {
     const { email } = await c.req.json();
     if (!email) return c.json({ error: "Email required" }, 400);
-    const { getSupabaseClient } = await import("./queries/supabase-client");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from("profiles")
@@ -278,7 +278,7 @@ app.post("/api/reactivate-admin", async (c) => {
   try {
     const { email } = await c.req.json();
     if (!email) return c.json({ error: "Email required" }, 400);
-    const { getSupabaseClient } = await import("./queries/supabase-client");
+    const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
     const { data, error } = await supabase
       .from("profiles")

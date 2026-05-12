@@ -38,7 +38,7 @@ export async function createContext(
   if (token) {
     // Verify the token with Supabase using a client that acts as this user
     const supabase = getSupabaseClient(token);
-    const { data: { user: supaUser }, error } = await supabase.auth.getUser(token);
+    const { data: { user: supaUser }, error } = await (supabase as any).auth.getUser(token);
 
     if (error) {
       console.log("[context] getUser error:", error.message);

@@ -13,7 +13,7 @@ loginApp.post("/api/login", async (c) => {
     const { getSupabaseClient } = await import("./queries/supabase-client.js");
     const supabase = getSupabaseClient();
 
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await (supabase as any).auth.signInWithPassword({
       email,
       password,
     });
