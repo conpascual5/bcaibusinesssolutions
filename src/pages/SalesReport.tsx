@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import * as XLSX from "xlsx";
+import SalesEntriesTable, { type SalesEntryRow as SalesEntryRowTable } from "@/components/SalesEntriesTable";
 import {
   ResponsiveContainer,
   LineChart,
@@ -33,13 +34,7 @@ import {
 
 type RangeMode = "daily" | "weekly" | "monthly" | "yearly";
 
-type SalesEntryRow = {
-  id: string;
-  entry_date: string;
-  amount: number;
-  source: string | null;
-  notes: string | null;
-};
+type SalesEntryRow = SalesEntryRowTable;
 
 function formatMoney(v: number) {
   return new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP" }).format(v);
@@ -159,6 +154,26 @@ export default function SalesReport() {
     setNewSource("");
     setNewNotes("");
 
+    await load();
+  };
+
+  const handleUpdateRow = async (row: SalesEntryRow) => {
+    await supabase
+      .from("sales_entries")
+      .update({
+        entry_date: row.entry_date,
+        amount: row.amount,
+        source: row.source,
+        notes: row.notes,
+        updated_at: new Date().toISOString(),
+      } as any)
+      .eq("id", row.id);
+
+    await load();
+  };
+
+  const handleDeleteRow = async (id: string) => {
+    await supabase.from("sales_entries").delete().eq("id", id);
     await load();
   };
 
@@ -404,6 +419,8 @@ export default function SalesReport() {
             </div>
           </div>
         </div>
+
+        <SalesEntriesTable rows={rawEntries} onUpdate={handleUpdateRow} onDelete={handleDeleteRow} />
 
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center gap-2">
