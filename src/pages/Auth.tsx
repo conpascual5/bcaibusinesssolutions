@@ -5,6 +5,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import { toast } from "sonner";
 
+function getPostAuthRedirect(isAdmin: boolean) {
+  return isAdmin ? "/admin" : "/app";
+}
+
 export default function AuthPage() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
@@ -21,7 +25,9 @@ export default function AuthPage() {
   useEffect(() => {
     if (isLoading) return;
     if (!user) return;
-    navigate(user.isAdmin ? "/admin" : "/app", { replace: true });
+    const dest = getPostAuthRedirect(user.isAdmin);
+    console.log("[auth] AuthPage redirecting to:", dest);
+    navigate(dest, { replace: true });
   }, [user, isLoading, navigate]);
 
   // Force clear session if stuck
