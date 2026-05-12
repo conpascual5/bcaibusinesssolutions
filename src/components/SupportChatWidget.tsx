@@ -129,20 +129,24 @@ export default function SupportChatWidget() {
     });
 
     const json = await res.json();
-    const reply = json?.result?.data as any;
-    if (reply?.content) {
-      setMessages((m) => [
-        ...m,
-        {
-          id: Date.now() + 1,
-          chat_id: chatId,
-          role: "assistant",
-          content: String(reply.content),
-          created_at: new Date().toISOString(),
-        },
-      ]);
+    const data = json?.result?.data as any;
+
+    if (data?.saved) {
+      // Message was saved successfully. If there's an AI reply, show it.
+      if (data?.aiReply?.content) {
+        setMessages((m) => [
+          ...m,
+          {
+            id: Date.now() + 1,
+            chat_id: chatId,
+            role: "assistant",
+            content: String(data.aiReply.content),
+            created_at: new Date().toISOString(),
+          },
+        ]);
+      }
     } else {
-      // If the backend returns an error (e.g., missing Deepseek key), show it as assistant text.
+      // If the backend returns an error, show it as assistant text.
       const errMsg = json?.error?.message || "Message failed";
       setMessages((m) => [
         ...m,

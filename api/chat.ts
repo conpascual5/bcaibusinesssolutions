@@ -135,18 +135,33 @@ export const chatRouter = createRouter({
         .limit(1) as any);
       const chat = (chatRows as any[])?.[0];
       if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
-      if (chat.user_id !== ctx.user.userId) {
+      if (chat.user_id !== ctx.user.userId && !ctx.user.isAdmin) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
       }
+
+      // Determine the role: if admin, store as assistant; otherwise store as user
+      const role = ctx.user.isAdmin ? "assistant" : "user";
 
       await (supabase
         .from("messages")
         .insert({
           chat_id: input.chatId,
-          role: "user",
+          role,
           content: input.content,
         } as any) as any);
 
+      // Update chat timestamp
+      await ((supabase as any)
+        .from("chats")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", input.chatId));
+
+      // If the sender is an admin, we're done — no AI reply needed
+      if (ctx.user.isAdmin) {
+        return { saved: true, role, content: input.content };
+      }
+
+      // For regular users: try to generate an AI reply, but don't fail if it doesn't work
       const { data: history } = await (supabase
         .from("messages")
         .select("*")
@@ -159,26 +174,22 @@ export const chatRouter = createRouter({
       const messages = [
         { role: "system", content: systemPrompt },
         ...(history as any[] | undefined)?.map((m: any) => ({ role: m.role, content: m.content })) ?? [],
-        { role: "user", content: input.content },
       ];
 
       const deepseekKey = (await getSetting(DEEPSEEK_KEY, ctx.token)) || env.deepseekApiKey;
 
       if (!deepseekKey) {
-        throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "Deepseek API key is not configured. Please set it in the admin settings.",
-        });
+        // No AI key configured — message saved, return without AI reply
+        return { saved: true, role: "user", content: input.content, aiReply: null };
       }
 
       const reply = await callDeepseek(messages, deepseekKey);
       if (!reply) {
-        throw new TRPCError({
-          code: "BAD_GATEWAY",
-          message: "Deepseek is unavailable right now. Please try again later.",
-        });
+        // AI unavailable — message saved, return without AI reply
+        return { saved: true, role: "user", content: input.content, aiReply: null };
       }
 
+      // Save the AI reply
       const { data: msgResult } = await (supabase
         .from("messages")
         .insert({
@@ -189,11 +200,11 @@ export const chatRouter = createRouter({
         .select("id") as any);
       const savedMsg = (msgResult as any[])?.[0];
 
-      await ((supabase as any)
-        .from("chats")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", input.chatId));
-
-      return { id: savedMsg?.id, role: "assistant", content: reply, provider: "deepseek" };
+      return {
+        saved: true,
+        role: "user",
+        content: input.content,
+        aiReply: { id: savedMsg?.id, role: "assistant", content: reply, provider: "deepseek" },
+      };
     }),
 });
