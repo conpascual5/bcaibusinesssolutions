@@ -12,13 +12,10 @@ export default function PortfolioGallery() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/samples')
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.images) setImages(data.images);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    // Samples were previously served from a Vercel API route.
+    // Disabled during Supabase migration to avoid 404 NOT_FOUND in production.
+    setImages([]);
+    setLoading(false);
   }, []);
 
   const openLightbox = (index: number) => setSelectedIndex(index);
@@ -52,7 +49,8 @@ export default function PortfolioGallery() {
         <Camera className="w-12 h-12 text-gray-300 mx-auto mb-3" />
         <p className="text-gray-500 font-medium">No images uploaded yet</p>
         <p className="text-sm text-gray-400 mt-1">
-          <a href="/upload" className="text-blue-600 hover:underline font-semibold">Upload your ad creatives</a> to showcase them here.
+          Uploads are being upgraded for serverless hosting.
+
         </p>
       </div>
     );

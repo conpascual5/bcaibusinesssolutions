@@ -3,6 +3,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
+import { deepseekChat } from "@/lib/deepseekClient";
+import { useAuth } from "@/providers/auth";
 import {
   Search,
   ExternalLink,
@@ -40,6 +42,7 @@ function AnalysisSkeleton() {
 }
 
 export default function AdAnalyzer({ language }: AdAnalyzerProps) {
+  const { token } = useAuth();
   const [adUrl, setAdUrl] = useState("");
   const [analysis, setAnalysis] = useState("");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -54,43 +57,33 @@ export default function AdAnalyzer({ language }: AdAnalyzerProps) {
   }, [analysis]);
 
   const handleAnalyze = async () => {
-    if (!adUrl.trim()) return;
+    if (!adUrl.trim() || !token) return;
+
     setIsAnalyzing(true);
     setAnalysis("");
     setError("");
+
     try {
-      const response = await fetch("/api/sales-wizard/analyze-ad", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ adUrl: adUrl.trim(), language }),
+      const content = await deepseekChat({
+        token,
+        temperature: 0.5,
+        max_tokens: 1400,
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an expert ad copy analyst. You will analyze an ad based on its URL context provided by the user. Provide a structured breakdown: hook, offer, proof, CTA, objections, and suggested improvements.",
+          },
+          {
+            role: "user",
+            content: `Analyze this ad URL (note: you cannot browse; infer likely structure and give a best-practice analysis):\nURL: ${adUrl.trim()}\nLanguage preference: ${language}`,
+          },
+        ],
       });
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Analysis failed");
-      }
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("No response stream");
-      const decoder = new TextDecoder();
-      let buffer = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data: ")) continue;
-          const dataStr = trimmed.slice(6);
-          if (dataStr === "[DONE]") continue;
-          try {
-            const parsed = JSON.parse(dataStr);
-            if (parsed.content) setAnalysis((prev) => prev + parsed.content);
-          } catch { /* skip */ }
-        }
-      }
+
+      setAnalysis(content);
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message || "Analysis failed");
     } finally {
       setIsAnalyzing(false);
     }
@@ -105,9 +98,7 @@ export default function AdAnalyzer({ language }: AdAnalyzerProps) {
           </div>
           <div>
             <h3 className="text-sm font-semibold text-foreground">Ad Analyzer</h3>
-            <p className="text-xs text-muted-foreground">
-              I-paste ang ad URL para ma-analyze ang sales framework nito
-            </p>
+            <p className="text-xs text-muted-foreground">I-paste ang ad URL para ma-analyze ang sales framework nito</p>
           </div>
         </div>
         <Button
@@ -120,58 +111,61 @@ export default function AdAnalyzer({ language }: AdAnalyzerProps) {
           {isOpen ? <X className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
         </Button>
       </div>
+
       {isOpen && (
         <div className="p-5 space-y-4">
-          <div className="flex gap-2">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold text-muted-foreground">Ad URL</label>
             <Input
-              placeholder="Paste ad URL (e.g., Facebook ad link)..."
               value={adUrl}
               onChange={(e) => setAdUrl(e.target.value)}
-              className="bg-background/50 border-border/60 focus:border-orange-400 focus:ring-orange-400/20 h-10 flex-1"
+              placeholder="https://..."
+              className="rounded-xl"
             />
-            <Button
-              onClick={handleAnalyze}
-              disabled={isAnalyzing || !adUrl.trim()}
-              className="bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white rounded-xl shadow-lg shadow-orange-500/20 px-5"
-            >
-              {isAnalyzing ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                "Analyze"
-              )}
-            </Button>
           </div>
 
-          {error && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-sm text-destructive">
-              {error}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <div
+                key={opt.id}
+                className={`px-3 py-2 rounded-xl border text-xs font-semibold flex items-center gap-2 ${
+                  language === opt.id ? "bg-accent border-border" : "bg-background border-border"
+                }`}
+              >
+                <opt.icon className="w-3.5 h-3.5" />
+                {opt.label}
+              </div>
+            ))}
+          </div>
 
-          <ScrollArea className="h-[300px]" ref={analysisRef}>
-            {isAnalyzing && !analysis ? (
-              <AnalysisSkeleton />
-            ) : analysis ? (
-              <div className="p-4">
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground/90 font-[450]">
-                  {analysis}
-                  {isAnalyzing && (
-                    <span className="inline-block w-[3px] h-[18px] bg-orange-500 animate-pulse ml-0.5 align-text-bottom" />
-                  )}
-                </div>
-              </div>
+          <Button
+            onClick={handleAnalyze}
+            disabled={isAnalyzing || !adUrl.trim() || !token}
+            className="w-full rounded-xl"
+          >
+            {isAnalyzing ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                Analyzing...
+              </>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-                <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
-                  <Search className="w-6 h-6 text-muted-foreground/50 stroke-[1]" />
-                </div>
-                <p className="text-sm font-medium">Paste an ad URL to analyze</p>
-                <p className="text-xs text-muted-foreground/70 mt-1">
-                  We'll identify the sales framework and copy techniques used
-                </p>
-              </div>
+              "Analyze"
             )}
-          </ScrollArea>
+          </Button>
+
+          {error && <div className="text-sm text-red-500">{error}</div>}
+
+          <div className="rounded-2xl border border-border overflow-hidden">
+            <ScrollArea className="h-72" ref={analysisRef as any}>
+              {isAnalyzing ? (
+                <AnalysisSkeleton />
+              ) : (
+                <div className="p-4 text-sm whitespace-pre-wrap text-foreground">{analysis}</div>
+              )}
+            </ScrollArea>
+          </div>
+
+          {!token && <div className="text-xs text-muted-foreground">Please log in to use this tool.</div>}
         </div>
       )}
     </div>
