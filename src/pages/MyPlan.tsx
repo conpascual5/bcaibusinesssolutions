@@ -109,7 +109,7 @@ export default function MyPlan() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
-            Monthly Usage
+            Usage
           </h3>
           {loading && <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />}
         </div>

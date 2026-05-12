@@ -10,7 +10,7 @@ type UsageBadgeProps = {
 };
 
 export default function UsageBadge({ isPro, isVip, used = 0, limit = 0, plan, className = "" }: UsageBadgeProps) {
-  if (isPro) {
+  if (isPro || plan === "pro") {
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[10px] font-bold rounded-full ${className}`}>
         <Crown className="w-2.5 h-2.5" />
