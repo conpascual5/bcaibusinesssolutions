@@ -15,8 +15,13 @@ type MessageRow = {
 const SUPPORT_TITLE = "Support";
 
 async function trpcCall<T>(method: "GET" | "POST", path: string, token: string, body?: unknown): Promise<T> {
+  // tRPC v11 with superjson transformer requires input wrapped in { json, meta }
+  const inputPayload = body !== undefined
+    ? { json: body, meta: { values: ["undefined"] } }
+    : { json: null, meta: { values: ["undefined"] } };
+
   const url = method === "GET"
-    ? `/api/trpc/${path}?input=${encodeURIComponent(JSON.stringify(body ?? {}))}`
+    ? `/api/trpc/${path}?input=${encodeURIComponent(JSON.stringify(inputPayload))}`
     : `/api/trpc/${path}`;
 
   const res = await fetch(url, {
@@ -25,7 +30,7 @@ async function trpcCall<T>(method: "GET" | "POST", path: string, token: string, 
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: method === "POST" ? JSON.stringify(body ?? {}) : undefined,
+    body: method === "POST" ? JSON.stringify(inputPayload) : undefined,
   });
 
   if (!res.ok) {
@@ -40,9 +45,12 @@ async function trpcCall<T>(method: "GET" | "POST", path: string, token: string, 
 
   const json = await res.json();
   console.log("[SupportChat] trpc response", { path, method, json });
-  // tRPC v11 returns data directly in the response body for queries,
-  // or wrapped in { result: { data } } for mutations
-  const data = json?.result?.data ?? json;
+
+  // tRPC v11 with superjson transformer wraps data in result.data.json
+  // For queries: { result: { data: { json: actualData, meta: {...} } } }
+  // For mutations: { result: { data: { json: actualData, meta: {...} } } }
+  // Fallback: try result.data.json, then result.data, then the raw json
+  const data = json?.result?.data?.json ?? json?.result?.data ?? json;
   return data as T;
 }
 
