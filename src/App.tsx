@@ -16,7 +16,7 @@ import FBAdsTargeting from './pages/FBAdsTargeting'
 import MyPlan from './pages/MyPlan'
 import SalesReport from './pages/SalesReport'
 import AppLayout from './components/AppLayout'
-import ChatWidget from './components/ChatWidget'
+import SupportChatWidget from './components/SupportChatWidget'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -68,7 +68,7 @@ export default function App() {
         <Route path="/setup" element={<Setup />} />
         <Route path="/upload" element={<Upload />} />
       </Routes>
-      <ChatWidget />
+      <SupportChatWidget />
     </>
   )
 }
