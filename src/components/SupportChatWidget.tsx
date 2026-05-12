@@ -39,7 +39,11 @@ async function trpcCall<T>(method: "GET" | "POST", path: string, token: string, 
   }
 
   const json = await res.json();
-  return json?.result?.data as T;
+  console.log("[SupportChat] trpc response", { path, method, json });
+  // tRPC v11 returns data directly in the response body for queries,
+  // or wrapped in { result: { data } } for mutations
+  const data = json?.result?.data ?? json;
+  return data as T;
 }
 
 export default function SupportChatWidget() {
