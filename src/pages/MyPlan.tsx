@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/auth';
 import { Crown, Star, Sparkles, Shield, CheckCircle, XCircle, BarChart3, RefreshCw } from 'lucide-react';
 
@@ -35,19 +35,18 @@ const FEATURES = [
   { key: 'invoices', label: 'Invoices' },
 ];
 
-// Per-feature limits are no longer used; usage is capped per plan across all tools.
-const FREE_LIMITS: Record<string, number> = {
-  'image-ad-analyzer': 3,
-  'sales-wizard': 3,
-  'fb-ads-targeting': 3,
-  'captions-video-script': 3,
-  'ad-analyzer': 3,
-  'invoices': 3,
+type UsageRow = {
+  used: number;
+  limit: number;
+  remaining: number;
+  isPro: boolean;
+  isVip: boolean;
+  plan: string;
 };
 
 export default function MyPlan() {
-  const { user } = useAuth();
-  const [usageData, setUsageData] = useState<Record<string, any>>({});
+  const { user, token } = useAuth();
+  const [usageData, setUsageData] = useState<Record<string, UsageRow>>({});
   const [loading, setLoading] = useState(true);
 
   const plan = ((user?.plan || 'free') as keyof typeof PLAN_INFO);
@@ -56,22 +55,40 @@ export default function MyPlan() {
 
   useEffect(() => {
     async function fetchUsage() {
-      setLoading(true);
-      // Usage endpoints were previously served via Vercel /api; removed during Supabase migration.
-      setLoading(false);
-      return;
-
-      const results: Record<string, any> = {};
-      for (const feat of FEATURES) {
-        try {
-          // no-op
-        } catch {}
+      if (!token) {
+        setLoading(false);
+        return;
       }
-      setUsageData(results);
-      setLoading(false);
+
+      setLoading(true);
+      try {
+        const results: Record<string, UsageRow> = {};
+        await Promise.all(
+          FEATURES.map(async (feat) => {
+            const res = await fetch(`/api/usage/${encodeURIComponent(feat.key)}`, {
+              method: 'GET',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) return;
+            results[feat.key] = {
+              used: Number(json.used ?? 0),
+              limit: Number(json.limit ?? 0),
+              remaining: Number(json.remaining ?? 0),
+              isPro: !!json.isPro,
+              isVip: !!json.isVip,
+              plan: String(json.plan ?? 'free'),
+            };
+          })
+        );
+        setUsageData(results);
+      } finally {
+        setLoading(false);
+      }
     }
+
     fetchUsage();
-  }, []);
+  }, [token]);
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 animate-fade-in">
@@ -103,7 +120,7 @@ export default function MyPlan() {
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
-            Usage
+            Usage (this month)
           </h3>
           {loading && <RefreshCw className="w-4 h-4 text-muted-foreground animate-spin" />}
         </div>
@@ -111,11 +128,11 @@ export default function MyPlan() {
         <div className="grid gap-3">
           {FEATURES.map((feat) => {
             const usage = usageData[feat.key];
-            const isPro = usage?.isPro;
-            const isVip = usage?.isVip;
+            const isPro = usage?.isPro ?? plan === 'pro';
+            const isVip = usage?.isVip ?? plan === 'vip';
             const used = usage?.used ?? 0;
             const limit = usage?.limit ?? (plan === 'pro' ? 500 : plan === 'vip' ? 100 : 3);
-            const remaining = usage?.remaining ?? limit;
+            const remaining = usage?.remaining ?? Math.max(0, limit - used);
             const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
             return (
@@ -128,7 +145,8 @@ export default function MyPlan() {
                       {remaining} / 500 remaining
                     </span>
                   ) : isVip ? (
-                    <span className="text-xs font-semibold text-purple-600">
+                    <span className="text-xs font-semibold text-purple-600 flex items-center gap-1">
+                      <Star className="w-3.5 h-3.5" />
                       {remaining} / 100 remaining
                     </span>
                   ) : (
@@ -167,18 +185,22 @@ export default function MyPlan() {
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Role</span>
-            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-              user?.isAdmin ? 'text-indigo-600 dark:text-indigo-400' : 'text-muted-foreground'
-            }`}>
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
+                user?.isAdmin ? 'text-indigo-600 dark:text-indigo-400' : 'text-muted-foreground'
+              }`}
+            >
               {user?.isAdmin ? <Shield className="w-3.5 h-3.5" /> : null}
               {user?.isAdmin ? 'Admin' : 'User'}
             </span>
           </div>
           <div className="flex justify-between">
             <span className="text-muted-foreground">Status</span>
-            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
-              user?.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
-            }`}>
+            <span
+              className={`inline-flex items-center gap-1.5 text-xs font-semibold ${
+                user?.isActive ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'
+              }`}
+            >
               {user?.isActive ? <CheckCircle className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
               {user?.isActive ? 'Active' : 'Inactive'}
             </span>

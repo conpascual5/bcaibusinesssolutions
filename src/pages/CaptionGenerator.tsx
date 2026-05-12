@@ -223,7 +223,7 @@ export default function ImageAdAnalyzer() {
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
-              disabled={!uploadedImage || isGenerating || (!isPro && remaining <= 0)}
+              disabled={!uploadedImage || isGenerating || !token || (!isPro && remaining <= 0)}
               className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-violet-200"
             >
               {isGenerating ? (

@@ -59,8 +59,8 @@ function FrameworkCard({
 
 export default function SalesWizard() {
   const { token } = useAuth();
+  const [productName, setProductName] = useState("");
   const [businessName, setBusinessName] = useState("");
-  const [product, setProduct] = useState("");
   const [message, setMessage] = useState("");
   const [frameworkId, setFrameworkId] = useState<SalesFrameworkId>("aida");
 
@@ -72,8 +72,8 @@ export default function SalesWizard() {
   const { usage, loading: usageLoading, increment } = useUsageLimit("sales-wizard");
 
   const canSubmit = useMemo(
-    () => !!token && businessName.trim().length > 0 && product.trim().length > 0,
-    [token, businessName, product]
+    () => !!token && businessName.trim().length > 0 && productName.trim().length > 0,
+    [token, businessName, productName]
   );
 
   const selectedFramework = useMemo(
@@ -135,7 +135,7 @@ export default function SalesWizard() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          productName: product,
+          productName,
           targetAudience: businessName,
           messageContext: message || "",
           contentType: "caption",
@@ -207,21 +207,21 @@ export default function SalesWizard() {
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Product Name</label>
+            <input
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
+              className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              placeholder="e.g., Whitening Soap"
+            />
+          </div>
+          <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Business Name</label>
             <input
               value={businessName}
               onChange={(e) => setBusinessName(e.target.value)}
               className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="e.g., Con's Online Store"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Product</label>
-            <input
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
-              className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="e.g., Whitening Soap"
             />
           </div>
         </div>
