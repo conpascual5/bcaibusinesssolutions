@@ -46,8 +46,8 @@ app.post("/api/image-ad-analyzer", async (c) => {
 
     const desc = imageDescription?.trim() || "a product in an advertisement image";
 
-    // Step 1: Use GPT-4o-mini to analyze the actual image
-    console.log("[image-ad-analyzer] Analyzing image with GPT-4o-mini...");
+    // Step 1: Use GPT-4 to analyze the actual image
+    console.log("[image-ad-analyzer] Analyzing image with GPT-4...");
     const visionResponse = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -55,7 +55,7 @@ app.post("/api/image-ad-analyzer", async (c) => {
         "Authorization": `Bearer ${openaiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",
+        model: "gpt-4o",
         messages: [
           {
             role: "system",
