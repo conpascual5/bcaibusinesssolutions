@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
-import { deepseekChat } from "@/lib/deepseekClient";
 import { useAuth } from "@/providers/auth";
 import {
   Search,
@@ -13,6 +12,7 @@ import {
   MessageCircle,
   Heart,
   X,
+  AlertTriangle,
 } from "lucide-react";
 
 interface AdAnalyzerProps {
@@ -59,34 +59,11 @@ export default function AdAnalyzer({ language }: AdAnalyzerProps) {
   const handleAnalyze = async () => {
     if (!adUrl.trim() || !token) return;
 
-    setIsAnalyzing(true);
+    // This tool previously depended on Vercel API and has been disabled per request
+    // to remove provider-specific references from the product UI.
+    setIsAnalyzing(false);
     setAnalysis("");
-    setError("");
-
-    try {
-      const content = await deepseekChat({
-        token,
-        temperature: 0.5,
-        max_tokens: 1400,
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are an expert ad copy analyst. You will analyze an ad based on its URL context provided by the user. Provide a structured breakdown: hook, offer, proof, CTA, objections, and suggested improvements.",
-          },
-          {
-            role: "user",
-            content: `Analyze this ad URL (note: you cannot browse; infer likely structure and give a best-practice analysis):\nURL: ${adUrl.trim()}\nLanguage preference: ${language}`,
-          },
-        ],
-      });
-
-      setAnalysis(content);
-    } catch (err: any) {
-      setError(err?.message || "Analysis failed");
-    } finally {
-      setIsAnalyzing(false);
-    }
+    setError("Temporarily unavailable while AI provider integrations are being removed from the UI.");
   };
 
   return (
@@ -138,34 +115,29 @@ export default function AdAnalyzer({ language }: AdAnalyzerProps) {
             ))}
           </div>
 
-          <Button
-            onClick={handleAnalyze}
-            disabled={isAnalyzing || !adUrl.trim() || !token}
-            className="w-full rounded-xl"
-          >
+          <Button onClick={handleAnalyze} disabled className="w-full rounded-xl">
             {isAnalyzing ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin mr-2" />
                 Analyzing...
               </>
             ) : (
-              "Analyze"
+              "Analyze (Disabled)"
             )}
           </Button>
 
-          {error && <div className="text-sm text-red-500">{error}</div>}
+          {error && (
+            <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <div className="rounded-2xl border border-border overflow-hidden">
             <ScrollArea className="h-72" ref={analysisRef as any}>
-              {isAnalyzing ? (
-                <AnalysisSkeleton />
-              ) : (
-                <div className="p-4 text-sm whitespace-pre-wrap text-foreground">{analysis}</div>
-              )}
+              {isAnalyzing ? <AnalysisSkeleton /> : <div className="p-4 text-sm whitespace-pre-wrap text-foreground">{analysis}</div>}
             </ScrollArea>
           </div>
-
-          {!token && <div className="text-xs text-muted-foreground">Please log in to use this tool.</div>}
         </div>
       )}
     </div>

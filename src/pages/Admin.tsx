@@ -44,11 +44,11 @@ type PlanHistoryRow = {
 };
 
 function ApiKeySettings() {
-  const [deepseekKey, setDeepseekKey] = useState("");
+  const [aiKey, setAiKey] = useState("");
   const [openaiKey, setOpenaiKey] = useState("");
-  const [showDeepseek, setShowDeepseek] = useState(false);
+  const [showAiKey, setShowAiKey] = useState(false);
   const [showOpenai, setShowOpenai] = useState(false);
-  const [deepseekSaved, setDeepseekSaved] = useState(false);
+  const [aiSaved, setAiSaved] = useState(false);
   const [openaiSaved, setOpenaiSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
@@ -56,12 +56,12 @@ function ApiKeySettings() {
     let cancelled = false;
     (async () => {
       setLoading(true);
-      const [deep, open] = await Promise.all([
-        supabase.from("settings").select("value").eq("key", "deepseek_api_key").maybeSingle(),
+      const [ai, open] = await Promise.all([
+        supabase.from("settings").select("value").eq("key", "ai_api_key").maybeSingle(),
         supabase.from("settings").select("value").eq("key", "openai_api_key").maybeSingle(),
       ]);
       if (cancelled) return;
-      setDeepseekKey((deep.data as any)?.value ?? "");
+      setAiKey((ai.data as any)?.value ?? "");
       setOpenaiKey((open.data as any)?.value ?? "");
       setLoading(false);
     })();
@@ -71,15 +71,14 @@ function ApiKeySettings() {
   }, []);
 
   const upsertKey = async (key: string, value: string) => {
-    // settings table is admin-only by RLS via your existing adminQuery policies; we rely on those.
     await supabase.from("settings").upsert({ key, value, updated_at: new Date().toISOString() } as any, { onConflict: "key" });
   };
 
-  const handleSaveDeepseek = async () => {
-    if (!deepseekKey.trim()) return;
-    await upsertKey("deepseek_api_key", deepseekKey.trim());
-    setDeepseekSaved(true);
-    setTimeout(() => setDeepseekSaved(false), 1500);
+  const handleSaveAiKey = async () => {
+    if (!aiKey.trim()) return;
+    await upsertKey("ai_api_key", aiKey.trim());
+    setAiSaved(true);
+    setTimeout(() => setAiSaved(false), 1500);
   };
 
   const handleSaveOpenai = async () => {
@@ -96,9 +95,7 @@ function ApiKeySettings() {
           <Key className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
           API Keys
         </h2>
-        <p className="text-sm text-muted-foreground mb-6">
-          Configure AI provider API keys. Chat and most tools use <strong>Deepseek</strong>. The Image Ad Analyzer uses <strong>OpenAI GPT‑4</strong> for image analysis.
-        </p>
+        <p className="text-sm text-muted-foreground mb-6">Configure API keys.</p>
 
         {loading ? (
           <div className="text-sm text-muted-foreground">Loading keys...</div>
@@ -107,33 +104,33 @@ function ApiKeySettings() {
             <div className="mb-6 p-4 rounded-xl border border-border bg-accent/30">
               <div className="flex items-center gap-2 mb-3">
                 <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <h3 className="text-sm font-semibold text-foreground">Deepseek API Key</h3>
+                <h3 className="text-sm font-semibold text-foreground">AI API Key</h3>
                 <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Primary</span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <input
-                    type={showDeepseek ? "text" : "password"}
-                    value={deepseekKey}
-                    onChange={(e) => setDeepseekKey(e.target.value)}
-                    placeholder="sk-..."
+                    type={showAiKey ? "text" : "password"}
+                    value={aiKey}
+                    onChange={(e) => setAiKey(e.target.value)}
+                    placeholder="Enter key"
                     className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <button
                     type="button"
-                    onClick={() => setShowDeepseek(!showDeepseek)}
+                    onClick={() => setShowAiKey(!showAiKey)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
-                    {showDeepseek ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showAiKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
                 <button
-                  onClick={handleSaveDeepseek}
-                  disabled={!deepseekKey.trim()}
+                  onClick={handleSaveAiKey}
+                  disabled={!aiKey.trim()}
                   className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
-                  {deepseekSaved ? <Check className="w-4 h-4" /> : null}
-                  {deepseekSaved ? "Saved" : "Save"}
+                  {aiSaved ? <Check className="w-4 h-4" /> : null}
+                  {aiSaved ? "Saved" : "Save"}
                 </button>
               </div>
             </div>
@@ -150,7 +147,7 @@ function ApiKeySettings() {
                     type={showOpenai ? "text" : "password"}
                     value={openaiKey}
                     onChange={(e) => setOpenaiKey(e.target.value)}
-                    placeholder="sk-..."
+                    placeholder="Enter key"
                     className="w-full px-3 py-2 pr-10 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                   <button
@@ -174,9 +171,7 @@ function ApiKeySettings() {
 
             <div className="mt-6 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
               <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
-              <p className="text-xs text-amber-800">
-                Keys are stored in the database. Deepseek is used for chat and most tools, while OpenAI is used only for Image Ad Analyzer image analysis.
-              </p>
+              <p className="text-xs text-amber-800">Keys are stored in the database.</p>
             </div>
           </>
         )}
@@ -218,8 +213,6 @@ export default function Admin() {
       .limit(limit + 1);
 
     if (nextCursor) {
-      // Cursor paginate by created_at/id is ideal; for simplicity use created_at + id ordering and filter by created_at.
-      // We'll use id as cursor because it's unique and stable enough for an admin list.
       q = q.lt("id", nextCursor);
     }
 

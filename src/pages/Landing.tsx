@@ -31,7 +31,7 @@ export default function Landing() {
     { icon: <FileSearch className="w-5 h-5" />, color: "bg-indigo-500", title: "Ad Copy Analyzer", desc: "Paste competitor ads and get AI-powered psychological trigger analysis & counter-positioning strategies." },
     { icon: <Receipt className="w-5 h-5" />, color: "bg-teal-500", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF." },
     { icon: <ImageIcon className="w-5 h-5" />, color: "bg-orange-500", title: "Caption Generator", desc: "Upload your ad image and get optimized captions with hashtags for all platforms." },
-    { icon: <Brain className="w-5 h-5" />, color: "bg-cyan-500", title: "AI-Powered Insights", desc: "Deepseek AI integration for deep ad copy analysis and competitive intelligence." },
+    { icon: <Brain className="w-5 h-5" />, color: "bg-cyan-500", title: "AI-Powered Insights", desc: "AI integration for deep ad copy analysis and competitive intelligence." },
     { icon: <Lightbulb className="w-5 h-5" />, color: "bg-amber-500", title: "The 'Why'", desc: "Clear logic behind each audience choice so you understand the strategy." },
     { icon: <MessageCircle className="w-5 h-5" />, color: "bg-violet-500", title: "Live Chat Support", desc: "Chat directly with us to order services or get help with your campaigns." },
   ];
