@@ -223,7 +223,7 @@ app.delete("/api/samples/:filename", async (c) => {
 app.use("/api/trpc/*", async (c) => {
   try {
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => reject(new Error("tRPC request timed out after 25 seconds")), 25000)
+      setTimeout(() => reject(new Error("tRPC request timed out after 60 seconds")), 60000)
     );
 
     const result = await Promise.race([
@@ -232,6 +232,9 @@ app.use("/api/trpc/*", async (c) => {
         req: c.req.raw,
         router: appRouter,
         createContext,
+        onError({ error, path }) {
+          console.error("[tRPC handler]", path, error?.message);
+        },
       }),
       timeoutPromise,
     ]);

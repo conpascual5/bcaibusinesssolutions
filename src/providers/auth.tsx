@@ -135,6 +135,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       logout: async () => {
         await supabase.auth.signOut();
+        // Ensure we don't immediately redirect back into the app due to stale state
+        window.location.href = "/auth";
       },
     }),
     [user, isLoading, session, token]
