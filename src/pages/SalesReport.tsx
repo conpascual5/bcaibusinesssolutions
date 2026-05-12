@@ -22,7 +22,9 @@ import {
   Pencil,
   Check,
   X,
+  Table2,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   groupDaily,
   groupWeekly,
@@ -308,8 +310,20 @@ export default function SalesReport() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="w-full justify-start rounded-2xl bg-slate-50 border border-slate-200 p-1">
+          <TabsTrigger value="overview" className="rounded-xl px-4">Overview</TabsTrigger>
+          <TabsTrigger value="entries" className="rounded-xl px-4">
+            <span className="inline-flex items-center gap-2">
+              <Table2 className="w-4 h-4" />
+              All entries
+            </span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="mt-0">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-indigo-600" />
@@ -420,8 +434,6 @@ export default function SalesReport() {
           </div>
         </div>
 
-        <SalesEntriesTable rows={rawEntries} onUpdate={handleUpdateRow} onDelete={handleDeleteRow} />
-
         <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
           <div className="flex items-center gap-2">
             <CalendarDays className="w-4 h-4 text-indigo-600" />
@@ -482,7 +494,15 @@ export default function SalesReport() {
             </p>
           </div>
         </div>
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="entries" className="mt-0">
+          <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-3 sm:p-4">
+            <SalesEntriesTable rows={rawEntries} onUpdate={handleUpdateRow} onDelete={handleDeleteRow} />
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
