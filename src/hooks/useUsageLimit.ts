@@ -37,7 +37,12 @@ export function useUsageLimit(feature: string): UsageState {
   const limit = PLAN_LIMITS[plan] ?? PLAN_LIMITS.free;
 
   const check = useCallback(async () => {
-    if (!user?.id || !token) return null;
+    if (!user?.id || !token) {
+      // Avoid noisy errors on pages that mount before auth token is ready.
+      setLoading(false);
+      setError(null);
+      return null;
+    }
 
     setLoading(true);
     setError(null);

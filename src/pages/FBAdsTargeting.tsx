@@ -170,9 +170,10 @@ export default function FBAdsTargeting() {
         )}
 
         <button
+          type="button"
           onClick={handleGenerate}
-          disabled={isGenerating}
-          className="mt-5 w-full px-5 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+          disabled={isGenerating || !token}
+          className="mt-5 w-full px-5 py-4 rounded-2xl font-extrabold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-95 disabled:opacity-60 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20 pointer-events-auto"
         >
           {isGenerating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Wand2 className="w-5 h-5" />}
           {isGenerating ? "Generating…" : "Generate Targeting"}
