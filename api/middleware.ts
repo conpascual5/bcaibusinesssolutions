@@ -30,9 +30,32 @@ export const authedQuery = t.procedure.use(
         .from("profiles")
         .select("is_admin, is_active")
         .eq("id", ctx.user.userId)
-        .single();
+        .maybeSingle();
 
-      if (error || !data) {
+      // If no profile exists, auto-create one with defaults
+      if (!data && !error) {
+        console.log("[middleware] authedQuery: no profile found for", ctx.user.userId, "- auto-creating");
+        await supabase.from("profiles").insert({
+          id: ctx.user.userId,
+          email: ctx.user.email ?? "",
+          full_name: ctx.user.name ?? "",
+          is_admin: false,
+          is_active: true,
+          plan: "free",
+        } as any);
+
+        return next({
+          ctx: {
+            ...ctx,
+            user: {
+              ...ctx.user,
+              isAdmin: false,
+            },
+          },
+        });
+      }
+
+      if (error) {
         throw new TRPCError({ code: "UNAUTHORIZED", message: "User not found in database" });
       }
 
