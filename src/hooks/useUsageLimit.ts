@@ -91,7 +91,9 @@ export function useUsageLimit(feature: string): UsageState {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        body: "{}",
       });
 
       const json = await res.json().catch(() => ({}));

@@ -17,7 +17,7 @@ export default function FBAdsTargeting() {
   const { token } = useAuth();
 
   const [businessName, setBusinessName] = useState("");
-  const [product, setProduct] = useState("");
+  const [productName, setProductName] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
@@ -32,8 +32,8 @@ export default function FBAdsTargeting() {
   }, [output]);
 
   const handleGenerate = async () => {
-    if (!businessName || !product) {
-      setError("Please enter your Business Name and Product.");
+    if (!businessName || !productName) {
+      setError("Please enter your Business Name and Product Name.");
       return;
     }
 
@@ -63,7 +63,7 @@ export default function FBAdsTargeting() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ businessName, product }),
+        body: JSON.stringify({ businessName, product: productName }),
       });
 
       if (!res.ok) {
@@ -152,10 +152,10 @@ export default function FBAdsTargeting() {
             />
           </div>
           <div>
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Product</label>
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Product Name</label>
             <input
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
+              value={productName}
+              onChange={(e) => setProductName(e.target.value)}
               className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="e.g., Whitening Soap"
             />
