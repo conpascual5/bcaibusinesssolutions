@@ -76,10 +76,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Debug: log all localStorage keys to see if Supabase session exists
+    const storageKeys: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key) storageKeys.push(key);
+    }
+    console.log("[auth] localStorage keys:", storageKeys);
+
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        console.log("[auth] initial getSession:", { hasSession: !!data.session });
+        console.log("[auth] initial getSession:", { hasSession: !!data.session, session: data.session?.user?.email });
         if (!mounted) return;
         setSession(data.session);
         await fetchProfile(data.session);
@@ -91,7 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log("[auth] onAuthStateChange event:", event, "session:", !!newSession);
+      console.log("[auth] onAuthStateChange event:", event, "session:", !!newSession, "email:", newSession?.user?.email);
       if (!mounted) return;
       setSession(newSession);
       await fetchProfile(newSession);
@@ -99,7 +107,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (event === "INITIAL_SESSION" && !newSession) {
         console.log("[auth] INITIAL_SESSION had no session; attempting refreshSession() once");
         const { data } = await supabase.auth.refreshSession();
-        console.log("[auth] refreshSession result:", { hasSession: !!data.session });
+        console.log("[auth] refreshSession result:", { hasSession: !!data.session, email: data.session?.user?.email });
         setSession(data.session);
         await fetchProfile(data.session);
       }
