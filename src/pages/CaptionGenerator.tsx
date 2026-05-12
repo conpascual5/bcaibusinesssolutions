@@ -127,6 +127,7 @@ export default function ImageAdAnalyzer() {
   const remaining = usage ? usage.remaining : 0;
   const limit = usage ? usage.limit : 0;
   const isPro = usage?.isPro ?? false;
+  const canGenerate = !!uploadedImage && !!token && !isGenerating && (isPro || remaining > 0);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -223,7 +224,7 @@ export default function ImageAdAnalyzer() {
             {/* Generate Button */}
             <button
               onClick={handleGenerate}
-              disabled={!uploadedImage || isGenerating || !token || (!isPro && remaining <= 0)}
+              disabled={!canGenerate}
               className="w-full py-4 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-xl font-bold text-lg hover:from-violet-700 hover:to-indigo-700 transition-all disabled:opacity-40 flex items-center justify-center gap-2 shadow-lg shadow-violet-200"
             >
               {isGenerating ? (
