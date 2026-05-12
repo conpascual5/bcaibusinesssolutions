@@ -18,6 +18,9 @@ import {
   Plus,
   TrendingUp,
   RefreshCw,
+  Pencil,
+  Check,
+  X,
 } from "lucide-react";
 import {
   groupDaily,
@@ -32,7 +35,7 @@ type RangeMode = "daily" | "weekly" | "monthly" | "yearly";
 
 type SalesEntryRow = {
   id: string;
-  entry_date: string; // YYYY-MM-DD
+  entry_date: string;
   amount: number;
   source: string | null;
   notes: string | null;
@@ -53,6 +56,7 @@ export default function SalesReport() {
   const { user } = useAuth();
   const [mode, setMode] = useState<RangeMode>("daily");
   const [rows, setRows] = useState<SaleRow[]>([]);
+  const [rawEntries, setRawEntries] = useState<SalesEntryRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
@@ -60,6 +64,11 @@ export default function SalesReport() {
   const [newAmount, setNewAmount] = useState(0);
   const [newSource, setNewSource] = useState("");
   const [newNotes, setNewNotes] = useState("");
+
+  // Editable average daily sales
+  const [avgDailySales, setAvgDailySales] = useState(0);
+  const [editingAvg, setEditingAvg] = useState(false);
+  const [avgInput, setAvgInput] = useState("");
 
   const load = async () => {
     if (!user?.id) return;
@@ -71,7 +80,9 @@ export default function SalesReport() {
       .order("entry_date", { ascending: true });
 
     if (!error) {
-      const mapped: SaleRow[] = ((data ?? []) as SalesEntryRow[]).map((r) => ({
+      const entries = (data ?? []) as SalesEntryRow[];
+      setRawEntries(entries);
+      const mapped: SaleRow[] = entries.map((r) => ({
         date: r.entry_date,
         amount: Number(r.amount),
         source: r.source ?? undefined,
@@ -82,6 +93,24 @@ export default function SalesReport() {
 
     setLoading(false);
   };
+
+  // Load saved average daily sales from settings
+  useEffect(() => {
+    if (!user?.id) return;
+    (async () => {
+      const { data } = await supabase
+        .from("settings")
+        .select("value")
+        .eq("key", `avg_daily_sales_${user.id}`)
+        .maybeSingle();
+      if (data) {
+        const v = Number((data as any).value);
+        if (!Number.isNaN(v)) {
+          setAvgDailySales(v);
+        }
+      }
+    })();
+  }, [user?.id]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -106,6 +135,14 @@ export default function SalesReport() {
 
   const total = useMemo(() => series.reduce((sum, s) => sum + s.total, 0), [series]);
 
+  const computedAvg = useMemo(() => {
+    if (rows.length === 0) return avgDailySales;
+    // compute actual average per day from data
+    const uniqueDays = new Set(rows.map((r) => r.date)).size;
+    if (uniqueDays === 0) return avgDailySales;
+    return total / uniqueDays;
+  }, [rows, total, avgDailySales]);
+
   const handleAdd = async () => {
     if (!user?.id) return;
     if (!newDate || !newAmount) return;
@@ -125,6 +162,19 @@ export default function SalesReport() {
     await load();
   };
 
+  const handleSaveAvg = async () => {
+    const v = Number(avgInput);
+    if (Number.isNaN(v) || v < 0) return;
+    setAvgDailySales(v);
+    setEditingAvg(false);
+
+    if (!user?.id) return;
+    await supabase.from("settings").upsert(
+      { key: `avg_daily_sales_${user.id}`, value: String(v), updated_at: new Date().toISOString() } as any,
+      { onConflict: "key" }
+    );
+  };
+
   const parseExcel = async (file: File) => {
     const buf = await file.arrayBuffer();
     const wb = XLSX.read(buf, { type: "array" });
@@ -132,10 +182,6 @@ export default function SalesReport() {
     const ws = wb.Sheets[sheetName];
     const json = XLSX.utils.sheet_to_json<Record<string, any>>(ws, { defval: "" });
 
-    // Best-effort mapping:
-    // date columns: Date, date, day
-    // amount columns: Amount, amount, Sales, sales, Total, total
-    // optional: Source, Notes
     const out: SaleRow[] = [];
     for (const r of json) {
       const rawDate =
@@ -149,7 +195,6 @@ export default function SalesReport() {
       if (rawDate instanceof Date) {
         dateStr = toISODate(rawDate);
       } else if (typeof rawDate === "number") {
-        // Excel date serial
         const d = XLSX.SSF.parse_date_code(rawDate);
         if (d) {
           dateStr = `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
@@ -190,7 +235,6 @@ export default function SalesReport() {
         notes: r.notes ?? null,
       }));
 
-      // chunk inserts
       const chunkSize = 500;
       for (let i = 0; i < payload.length; i += chunkSize) {
         const chunk = payload.slice(i, i + chunkSize);
@@ -297,7 +341,7 @@ export default function SalesReport() {
             </div>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
               <p className="text-xs font-bold text-slate-500">Entries</p>
               <p className="mt-1 text-xl font-extrabold text-slate-900">{rows.length}</p>
@@ -306,6 +350,56 @@ export default function SalesReport() {
               <p className="text-xs font-bold text-slate-500">Average ({mode})</p>
               <p className="mt-1 text-xl font-extrabold text-slate-900">
                 {series.length ? formatMoney(total / series.length) : formatMoney(0)}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-bold text-slate-500">Avg Daily Sales</p>
+              <div className="mt-1 flex items-center gap-2">
+                {editingAvg ? (
+                  <>
+                    <input
+                      type="number"
+                      value={avgInput}
+                      onChange={(e) => setAvgInput(e.target.value)}
+                      className="flex-1 px-2 py-1 rounded-xl border border-slate-200 bg-slate-50 text-sm font-extrabold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleSaveAvg}
+                      className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                    >
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setEditingAvg(false)}
+                      className="p-1.5 rounded-lg bg-red-100 text-red-700 hover:bg-red-200"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <p className="flex-1 text-xl font-extrabold text-slate-900">
+                      {formatMoney(computedAvg)}
+                    </p>
+                    <button
+                      onClick={() => {
+                        setAvgInput(String(avgDailySales));
+                        setEditingAvg(true);
+                      }}
+                      className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">
+                {rows.length > 0
+                  ? "Computed from your data"
+                  : avgDailySales > 0
+                    ? "Manually set"
+                    : "Set your target"}
               </p>
             </div>
           </div>
