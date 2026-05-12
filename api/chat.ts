@@ -127,6 +127,8 @@ export const chatRouter = createRouter({
       })
     )
     .mutation(async ({ input, ctx }) => {
+      console.log("[chat.sendMessage] called", { chatId: input.chatId, userId: ctx.user.userId, isAdmin: ctx.user.isAdmin, contentLength: input.content.length });
+
       const supabase = getSupabaseClient(ctx.token);
       const { data: chatRows } = await (supabase
         .from("chats")
@@ -134,21 +136,33 @@ export const chatRouter = createRouter({
         .eq("id", input.chatId)
         .limit(1) as any);
       const chat = (chatRows as any[])?.[0];
-      if (!chat) throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
+      if (!chat) {
+        console.log("[chat.sendMessage] chat not found", { chatId: input.chatId });
+        throw new TRPCError({ code: "NOT_FOUND", message: "Chat not found" });
+      }
       if (chat.user_id !== ctx.user.userId && !ctx.user.isAdmin) {
+        console.log("[chat.sendMessage] forbidden", { chatUserId: chat.user_id, requestUserId: ctx.user.userId });
         throw new TRPCError({ code: "FORBIDDEN", message: "Not your chat" });
       }
 
       // Determine the role: if admin, store as assistant; otherwise store as user
       const role = ctx.user.isAdmin ? "assistant" : "user";
 
-      await (supabase
+      console.log("[chat.sendMessage] inserting message", { chatId: input.chatId, role });
+      const { error: insertError } = await (supabase
         .from("messages")
         .insert({
           chat_id: input.chatId,
           role,
           content: input.content,
         } as any) as any);
+
+      if (insertError) {
+        console.error("[chat.sendMessage] insert error:", insertError.message);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `Failed to save message: ${insertError.message}` });
+      }
+
+      console.log("[chat.sendMessage] message inserted successfully");
 
       // Update chat timestamp
       await ((supabase as any)
@@ -158,6 +172,7 @@ export const chatRouter = createRouter({
 
       // If the sender is an admin, we're done — no AI reply needed
       if (ctx.user.isAdmin) {
+        console.log("[chat.sendMessage] admin message, returning without AI reply");
         return { saved: true, role, content: input.content };
       }
 
@@ -179,13 +194,14 @@ export const chatRouter = createRouter({
       const deepseekKey = (await getSetting(DEEPSEEK_KEY, ctx.token)) || env.deepseekApiKey;
 
       if (!deepseekKey) {
-        // No AI key configured — message saved, return without AI reply
+        console.log("[chat.sendMessage] no deepseek key, returning without AI reply");
         return { saved: true, role: "user", content: input.content, aiReply: null };
       }
 
+      console.log("[chat.sendMessage] calling deepseek");
       const reply = await callDeepseek(messages, deepseekKey);
       if (!reply) {
-        // AI unavailable — message saved, return without AI reply
+        console.log("[chat.sendMessage] deepseek returned no reply, returning without AI reply");
         return { saved: true, role: "user", content: input.content, aiReply: null };
       }
 
@@ -199,6 +215,8 @@ export const chatRouter = createRouter({
         } as any)
         .select("id") as any);
       const savedMsg = (msgResult as any[])?.[0];
+
+      console.log("[chat.sendMessage] AI reply saved", { replyId: savedMsg?.id });
 
       return {
         saved: true,

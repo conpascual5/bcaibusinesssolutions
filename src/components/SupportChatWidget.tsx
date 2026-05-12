@@ -103,9 +103,16 @@ export default function SupportChatWidget() {
   };
 
   const send = async () => {
-    if (!chatId || !token) return;
+    console.log("[SupportChat] send called", { chatId, hasToken: !!token, inputLength: input.trim().length });
+    if (!chatId || !token) {
+      console.log("[SupportChat] send aborted: missing chatId or token", { chatId, hasToken: !!token });
+      return;
+    }
     const content = input.trim();
-    if (!content) return;
+    if (!content) {
+      console.log("[SupportChat] send aborted: empty content");
+      return;
+    }
 
     setInput("");
     setMessages((m) => [
@@ -119,42 +126,61 @@ export default function SupportChatWidget() {
       },
     ]);
 
-    const res = await fetch("/api/trpc/chat.sendMessage", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ chatId, content }),
-    });
+    console.log("[SupportChat] sending message to API", { chatId, contentLength: content.length });
+    try {
+      const res = await fetch("/api/trpc/chat.sendMessage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chatId, content }),
+      });
 
-    const json = await res.json();
-    const data = json?.result?.data as any;
+      console.log("[SupportChat] API response status:", res.status);
+      const json = await res.json();
+      console.log("[SupportChat] API response:", json);
+      const data = json?.result?.data as any;
 
-    if (data?.saved) {
-      // Message was saved successfully. If there's an AI reply, show it.
-      if (data?.aiReply?.content) {
+      if (data?.saved) {
+        console.log("[SupportChat] message saved successfully", { hasAiReply: !!data?.aiReply?.content });
+        // Message was saved successfully. If there's an AI reply, show it.
+        if (data?.aiReply?.content) {
+          setMessages((m) => [
+            ...m,
+            {
+              id: Date.now() + 1,
+              chat_id: chatId,
+              role: "assistant",
+              content: String(data.aiReply.content),
+              created_at: new Date().toISOString(),
+            },
+          ]);
+        }
+      } else {
+        // If the backend returns an error, show it as assistant text.
+        const errMsg = json?.error?.message || "Message failed";
+        console.log("[SupportChat] message send failed:", errMsg);
         setMessages((m) => [
           ...m,
           {
             id: Date.now() + 1,
             chat_id: chatId,
             role: "assistant",
-            content: String(data.aiReply.content),
+            content: `⚠️ ${errMsg}`,
             created_at: new Date().toISOString(),
           },
         ]);
       }
-    } else {
-      // If the backend returns an error, show it as assistant text.
-      const errMsg = json?.error?.message || "Message failed";
+    } catch (err) {
+      console.error("[SupportChat] send error:", err);
       setMessages((m) => [
         ...m,
         {
           id: Date.now() + 1,
           chat_id: chatId,
           role: "assistant",
-          content: `⚠️ ${errMsg}`,
+          content: `⚠️ Network error: ${err instanceof Error ? err.message : "Unknown error"}`,
           created_at: new Date().toISOString(),
         },
       ]);
