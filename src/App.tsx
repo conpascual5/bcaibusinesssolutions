@@ -2,8 +2,8 @@ import { Routes, Route, Navigate } from 'react-router'
 import { useAuth } from '@/providers/auth'
 import Landing from './pages/Landing'
 import Auth from './pages/Auth'
-import Home from './pages/Home'
 import Dashboard from './pages/Dashboard'
+
 import CaptionGenerator from './pages/CaptionGenerator'
 import Library from './pages/Library'
 import Admin from './pages/Admin'
@@ -14,6 +14,7 @@ import Invoices from './pages/Invoices'
 import SalesWizard from './pages/SalesWizard'
 import FBAdsTargeting from './pages/FBAdsTargeting'
 import MyPlan from './pages/MyPlan'
+import SalesReport from './pages/SalesReport'
 import AppLayout from './components/AppLayout'
 import ChatWidget from './components/ChatWidget'
 
@@ -54,7 +55,8 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/app" element={<ProtectedRoute><AppLayoutRoute><Dashboard /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/targeting" element={<ProtectedRoute><AppLayoutRoute><Home /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/sales-report" element={<ProtectedRoute><AppLayoutRoute><SalesReport /></AppLayoutRoute></ProtectedRoute>} />
+
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/invoices" element={<ProtectedRoute><AppLayoutRoute><Invoices /></AppLayoutRoute></ProtectedRoute>} />

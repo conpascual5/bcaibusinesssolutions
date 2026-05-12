@@ -18,7 +18,6 @@ import {
 } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
 import {
-  Crosshair,
   Sparkles,
   User,
   LogOut,
@@ -35,6 +34,7 @@ import {
   Eye,
   Crown,
   Star,
+  BarChart3,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -46,7 +46,7 @@ interface AppLayoutProps {
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
   { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
-  { icon: Crosshair, label: 'Captions and Video Script', path: '/app/targeting' },
+  { icon: BarChart3, label: 'Sales Report', path: '/app/sales-report' },
   { icon: Target, label: 'FB Ads Targeting', path: '/app/fb-ads-targeting' },
   { icon: Eye, label: 'Image Ad Analyzer', path: '/app/image-ad-analyzer' },
   { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
