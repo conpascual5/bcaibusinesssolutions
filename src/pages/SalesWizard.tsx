@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { useAuth } from "@/providers/auth";
-import { aiChat } from "@/lib/aiClient";
 import { SALES_FRAMEWORKS, type SalesFrameworkId } from "@/lib/salesFrameworks";
 import { useUsageLimit } from "@/hooks/useUsageLimit";
 import UpgradePrompt from "@/components/UpgradePrompt";
@@ -104,40 +103,62 @@ export default function SalesWizard() {
     setOutput("");
 
     try {
-      const content = await aiChat({
-        token,
-        temperature: 0.7,
-        max_tokens: 1400,
-        messages: [
-          {
-            role: "system",
-            content: [
-              "You are a Filipino social media copywriter.",
-              "Write in Taglish unless the user’s message clearly asks for English only.",
-              "Output must be structured and easy to copy.",
-              "Do not mention any AI provider names.",
-              "Return EXACTLY these sections:",
-              "1) FB CAPTION (1)\n2) BLOG POST (1)\n3) HASHTAGS (10-18 hashtags)",
-            ].join("\n"),
-          },
-          {
-            role: "user",
-            content: [
-              `Business Name: ${businessName}`,
-              `Product: ${product}`,
-              `What I want to say (notes): ${message || "(none)"}`,
-              "",
-              `Framework to follow: ${selectedFramework.title}`,
-              `Framework description: ${selectedFramework.description}`,
-              `Framework guidance: ${selectedFramework.promptHint}`,
-              "",
-              "Now create: (a) the best FB caption, (b) a short blog post, (c) hashtags.",
-            ].join("\n"),
-          },
-        ],
+      const res = await fetch("/api/sales-wizard", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productName: product,
+          targetAudience: businessName,
+          messageContext: message || "",
+          contentType: "caption",
+          framework: frameworkId,
+          language: "taglish",
+        }),
       });
 
-      setOutput(content || "No output");
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Request failed" }));
+        throw new Error(err.error || `Server error (${res.status})`);
+      }
+
+      // Handle SSE stream
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No response stream");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data: ")) continue;
+          const data = trimmed.slice(6);
+
+          try {
+            const parsed = JSON.parse(data);
+            if (parsed.error) throw new Error(parsed.error);
+            if (parsed.content) {
+              fullText += parsed.content;
+              setOutput(fullText);
+            }
+          } catch {
+            // Skip malformed JSON chunks
+          }
+        }
+      }
+
+      if (!fullText) setOutput("No output");
     } catch (e: any) {
       setError(e?.message || "Generation failed");
     } finally {
