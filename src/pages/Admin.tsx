@@ -5,6 +5,7 @@ import { useAuth } from '@/providers/auth';
 import {
   Users, Settings, Shield, CheckCircle, XCircle,
   Star, Crown, Sparkles, X, Clock, History, Key, Eye, EyeOff, Check, AlertCircle,
+  ChevronRight,
 } from 'lucide-react';
 
 function ApiKeySettings() {
@@ -48,7 +49,7 @@ function ApiKeySettings() {
           API Keys
         </h2>
         <p className="text-sm text-muted-foreground mb-6">
-          Configure AI provider API keys. The chat will use <strong>Deepseek</strong> as the primary provider and fall back to <strong>OpenAI</strong> if Deepseek is unavailable.
+          Configure AI provider API keys. Chat and most tools use <strong>Deepseek</strong>. The Image Ad Analyzer uses <strong>OpenAI GPT‑4</strong> for image analysis.
         </p>
 
         {/* Deepseek */}
@@ -101,7 +102,7 @@ function ApiKeySettings() {
           <div className="flex items-center gap-2 mb-3">
             <div className="w-2 h-2 rounded-full bg-amber-500" />
             <h3 className="text-sm font-semibold text-foreground">OpenAI API Key</h3>
-            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Fallback</span>
+            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">Image Analysis</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -145,7 +146,7 @@ function ApiKeySettings() {
         <div className="mt-6 p-3 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-2.5">
           <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
           <p className="text-xs text-amber-800">
-            At least one API key is required for the chat to work. Deepseek is tried first; if it fails, OpenAI is used as fallback. Keys are stored securely in the database.
+            At least one API key is required: Deepseek is used for chat and most tools, while OpenAI is used only for Image Ad Analyzer image analysis.
           </p>
         </div>
       </div>
@@ -165,14 +166,41 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState<'users' | 'settings'>('users');
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
-  const { data: usersList, refetch: refetchUsers, isFetching: usersFetching, error: usersError } = trpc.user.list.useQuery();
+  const [cursor, setCursor] = useState<string | null>(null);
+  const [allUsers, setAllUsers] = useState<any[]>([]);
+
+  const usersQuery = trpc.user.list.useQuery({ cursor: cursor ?? undefined, limit: 50 });
+
+  useEffect(() => {
+    const batch = usersQuery.data?.users ?? [];
+    if (!usersQuery.isFetching && cursor === null) {
+      setAllUsers(batch);
+    } else if (batch.length) {
+      setAllUsers((prev) => {
+        const seen = new Set(prev.map((u) => u.id));
+        const merged = [...prev];
+        for (const u of batch) if (!seen.has(u.id)) merged.push(u);
+        return merged;
+      });
+    }
+  }, [usersQuery.data, usersQuery.isFetching, cursor]);
+
+  const usersList = allUsers;
+  const nextCursor = usersQuery.data?.nextCursor ?? null;
+
+  const refetchUsers = async () => {
+    setCursor(null);
+    setAllUsers([]);
+    await usersQuery.refetch();
+  };
+
+  const toggleActiveMutation = trpc.user.toggleActive.useMutation({ onSuccess: () => refetchUsers() });
+  const setPlanMutation = trpc.user.setPlan.useMutation({ onSuccess: () => refetchUsers() });
+
   const { data: planHistoryData, refetch: refetchPlanHistory } = trpc.user.planHistory.useQuery(
     { userId: historyUserId ?? '' },
     { enabled: !!historyUserId },
   );
-
-  const toggleActiveMutation = trpc.user.toggleActive.useMutation({ onSuccess: () => refetchUsers() });
-  const setPlanMutation = trpc.user.setPlan.useMutation({ onSuccess: () => refetchUsers() });
 
   useEffect(() => {
     if (historyUserId) refetchPlanHistory();
@@ -252,9 +280,9 @@ export default function Admin() {
                 Registered Users
               </h2>
               <div className="flex items-center gap-3">
-                <span className="text-sm text-muted-foreground font-medium">{totalUsers} total</span>
+                <span className="text-sm text-muted-foreground font-medium">{totalUsers} loaded</span>
                 <button
-                  onClick={() => refetchUsers()}
+                  onClick={refetchUsers}
                   className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
                 >
                   Refresh
@@ -262,9 +290,9 @@ export default function Admin() {
               </div>
             </div>
 
-            {usersError && (
+            {usersQuery.error && (
               <div className="p-4 border-b border-border bg-red-50 text-red-700 text-sm">
-                {usersError.message}
+                {usersQuery.error.message}
               </div>
             )}
 
@@ -347,7 +375,7 @@ export default function Admin() {
                     </tr>
                   ))}
 
-                  {usersFetching && (
+                  {usersQuery.isFetching && (
                     <tr>
                       <td colSpan={6} className="px-6 py-6 text-sm text-muted-foreground">
                         Loading users...
@@ -355,7 +383,7 @@ export default function Admin() {
                     </tr>
                   )}
 
-                  {!usersFetching && (usersList?.length ?? 0) === 0 && (
+                  {!usersQuery.isFetching && (usersList?.length ?? 0) === 0 && (
                     <tr>
                       <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted-foreground">
                         No users found.
@@ -364,6 +392,22 @@ export default function Admin() {
                   )}
                 </tbody>
               </table>
+            </div>
+
+            <div className="flex items-center justify-between p-4 border-t border-border">
+              <div className="text-xs text-muted-foreground">
+                Showing {usersList.length} users
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  disabled={!nextCursor || usersQuery.isFetching}
+                  onClick={() => setCursor(nextCursor)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-accent hover:bg-accent/80 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Load more
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             {/* Simple history drawer */}
