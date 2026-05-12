@@ -225,6 +225,9 @@ app.delete("/api/samples/:filename", async (c) => {
 // tRPC handler with improved error handling
 app.use("/api/trpc/*", async (c) => {
   try {
+    // Clone the request so the body stream isn't consumed by Hono's middleware chain
+    const clonedReq = c.req.raw.clone();
+
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(() => reject(new Error("tRPC request timed out after 60 seconds")), 60000)
     );
@@ -232,7 +235,7 @@ app.use("/api/trpc/*", async (c) => {
     const result = await Promise.race([
       fetchRequestHandler({
         endpoint: "/api/trpc",
-        req: c.req.raw,
+        req: clonedReq,
         router: appRouter,
         createContext,
         onError({ error, path }) {
