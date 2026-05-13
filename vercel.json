@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "buildCommand": "vite build && node scripts/build-api.mjs",
+  "buildCommand": "vite build",
   "outputDirectory": "dist/public",
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/index" },
