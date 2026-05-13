@@ -16,7 +16,7 @@ for (const [key, value] of Object.entries(env)) {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [
-    devServer({ entry: "api/boot.ts", exclude: [/^\/$/, /^\/(?!api\/).*$/] }),
+    devServer({ entry: "api/index.ts", exclude: [/^\/$/, /^\/(?!api\/).*$/] }),
     inspectAttr(),
     react()
   ],

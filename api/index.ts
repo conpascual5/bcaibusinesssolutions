@@ -1,30 +1,25 @@
 // Vercel serverless entry point — self-contained with all API routes
 import { Hono } from "hono";
 import { streamSSE } from "hono/streaming";
+import { createClient } from "@supabase/supabase-js";
 
 const app = new Hono();
 
-// ─── Supabase helpers ───────────────────────────────────────────────
 const SUPABASE_URL = "https://dkatgjtvhitknghvaxxn.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRrYXRnanR2aGl0a25naHZheHhuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MTYxNDMsImV4cCI6MjA5MzQ5MjE0M30.fsxUDg76sYGOFBVhekoj0LszaQ2YNvqkAmDIMTZ6keU";
 
 function getSupabaseClient(userJwt?: string | null) {
-  const { createClient } = require("@supabase/supabase-js");
   return createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     global: { headers: userJwt ? { Authorization: `Bearer ${userJwt}` } : {} },
   });
 }
 
-function getEnv(name: string): string {
-  return process.env[name] ?? "";
-}
-
 function getDeepseekKey(): string {
-  return getEnv("DEEPSEEK_API_KEY");
+  return process.env.DEEPSEEK_API_KEY ?? "";
 }
 
 function getOpenaiKey(): string {
-  return getEnv("OPENAI_API_KEY");
+  return process.env.OPENAI_API_KEY ?? "";
 }
 
 // ─── Health check ────────────────────────────────────────────────────
@@ -197,7 +192,7 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<string, string> = {
 };
 
 const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
-  taglish: "IMPORTANT: Write the copy in TAGLISH (a natural mix of Tagalog and English). Use conversational Filipino phrases mixed with English terms. Example: 'Mga kaibigan, gusto niyo bang mag-save ng malaki? Eto na ang chance niyo!'",
+  taglish: "IMPORTANT: Write the copy in TAGLISH (a natural mix of Tagalog and English). Use conversational Filipino phrases mixed with English terms.",
   filipino: "IMPORTANT: Write the copy in PURE FILIPINO (Tagalog). Use deep, natural Filipino language. Avoid English words as much as possible.",
   english: "IMPORTANT: Write the copy in PURE ENGLISH. Use professional, persuasive English language suitable for a global audience.",
 };
@@ -254,7 +249,7 @@ app.post("/api/fb-ads-targeting", async (c) => {
     if (!businessName || !product) return c.json({ error: "Missing required fields: businessName, product" }, 400);
     const apiKey = getDeepseekKey();
     if (!apiKey) return c.json({ error: "Deepseek API key not configured. Ask an admin to set it in Settings." }, 500);
-    const systemPrompt = `You are a Facebook Ads targeting expert. Generate a comprehensive Facebook Ads targeting strategy for the given business and product.\n\nGenerate exactly 3 detailed buyer personas. For each persona, provide ALL of the following:\n\n## Persona [Number]: [Persona Name]\n- **Age Range**: [specific age range]\n- **Gender**: [male/female/all]\n- **Location**: [where they live]\n- **Education**: [education level]\n- **Income**: [income bracket]\n- **Relationship Status**: [single/married/parent/etc]\n- **Job Titles**: [relevant job titles]\n- **Interests**: [8-12 specific Facebook interests]\n- **Behaviors**: [5-8 specific Facebook behaviors including Engaged Shoppers]\n- **Demographics**: [specific demographic targeting options]\n- **Facebook Targeting Keywords**: [10-15 specific keywords for Facebook ad targeting]\n- **Age Targeting**: [exact age range for Facebook ads]\n- **Placements**: [recommended Facebook/Instagram placements]\n- **Why This Persona Works**: [explanation of why this persona is a good fit]\n\nAfter all 3 personas, add:\n\n## 📊 Audience Size Estimate\nEstimated total audience size and breakdown per persona.\n\n## 🎯 Recommended Ad Strategy\nBrief recommendation on which persona to target first and why.\n\n## 💡 Pro Tips\n3-5 actionable tips for running Facebook ads for this product.\n\nBusiness: ${businessName}\nProduct: ${product}\n\nGenerate the complete targeting strategy now. Be extremely specific and actionable.`;
+    const systemPrompt = `You are a Facebook Ads targeting expert. Generate a comprehensive Facebook Ads targeting strategy for the given business and product.\n\nGenerate exactly 3 detailed buyer personas. For each persona, provide ALL of the following:\n\n## Persona [Number]: [Persona Name]\n- **Age Range**: [specific age range]\n- **Gender**: [male/female/all]\n- **Location**: [where they live]\n- **Education**: [education level]\n- **Income**: [income bracket]\n- **Relationship Status**: [single/married/parent/etc]\n- **Job Titles**: [relevant job titles]\n- **Interests**: [8-12 specific Facebook interests]\n- **Behaviors**: [5-8 specific Facebook behaviors including Engaged Shoppers]\n- **Demographics**: [specific demographic targeting options]\n- **Facebook Targeting Keywords**: [10-15 specific keywords for Facebook ad targeting]\n- **Age Targeting**: [exact age range for Facebook ads]\n- **Placements**: [recommended Facebook/Instagram placements]\n- **Why This Persona Works**: [explanation of why this persona is a good fit]\n\nAfter all 3 personas, add:\n\n## Audience Size Estimate\nEstimated total audience size and breakdown per persona.\n\n## Recommended Ad Strategy\nBrief recommendation on which persona to target first and why.\n\n## Pro Tips\n3-5 actionable tips for running Facebook ads for this product.\n\nBusiness: ${businessName}\nProduct: ${product}\n\nGenerate the complete targeting strategy now. Be extremely specific and actionable.`;
 
     return streamSSE(c, async (stream) => {
       const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -316,7 +311,7 @@ app.post("/api/image-ad-analyzer", async (c) => {
     const imageAnalysis = visionData.choices?.[0]?.message?.content || "No analysis available.";
 
     // Step 2: Deepseek for Taglish captions and FB Ads targeting
-    const systemPrompt = `You are an expert Filipino digital marketing AI. You analyze product images and generate marketing content in Taglish (Tagalog + English).\n\nGiven a product description and detailed image analysis, generate the following:\n\n## SECTION 1: IMAGE ANALYSIS\nSummarize the key visual elements and marketing strategy of the image.\n\n## SECTION 2: TAGLISH CAPTIONS (3 captions)\nGenerate 3 different ad captions in Taglish. Each caption should be conversational and relatable to Filipino audiences. Include relevant hashtags (5-7 per caption).\n\n## SECTION 3: FB ADS TARGETING STRATEGY\nGenerate a Facebook Ads targeting strategy for this product:\n- Target Audience Demographics\n- Interests & Behaviors (10+ specific Facebook interest targeting options)\n- Suggested Ad Placement\n- Budget Recommendation\n- Why this targeting works for the Filipino market\n\nProduct: ${desc}\n\nImage Analysis Results:\n${imageAnalysis}\n\nWrite the complete analysis now. Be specific and actionable.`;
+    const systemPrompt = `You are an expert Filipino digital marketing AI. You analyze product images and generate marketing content in Taglish (Tagalog + English).\n\nGiven a product description and detailed image analysis, generate the following:\n\n## SECTION 1: IMAGE ANALYSIS\nSummarize the key visual elements and marketing strategy of the image.\n\n## SECTION 2: TAGLISH CAPTIONS (3 captions)\nGenerate 3 different ad captions in Taglish. Each caption should be conversational and relatable to Filipino audiences. Include relevant hashtags (5-7 per caption).\n\n## SECTION 3: FB ADS TARGETING STRATEGY\nGenerate a Facebook Ads targeting strategy for this product:\n- Target Audience Demographics\n- Interests and Behaviors (10+ specific Facebook interest targeting options)\n- Suggested Ad Placement\n- Budget Recommendation\n- Why this targeting works for the Filipino market\n\nProduct: ${desc}\n\nImage Analysis Results:\n${imageAnalysis}\n\nWrite the complete analysis now. Be specific and actionable.`;
 
     return streamSSE(c, async (stream) => {
       const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
@@ -391,5 +386,4 @@ app.post("/api/promote-admin", async (c) => {
   }
 });
 
-// ─── Export ──────────────────────────────────────────────────────────
 export default app;
