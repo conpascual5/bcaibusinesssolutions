@@ -175,7 +175,7 @@ export default function Landing() {
           <AnimatedSection delay={400}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-green-500/20 border border-green-400/30 rounded-full mb-8">
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-              <span className="text-sm text-green-100 font-semibold">100% FREE Access to All Tools</span>
+              <span className="text-sm text-green-100 font-semibold">Sales Report &amp; Invoice Generator — Free &amp; Unlimited</span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={500}>
