@@ -38,12 +38,13 @@ export default function Landing() {
 
   // All tools from the app
   const allTools = [
-    { icon: <Wand2 className="w-5 h-5" />, color: "from-blue-500 to-cyan-400", title: "Sales Wizard", desc: "AI-powered sales message generator with multiple frameworks (AIDA, PAS, BAB, etc.) for any product or audience." },
-    { icon: <Crosshair className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Captions & Video Script", desc: "Generate 8 ready-to-use ad captions with hashtags and 3 complete video ad scripts with hooks and CTAs." },
-    { icon: <Target className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "FB Ads Targeting", desc: "Generate 3 detailed buyer personas with demographics, interests, behaviors, and exact Facebook targeting keywords." },
-    { icon: <Eye className="w-5 h-5" />, color: "from-orange-500 to-amber-400", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with 3 Taglish captions and Facebook Ads targeting strategy." },
-    { icon: <FileSearch className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Ad Analyzer", desc: "Paste competitor ad copy and get psychological trigger analysis, counter-positioning strategies, and improvement tips." },
-    { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF instantly." },
+    { icon: <Wand2 className="w-5 h-5" />, color: "from-blue-500 to-cyan-400", title: "Sales Wizard", desc: "AI-powered sales message generator with multiple frameworks (AIDA, PAS, BAB, etc.) for any product or audience.", badge: "3 trial" },
+    { icon: <Crosshair className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Captions & Video Script", desc: "Generate 8 ready-to-use ad captions with hashtags and 3 complete video ad scripts with hooks and CTAs.", badge: "3 trial" },
+    { icon: <Target className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "FB Ads Targeting", desc: "Generate 3 detailed buyer personas with demographics, interests, behaviors, and exact Facebook targeting keywords.", badge: "3 trial" },
+    { icon: <Eye className="w-5 h-5" />, color: "from-orange-500 to-amber-400", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with 3 Taglish captions and Facebook Ads targeting strategy.", badge: "3 trial" },
+    { icon: <FileSearch className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Ad Analyzer", desc: "Paste competitor ad copy and get psychological trigger analysis, counter-positioning strategies, and improvement tips.", badge: "3 trial" },
+    { icon: <BarChart3 className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually. Charts and summaries included.", badge: "Free" },
+    { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF instantly.", badge: "Free" },
   ];
 
   const plans = [
@@ -56,11 +57,9 @@ export default function Landing() {
       gradient: "from-gray-400 to-gray-500",
       popular: false,
       features: [
-        "Access to all 6 AI tools",
-        "3 total generations (one-time trial)",
-        "Basic ad targeting personas",
-        "Invoice generation",
-        "Ad copy analysis",
+        "Sales Report — unlimited & free",
+        "Invoice Generator — unlimited & free",
+        "3 trial generations for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
         "Live chat support",
         "Subject to fair usage policy",
       ],
@@ -76,10 +75,9 @@ export default function Landing() {
       popular: true,
       features: [
         "500 generations per month",
-        "All 6 tools included",
-        "Full buyer personas with targeting",
-        "Unlimited invoice generation",
-        "Unlimited ad copy analysis",
+        "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+        "Sales Report — unlimited & free",
+        "Invoice Generator — unlimited & free",
         "Priority live chat support",
         "Subject to fair usage policy",
       ],
@@ -94,10 +92,9 @@ export default function Landing() {
       popular: false,
       features: [
         "Exclusive for existing buyers of Static Images, Cinematic Ads & Website Creation",
-        "100 generations per month across all AI tools",
-        "Advanced buyer personas with deep targeting",
-        "Priority invoice generation",
-        "Priority ad analysis",
+        "100 generations per month for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+        "Sales Report — unlimited & free",
+        "Invoice Generator — unlimited & free",
         "Dedicated live chat support",
         "Subject to fair usage policy",
       ],
@@ -198,7 +195,7 @@ export default function Landing() {
       <section className="py-12 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { value: "6", label: "AI Tools", color: "text-blue-600" },
+            { value: "7", label: "AI Tools", color: "text-blue-600" },
             { value: "15+", label: "Targeting Keywords", color: "text-purple-600" },
             { value: "8", label: "Ad Captions", color: "text-green-600" },
             { value: "3", label: "Pricing Plans", color: "text-amber-600" },
@@ -221,8 +218,11 @@ export default function Landing() {
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
                 <Palette className="w-3 h-3" /> All Tools
               </span>
-              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">6 Powerful AI Tools — Zero Cost</h2>
-              <p className="text-gray-500 mt-3 max-w-xl mx-auto">From audience research to competitor analysis to invoicing — all free on the Free plan. Upgrade to unlock unlimited usage.</p>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">7 Powerful AI Tools</h2>
+              <p className="text-gray-500 mt-3 max-w-xl mx-auto">
+                <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
+                The other 5 tools come with <strong>3 free trial generations</strong> on the Free plan. Upgrade to Pro or VIP for more.
+              </p>
             </div>
           </AnimatedSection>
 
@@ -233,7 +233,18 @@ export default function Landing() {
                   <div className={`w-12 h-12 bg-gradient-to-r ${tool.color} rounded-xl flex items-center justify-center text-white mb-4 group-hover:scale-110 transition-transform shadow-sm`}>
                     {tool.icon}
                   </div>
-                  <h3 className="font-bold text-gray-900 mb-2">{tool.title}</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-gray-900">{tool.title}</h3>
+                    {tool.badge === "Free" ? (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                        Free
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
+                        {tool.badge}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-500 leading-relaxed">{tool.desc}</p>
                 </div>
               </AnimatedSection>

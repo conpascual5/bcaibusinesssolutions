@@ -33,6 +33,9 @@ async function getUserPlan(userId: string, token: string): Promise<string> {
   return data?.plan ?? "free";
 }
 
+// Features that are free and unlimited for all users
+const FREE_UNLIMITED_FEATURES = new Set(["invoices", "sales-report"]);
+
 // Check if user has remaining usage for a feature
 app.get("/api/usage/:feature", async (c) => {
   try {
@@ -44,6 +47,19 @@ app.get("/api/usage/:feature", async (c) => {
     if (!supaUser) return c.json({ error: "Invalid token" }, 401);
 
     const feature = c.req.param("feature");
+
+    // Free unlimited features — always return unlimited
+    if (FREE_UNLIMITED_FEATURES.has(feature)) {
+      return c.json({
+        feature,
+        used: 0,
+        limit: 999999,
+        remaining: 999999,
+        isPro: true,
+        isVip: true,
+        plan: "pro",
+      });
+    }
 
     const month = getMonth();
     const plan = await getUserPlan(supaUser.id, token);
@@ -129,6 +145,19 @@ app.post("/api/usage/:feature/increment", async (c) => {
     if (!supaUser) return c.json({ error: "Invalid token" }, 401);
 
     const feature = c.req.param("feature");
+
+    // Free unlimited features — always succeed without tracking
+    if (FREE_UNLIMITED_FEATURES.has(feature)) {
+      return c.json({
+        success: true,
+        feature,
+        used: 0,
+        remaining: 999999,
+        isPro: true,
+        isVip: true,
+        plan: "pro",
+      });
+    }
 
     const month = getMonth();
     const plan = await getUserPlan(supaUser.id, token);
