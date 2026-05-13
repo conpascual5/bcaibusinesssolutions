@@ -186,6 +186,14 @@ export default function Landing() {
               <a href="#tools" className="px-8 py-4 bg-white/10 border border-white/30 text-white rounded-xl font-bold text-lg hover:bg-white/20 transition-all flex items-center justify-center gap-2 backdrop-blur">
                 Explore Tools
               </a>
+              <a
+                href="https://www.facebook.com/bcsocialmediaservices"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-8 py-4 bg-blue-600 border border-blue-400 text-white rounded-xl font-bold text-lg hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg"
+              >
+                <MessageCircle className="w-5 h-5" /> Order Services
+              </a>
             </div>
           </AnimatedSection>
         </div>
@@ -457,9 +465,14 @@ export default function Landing() {
                       </li>
                     ))}
                   </ul>
-                  <Link to="/auth" className={`w-full py-3 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all bg-gradient-to-r ${s.color} text-white hover:opacity-90 shadow-md`}>
-                    Order via Chat <ArrowUpRight className="w-4 h-4" />
-                  </Link>
+                  <a
+                    href="https://www.facebook.com/bcsocialmediaservices"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`w-full py-3 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all bg-gradient-to-r ${s.color} text-white hover:opacity-90 shadow-md`}
+                  >
+                    Message Us on Facebook <ArrowUpRight className="w-4 h-4" />
+                  </a>
                 </div>
               </AnimatedSection>
             ))}
@@ -475,10 +488,20 @@ export default function Landing() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Ads?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to all 6 AI tools — targeting, competitor analysis, captions, invoices, and more. No credit card needed.</p>
-              <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
-                Get Started Free <ChevronRight className="w-5 h-5" />
-              </Link>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to all 7 AI tools — targeting, competitor analysis, captions, invoices, and more. No credit card needed.</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
+                  Get Started Free <ChevronRight className="w-5 h-5" />
+                </Link>
+                <a
+                  href="https://www.facebook.com/bcsocialmediaservices"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white border border-white/30 rounded-xl font-bold text-lg hover:bg-white/20 transition-all shadow-xl"
+                >
+                  <MessageCircle className="w-5 h-5" /> Message Us for Upgrades
+                </a>
+              </div>
             </div>
           </div>
         </AnimatedSection>
