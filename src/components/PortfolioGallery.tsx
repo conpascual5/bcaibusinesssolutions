@@ -12,9 +12,18 @@ export default function PortfolioGallery() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Samples were previously served from a Vercel API route.
-    // Disabled during Supabase migration to avoid 404 NOT_FOUND in production.
-    setImages([]);
+    // Load sample images from the public/samples folder
+    const sampleNames = [
+      '1f608e4b-cee6-4069-8b6f-71ebc58b3d3e.jpg',
+      '929ce640-0d58-4597-8191-69e557286a4e.jpg',
+      'abbd3a9e-bea3-43b7-a808-34c426fab15d.jpg',
+      '4336db6d-972e-4b85-b621-8675601b4826.jpg',
+      'a33a1a17-0438-4e6a-aee8-0b7854f9099c.jpg',
+    ];
+    setImages(sampleNames.map((name) => ({
+      url: `/samples/${name}`,
+      name,
+    })));
     setLoading(false);
   }, []);
 
@@ -46,12 +55,8 @@ export default function PortfolioGallery() {
   if (images.length === 0) {
     return (
       <div className="text-center py-16 bg-gray-50 rounded-2xl border border-gray-200">
-        <Camera className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">No images uploaded yet</p>
-        <p className="text-sm text-gray-400 mt-1">
-          Uploads are being upgraded for serverless hosting.
-
-        </p>
+        <ImageOff className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+        <p className="text-gray-500 font-medium">No images available</p>
       </div>
     );
   }
