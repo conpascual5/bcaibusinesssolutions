@@ -5,5 +5,10 @@
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api" },
     { "source": "/(.*)", "destination": "/index.html" }
-  ]
+  ],
+  "functions": {
+    "api/index.ts": {
+      "runtime": "nodejs@20.x"
+    }
+  }
 }

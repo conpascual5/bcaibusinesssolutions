@@ -1,8 +1,8 @@
 // Vercel serverless entry point
 // This file is bundled by esbuild (scripts/build-api.mjs) into api/index.js
-// esbuild resolves all .ts imports and bundles everything into a single file
+// For Vercel, we import boot.ts directly (Vercel compiles .ts files automatically)
 
-import app from "./boot.js";
+import app from "./boot";
 
 export const config = {
   runtime: "nodejs",
