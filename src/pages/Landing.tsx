@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router';
 import {
-  Sparkles, ArrowRight, Zap, Crosshair, Target, BarChart3,
-  Lightbulb, Check, Menu, X, Layers,
-  MessageCircle, Film, MessageSquare, ChevronRight,
+  Sparkles, ArrowRight, Zap, Target, BarChart3,
+  Lightbulb, Check, Menu, X,
+  MessageCircle, Film, ChevronRight,
   ArrowUpRight, Palette, Star, Camera,
-  FileSearch, FileText, Receipt, Brain, ImageIcon,
-  Crown, Wand2, Eye, Shield, CheckCircle,
+  FileSearch, FileText, Receipt, Brain,
+  Crown, Wand2, Eye, CheckCircle,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -22,26 +22,22 @@ export default function Landing() {
   }, []);
 
   const features = [
-    { icon: <Crosshair className="w-5 h-5" />, color: "bg-blue-500", title: "AI Audience Targeting", desc: "Generate 3 buyer personas with detailed descriptions and interest keywords for Facebook Ads." },
-    { icon: <Target className="w-5 h-5" />, color: "bg-purple-500", title: "12-15 Targeting Keywords", desc: "Get specific Facebook Interests & Behaviors using lateral thinking beyond obvious keywords." },
-    { icon: <Layers className="w-5 h-5" />, color: "bg-emerald-500", title: "Behavioral Layer", desc: "Product-aware behavioral targeting — matches the right audience segments to your product." },
-    { icon: <MessageSquare className="w-5 h-5" />, color: "bg-green-500", title: "Ad Captions", desc: "8 ready-to-use captions with hashtags for Facebook, Instagram, and TikTok." },
-    { icon: <Film className="w-5 h-5" />, color: "bg-pink-500", title: "Video Ad Scripts", desc: "3 complete ad scripts with hook, scenes, CTA, and AI image prompts." },
-    { icon: <BarChart3 className="w-5 h-5" />, color: "bg-rose-500", title: "Demographics", desc: "Recommended age range, gender, and income levels for optimal ad performance." },
+    { icon: <Wand2 className="w-5 h-5" />, color: "bg-blue-500", title: "Sales Wizard", desc: "AI-powered sales message generator with 20+ frameworks. Choose Taglish, Filipino, or English." },
+    { icon: <Target className="w-5 h-5" />, color: "bg-purple-500", title: "FB Ads Targeting", desc: "3 detailed buyer personas with demographics, interests, behaviors, and exact Facebook targeting keywords." },
+    { icon: <Eye className="w-5 h-5" />, color: "bg-emerald-500", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with Taglish captions and FB Ads targeting strategy." },
     { icon: <FileSearch className="w-5 h-5" />, color: "bg-indigo-500", title: "Ad Copy Analyzer", desc: "Paste competitor ads and get AI-powered psychological trigger analysis & counter-positioning strategies." },
+    { icon: <BarChart3 className="w-5 h-5" />, color: "bg-rose-500", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually." },
     { icon: <Receipt className="w-5 h-5" />, color: "bg-teal-500", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF." },
-    { icon: <ImageIcon className="w-5 h-5" />, color: "bg-orange-500", title: "Caption Generator", desc: "Upload your ad image and get optimized captions with hashtags for all platforms." },
-    { icon: <Brain className="w-5 h-5" />, color: "bg-cyan-500", title: "AI-Powered Insights", desc: "AI integration for deep ad copy analysis and competitive intelligence." },
+    { icon: <Brain className="w-5 h-5" />, color: "bg-cyan-500", title: "AI-Powered Insights", desc: "Deep AI integration for ad copy analysis, competitive intelligence, and viral score predictions." },
     { icon: <Lightbulb className="w-5 h-5" />, color: "bg-amber-500", title: "The 'Why'", desc: "Clear logic behind each audience choice so you understand the strategy." },
     { icon: <MessageCircle className="w-5 h-5" />, color: "bg-violet-500", title: "Live Chat Support", desc: "Chat directly with us to order services or get help with your campaigns." },
   ];
 
   // All tools from the app
   const allTools = [
-    { icon: <Wand2 className="w-5 h-5" />, color: "from-blue-500 to-cyan-400", title: "Sales Wizard", desc: "AI-powered sales message generator with multiple frameworks (AIDA, PAS, BAB, etc.) for any product or audience.", badge: "3 trial" },
-    { icon: <Crosshair className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Captions & Video Script", desc: "Generate 8 ready-to-use ad captions with hashtags and 3 complete video ad scripts with hooks and CTAs.", badge: "3 trial" },
-    { icon: <Target className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "FB Ads Targeting", desc: "Generate 3 detailed buyer personas with demographics, interests, behaviors, and exact Facebook targeting keywords.", badge: "3 trial" },
-    { icon: <Eye className="w-5 h-5" />, color: "from-orange-500 to-amber-400", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with 3 Taglish captions and Facebook Ads targeting strategy.", badge: "3 trial" },
+    { icon: <Wand2 className="w-5 h-5" />, color: "from-blue-500 to-cyan-400", title: "Sales Wizard", desc: "AI-powered sales message generator with multiple frameworks (AIDA, PAS, BAB, etc.) for any product or audience. Choose from Taglish, Filipino, or English.", badge: "3 trial" },
+    { icon: <Target className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "FB Ads Targeting", desc: "Generate 3 detailed buyer personas with demographics, interests, behaviors, and exact Facebook targeting keywords. Target Philippines or International market.", badge: "3 trial" },
+    { icon: <Eye className="w-5 h-5" />, color: "from-orange-500 to-amber-400", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with Taglish captions and Facebook Ads targeting strategy.", badge: "3 trial" },
     { icon: <FileSearch className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Ad Analyzer", desc: "Paste competitor ad copy and get psychological trigger analysis, counter-positioning strategies, and improvement tips.", badge: "3 trial" },
     { icon: <BarChart3 className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually. Charts and summaries included.", badge: "Free" },
     { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF instantly.", badge: "Free" },
@@ -203,10 +199,10 @@ export default function Landing() {
       <section className="py-12 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { value: "7", label: "AI Tools", color: "text-blue-600" },
+            { value: "6", label: "AI Tools", color: "text-blue-600" },
             { value: "15+", label: "Targeting Keywords", color: "text-purple-600" },
-            { value: "8", label: "Ad Captions", color: "text-green-600" },
             { value: "3", label: "Pricing Plans", color: "text-amber-600" },
+            { value: "Free", label: "Sales & Invoices", color: "text-emerald-600" },
           ].map((s, i) => (
             <AnimatedSection key={i} delay={i * 100} direction="down">
               <div>
@@ -226,10 +222,10 @@ export default function Landing() {
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
                 <Palette className="w-3 h-3" /> All Tools
               </span>
-              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">7 Powerful AI Tools</h2>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">6 Powerful AI Tools</h2>
               <p className="text-gray-500 mt-3 max-w-xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
-                The other 5 tools come with <strong>3 free trial generations</strong> on the Free plan. Upgrade to Pro or VIP for more.
+                The other 4 tools come with <strong>3 free trial generations</strong> on the Free plan. Upgrade to Pro or VIP for more.
               </p>
             </div>
           </AnimatedSection>
@@ -346,8 +342,8 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { num: "01", title: "Sign Up", desc: "Create your free account in seconds. No credit card needed.", color: "bg-blue-500" },
-              { num: "02", title: "Choose Your Tool", desc: "Pick from 6 AI tools — targeting, competitor analysis, captions, invoices, and more.", color: "bg-purple-500" },
-              { num: "03", title: "Get Results", desc: "Personas, keywords, ad analysis, invoices, captions, and video scripts — instantly.", color: "bg-emerald-500" },
+              { num: "02", title: "Choose Your Tool", desc: "Pick from 6 AI tools — Sales Wizard, FB Ads Targeting, Image Analyzer, Ad Analyzer, Sales Report, and Invoices.", color: "bg-purple-500" },
+              { num: "03", title: "Get Results", desc: "Personas, keywords, ad analysis, invoices, sales reports, and AI-generated copy — instantly.", color: "bg-emerald-500" },
             ].map((step, i) => (
               <AnimatedSection key={i} delay={i * 150} direction="up">
                 <div className="text-center">
@@ -488,7 +484,7 @@ export default function Landing() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Ads?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to all 7 AI tools — targeting, competitor analysis, captions, invoices, and more. No credit card needed.</p>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to all 6 AI tools — Sales Wizard, FB Ads Targeting, Image Analyzer, Ad Analyzer, Sales Report, and Invoice Generator. No credit card needed.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                   Get Started Free <ChevronRight className="w-5 h-5" />
