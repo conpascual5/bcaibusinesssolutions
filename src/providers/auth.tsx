@@ -17,6 +17,7 @@ type AuthContextType = {
   session: Session | null;
   token: string | null;
   logout: () => Promise<void>;
+  forceReset: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,24 +29,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (s: Session | null) => {
     if (!s?.user) {
-      console.log("[auth] fetchProfile: no session user, clearing user");
       setUser(null);
       return;
     }
 
-    console.log("[auth] fetchProfile: fetching for id:", s.user.id);
-
-    // Fetch profile from the profiles table using the user's UUID
-    const { data, error } = await supabase
+    // Use the session's access token for authenticated requests
+    const authedClient = supabase;
+    
+    const { data, error } = await authedClient
       .from("profiles")
       .select("full_name, is_admin, plan, is_active")
       .eq("id", s.user.id)
       .maybeSingle();
 
-    console.log("[auth] fetchProfile: result", { data, error });
-
     if (error || !data) {
-      console.log("[auth] fetchProfile: no matching profile, using defaults", { error });
       setUser({
         id: s.user.id,
         email: s.user.email ?? "",
@@ -56,8 +53,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       return;
     }
-
-    console.log("[auth] fetchProfile: found profile", data);
 
     setUser({
       id: s.user.id,
@@ -75,60 +70,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let resolved = false;
 
-    // Debug: log all localStorage keys to see if Supabase session exists
-    const storageKeys: string[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key) storageKeys.push(key);
-    }
-    console.log("[auth] localStorage keys:", storageKeys);
+    const finishLoading = () => {
+      if (!resolved && mounted) {
+        resolved = true;
+        setIsLoading(false);
+      }
+    };
 
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
-        console.log("[auth] initial getSession:", { hasSession: !!data.session, session: data.session?.user?.email });
         if (!mounted) return;
-        setSession(data.session);
-        await fetchProfile(data.session);
+        
+        if (data.session) {
+          setSession(data.session);
+          await fetchProfile(data.session);
+        } else {
+          setSession(null);
+          setUser(null);
+        }
       } catch (err) {
         console.error("[auth] getSession error:", err);
       } finally {
-        if (mounted) setIsLoading(false);
+        finishLoading();
       }
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      console.log("[auth] onAuthStateChange event:", event, "session:", !!newSession, "email:", newSession?.user?.email);
       if (!mounted) return;
-      setSession(newSession);
-      await fetchProfile(newSession);
 
-      if (event === "INITIAL_SESSION" && !newSession) {
-        console.log("[auth] INITIAL_SESSION had no session; attempting refreshSession() once");
-        const { data } = await supabase.auth.refreshSession();
-        console.log("[auth] refreshSession result:", { hasSession: !!data.session, email: data.session?.user?.email });
-        setSession(data.session);
-        await fetchProfile(data.session);
-      }
-
-      if (event === "SIGNED_OUT") {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        setSession(newSession);
+        await fetchProfile(newSession);
+        finishLoading();
+      } else if (event === "SIGNED_OUT") {
+        setSession(null);
+        setUser(null);
+        finishLoading();
         window.location.href = "/auth";
+      } else if (event === "INITIAL_SESSION") {
+        // Only set from INITIAL_SESSION if we haven't already resolved
+        if (!resolved) {
+          setSession(newSession);
+          await fetchProfile(newSession);
+          finishLoading();
+        }
       }
     });
-
-    const onFocus = async () => {
-      // session in this closure may be stale; re-read it from Supabase to keep admin flag accurate
-      const { data } = await supabase.auth.getSession();
-      setSession(data.session);
-      await fetchProfile(data.session);
-    };
-    window.addEventListener("focus", onFocus);
 
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
-      window.removeEventListener("focus", onFocus);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -143,8 +137,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       logout: async () => {
         await supabase.auth.signOut();
-        // Ensure we don't immediately redirect back into the app due to stale state
         window.location.href = "/auth";
+      },
+      forceReset: async () => {
+        // Clear all Supabase-related localStorage items
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.includes("supabase") || key.includes("auth-token") || key.includes("sb-"))) {
+            localStorage.removeItem(key);
+          }
+        }
+        await supabase.auth.signOut();
+        window.location.reload();
       },
     }),
     [user, isLoading, session, token]

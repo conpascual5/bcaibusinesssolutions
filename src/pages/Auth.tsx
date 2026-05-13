@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router";
-import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import { toast } from "sonner";
@@ -11,7 +11,8 @@ function getPostAuthRedirect(isAdmin: boolean) {
 
 export default function AuthPage() {
   const navigate = useNavigate();
-  const { user, isLoading } = useAuth();
+  const { user, isLoading, forceReset } = useAuth();
+  const redirectAttempted = useRef(false);
 
   const [mode, setMode] = useState<"sign_in" | "sign_up">("sign_in");
   const [email, setEmail] = useState("");
@@ -20,27 +21,26 @@ export default function AuthPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resetting, setResetting] = useState(false);
 
-  // If already authenticated, send them where they belong.
+  // If already authenticated, send them where they belong (only once)
   useEffect(() => {
     if (isLoading) return;
     if (!user) return;
+    if (redirectAttempted.current) return;
+    redirectAttempted.current = true;
+    
     const dest = getPostAuthRedirect(user.isAdmin);
-    console.log("[auth] AuthPage redirecting to:", dest);
     navigate(dest, { replace: true });
   }, [user, isLoading, navigate]);
 
-  // Force clear session if stuck
-  const forceLogout = async () => {
-    // Clear all Supabase-related localStorage items
-    for (let i = localStorage.length - 1; i >= 0; i--) {
-      const key = localStorage.key(i);
-      if (key && (key.includes("supabase") || key.includes("auth-token") || key.includes("sb-"))) {
-        localStorage.removeItem(key);
-      }
+  const handleForceReset = async () => {
+    setResetting(true);
+    try {
+      await forceReset();
+    } finally {
+      setResetting(false);
     }
-    await supabase.auth.signOut();
-    window.location.reload();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -48,33 +48,33 @@ export default function AuthPage() {
     setError(null);
     setSubmitting(true);
 
-    console.log("[auth] handleSubmit: starting", { mode, email });
-
     try {
       if (mode === "sign_up") {
-        console.log("[auth] handleSubmit: signing up");
-        const { data, error: signUpError } = await supabase.auth.signUp({
+        const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: { full_name: name },
           },
         });
-        console.log("[auth] handleSubmit: signUp result", { data, error: signUpError });
         if (signUpError) throw signUpError;
         toast.success("Check your email for the confirmation link!");
+        setMode("sign_in");
       } else {
-        console.log("[auth] handleSubmit: signing in");
         const { data, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        console.log("[auth] handleSubmit: signIn result", { data, error: signInError });
         if (signInError) throw signInError;
-        // Navigation will happen via the auth state listener in AuthProvider
+        
+        // Immediately navigate — don't wait for onAuthStateChange
+        if (data?.user) {
+          const isAdmin = data.user.app_metadata?.is_admin ?? false;
+          const dest = getPostAuthRedirect(isAdmin);
+          navigate(dest, { replace: true });
+        }
       }
     } catch (err: any) {
-      console.error("[auth] handleSubmit: error", err);
       setError(err.message || "An error occurred");
     } finally {
       setSubmitting(false);
@@ -216,9 +216,15 @@ export default function AuthPage() {
 
           <div className="mt-4 text-center">
             <button
-              onClick={forceLogout}
-              className="text-xs text-gray-400 hover:text-red-500 transition-colors underline"
+              onClick={handleForceReset}
+              disabled={resetting}
+              className="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-red-500 transition-colors underline disabled:opacity-50"
             >
+              {resetting ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RefreshCw className="w-3 h-3" />
+              )}
               Stuck? Force reset session
             </button>
           </div>
