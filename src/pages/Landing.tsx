@@ -484,6 +484,62 @@ export default function Landing() {
         </AnimatedSection>
       </section>
 
+      {/* Terms & Conditions */}
+      <section id="terms" className="py-16 px-4 bg-gray-50 border-t border-gray-100">
+        <div className="max-w-4xl mx-auto">
+          <AnimatedSection>
+            <div className="text-center mb-10">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <FileText className="w-3 h-3" /> Legal
+              </span>
+              <h2 className="text-3xl font-extrabold text-gray-900 mt-4">Terms and Conditions</h2>
+              <p className="text-sm text-gray-400 mt-1">Last Updated: May 12, 2026</p>
+            </div>
+          </AnimatedSection>
+          <AnimatedSection delay={100}>
+            <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm space-y-6 text-sm text-gray-600 leading-relaxed">
+              <p className="font-medium text-gray-800">Welcome to BC Social Media Services. By accessing our website and using our services, you agree to comply with and be bound by the following terms and conditions.</p>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">1. Services Provided</h3>
+                <p>BC Social Media Services provides AI-driven marketing solutions, including but not limited to content generation (BC AI), social media management, and digital business consulting.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">2. Pricing and Payment</h3>
+                <p><strong>Price Adjustments:</strong> We reserve the right to change our service prices, subscription fees, or generation costs at any time without prior notice. Any price changes will be updated on the website or communicated through our official channels.</p>
+                <p className="mt-2"><strong>Taxes:</strong> All stated prices are exclusive of applicable taxes unless otherwise noted.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">3. Fair Access Policy (FAP)</h3>
+                <p>To ensure a stable and high-quality experience for all users, we implement a Fair Access Policy:</p>
+                <ul className="list-disc pl-5 mt-2 space-y-1">
+                  <li><strong>Usage Limits:</strong> We reserve the right to limit, suspend, or terminate access for accounts that exhibit "bot-like" behavior or excessive manual generations that exceed normal human usage patterns.</li>
+                  <li><strong>Resource Sharing:</strong> Users must not engage in activities that place an undue burden on our AI infrastructure (e.g., automated scraping or mass-generation scripts not authorized via API).</li>
+                  <li><strong>Quality Preservation:</strong> If a user's consumption significantly impacts the performance of the system for others, we may temporarily throttle their access speeds.</li>
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">4. User Responsibilities</h3>
+                <p>Users are responsible for the content generated through our platform. BC Social Media Services shall not be held liable for any misinformation or copyright issues arising from the use of AI-generated assets.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">5. Termination</h3>
+                <p>We reserve the right to terminate or suspend access to our services immediately, without prior notice or liability, for any reason, including breach of these Terms.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">6. Contact Us</h3>
+                <p>For questions regarding these terms, please reach out through our official support channels at <a href="mailto:admin@bcsocialmediaservices.online" className="text-blue-600 hover:underline font-medium">admin@bcsocialmediaservices.online</a>.</p>
+              </div>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
@@ -498,6 +554,7 @@ export default function Landing() {
               <a href="#tools" className="hover:text-white transition-colors">Tools</a>
               <a href="#plans" className="hover:text-white transition-colors">Plans</a>
               <a href="#services" className="hover:text-white transition-colors">Services</a>
+              <a href="#terms" className="hover:text-white transition-colors">Terms</a>
               <Link to="/auth" className="hover:text-white transition-colors">Sign Up</Link>
             </div>
             <p className="text-xs text-gray-600">2026 BC AI Business Solutions. All rights reserved.</p>
