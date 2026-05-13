@@ -51,34 +51,23 @@ app.get("/api/usage/:feature", async (c) => {
 
     const supabase = getSupabaseClient(token);
 
-    // Count total usage for this month across all features (aggregate for speed)
-    const { data: agg, error: aggErr } = await (supabase as any)
+    // Count total usage for this month across all features
+    const { data: monthRows } = await (supabase as any)
       .from("user_usage")
-      .select("count:count.sum()")
+      .select("count")
       .eq("user_id", supaUser.id)
-      .eq("month", month)
-      .maybeSingle();
+      .eq("month", month);
 
-    if (aggErr) {
-      console.error("[usage] aggregate error:", aggErr.message);
-    }
-
-    const used = Number((agg as any)?.count ?? 0);
+    const used = (monthRows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
 
     // Free is a one-time trial: after 3 total generations ever, block.
-    // Use a lightweight aggregate query to avoid pulling all rows (helps Vercel cold starts).
     if (plan === "free") {
-      const { data: agg, error: aggErr } = await (supabase as any)
+      const { data: allRows } = await (supabase as any)
         .from("user_usage")
-        .select("count:count.sum()")
-        .eq("user_id", supaUser.id)
-        .maybeSingle();
+        .select("count")
+        .eq("user_id", supaUser.id);
 
-      if (aggErr) {
-        console.error("[usage] aggregate error:", aggErr.message);
-      }
-
-      const totalEverUsed = Number((agg as any)?.count ?? 0);
+      const totalEverUsed = (allRows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
 
       return c.json({
         feature,
@@ -179,19 +168,14 @@ app.post("/api/usage/:feature/increment", async (c) => {
       });
     }
 
-    // Pro / VIP: monthly cap across all features (aggregate for speed)
-    const { data: agg, error: aggErr } = await (supabase as any)
+    // Pro / VIP: monthly cap across all features
+    const { data: monthRows } = await (supabase as any)
       .from("user_usage")
-      .select("count:count.sum()")
+      .select("count")
       .eq("user_id", supaUser.id)
-      .eq("month", month)
-      .maybeSingle();
+      .eq("month", month);
 
-    if (aggErr) {
-      console.error("[usage] aggregate error:", aggErr.message);
-    }
-
-    const totalUsedThisMonth = Number((agg as any)?.count ?? 0);
+    const totalUsedThisMonth = (monthRows ?? []).reduce((sum: number, r: any) => sum + Number(r.count ?? 0), 0);
 
     if (totalUsedThisMonth >= limit) {
       return c.json({

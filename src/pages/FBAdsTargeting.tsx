@@ -94,7 +94,11 @@ export default function FBAdsTargeting() {
 
           try {
             const parsed = JSON.parse(data);
-            if (parsed.error) throw new Error(parsed.error);
+            if (parsed.error) {
+              setError(parsed.error);
+              setIsGenerating(false);
+              return;
+            }
             if (parsed.content) {
               fullText += parsed.content;
               setOutput(fullText);
