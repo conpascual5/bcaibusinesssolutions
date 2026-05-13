@@ -203,11 +203,16 @@ export default function AuthPage() {
             </button>
           </form>
 
-          <div className="mt-4 rounded-xl bg-indigo-50 border border-indigo-100 p-3">
-            <p className="text-xs text-indigo-900">
-              Tip: After signing up, check your email if confirmation is enabled in Supabase.
-            </p>
-          </div>
+          {mode === "sign_up" && (
+            <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4">
+              <p className="text-sm font-semibold text-amber-900 mb-1">📧 Confirm your email to log in</p>
+              <p className="text-xs text-amber-800 leading-relaxed">
+                After signing up, Supabase will send a confirmation link to your email.
+                You <strong>must click that link</strong> before you can log in.
+                If you don't see it, check your Spam or Promotions folder.
+              </p>
+            </div>
+          )}
 
           <div className="mt-4 text-center">
             <button
