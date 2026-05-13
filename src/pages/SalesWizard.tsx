@@ -12,7 +12,15 @@ import {
   Hash,
   FileText,
   Facebook,
+  Globe,
+  MessageSquare,
 } from "lucide-react";
+
+const LANGUAGES = [
+  { id: "taglish", label: "Taglish", description: "Tagalog + English mix" },
+  { id: "filipino", label: "Filipino", description: "Pure Tagalog" },
+  { id: "english", label: "English", description: "Pure English" },
+];
 
 function FrameworkCard({
   id,
@@ -63,6 +71,7 @@ export default function SalesWizard() {
   const [businessName, setBusinessName] = useState("");
   const [message, setMessage] = useState("");
   const [frameworkId, setFrameworkId] = useState<SalesFrameworkId>("aida");
+  const [language, setLanguage] = useState("taglish");
 
   const [loading, setLoading] = useState(false);
   const [output, setOutput] = useState("");
@@ -140,7 +149,7 @@ export default function SalesWizard() {
           messageContext: message || "",
           contentType: "caption",
           framework: frameworkToApiId[frameworkId] || frameworkId,
-          language: "taglish",
+          language,
         }),
       });
 
@@ -237,6 +246,31 @@ export default function SalesWizard() {
         </div>
 
         <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <MessageSquare className="w-4 h-4 text-indigo-600" />
+            <h2 className="text-sm font-extrabold text-slate-900">Language</h2>
+          </div>
+          <div className="grid grid-cols-3 gap-2 mb-6">
+            {LANGUAGES.map((lang) => (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => setLanguage(lang.id)}
+                className={`text-left rounded-2xl border p-3 transition-all ${
+                  language === lang.id
+                    ? "border-indigo-300 bg-indigo-50 shadow-sm"
+                    : "border-slate-200 bg-white hover:border-indigo-200"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Globe className={`w-4 h-4 ${language === lang.id ? "text-indigo-600" : "text-slate-400"}`} />
+                  <span className="text-sm font-bold text-slate-900">{lang.label}</span>
+                </div>
+                <p className="mt-1 text-[11px] text-slate-500">{lang.description}</p>
+              </button>
+            ))}
+          </div>
+
           <div className="flex items-center justify-between gap-4 mb-3">
             <div className="flex items-center gap-2">
               <Wand2 className="w-4 h-4 text-indigo-600" />

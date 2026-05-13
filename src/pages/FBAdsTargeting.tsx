@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Check,
   Copy,
+  Globe,
   Loader2,
   Package,
   Sparkles,
@@ -18,6 +19,7 @@ export default function FBAdsTargeting() {
 
   const [businessName, setBusinessName] = useState("");
   const [productName, setProductName] = useState("");
+  const [targetMarket, setTargetMarket] = useState("philippines");
   const [isGenerating, setIsGenerating] = useState(false);
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
@@ -63,7 +65,7 @@ export default function FBAdsTargeting() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ businessName, product: productName }),
+        body: JSON.stringify({ businessName, product: productName, targetMarket }),
       });
 
       if (!res.ok) {
@@ -163,6 +165,42 @@ export default function FBAdsTargeting() {
               className="mt-2 w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               placeholder="e.g., Whitening Soap"
             />
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <label className="text-xs font-bold text-slate-500 uppercase tracking-wide">Target Market</label>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setTargetMarket("philippines")}
+              className={`rounded-2xl border p-3 text-left transition-all ${
+                targetMarket === "philippines"
+                  ? "border-indigo-300 bg-indigo-50 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-indigo-200"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Globe className={`w-4 h-4 ${targetMarket === "philippines" ? "text-indigo-600" : "text-slate-400"}`} />
+                <span className="text-sm font-bold text-slate-900">Philippines</span>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500">Filipino market, local targeting</p>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTargetMarket("international")}
+              className={`rounded-2xl border p-3 text-left transition-all ${
+                targetMarket === "international"
+                  ? "border-indigo-300 bg-indigo-50 shadow-sm"
+                  : "border-slate-200 bg-white hover:border-indigo-200"
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <Globe className={`w-4 h-4 ${targetMarket === "international" ? "text-indigo-600" : "text-slate-400"}`} />
+                <span className="text-sm font-bold text-slate-900">International</span>
+              </div>
+              <p className="mt-1 text-[11px] text-slate-500">Global audience, worldwide targeting</p>
+            </button>
           </div>
         </div>
 
