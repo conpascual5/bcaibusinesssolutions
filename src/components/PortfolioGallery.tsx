@@ -19,6 +19,7 @@ export default function PortfolioGallery() {
       'abbd3a9e-bea3-43b7-a808-34c426fab15d.jpg',
       '4336db6d-972e-4b85-b621-8675601b4826.jpg',
       'a33a1a17-0438-4e6a-aee8-0b7854f9099c.jpg',
+      'bc-ai-sample-1.jpg',
     ];
     setImages(sampleNames.map((name) => ({
       url: `/samples/${name}`,
