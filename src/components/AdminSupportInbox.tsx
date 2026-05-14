@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, User, Shield, RefreshCw } from "lucide-react";
 import { useAuth } from "@/providers/auth";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,8 +9,8 @@ type ChatMessage = {
   user_name: string;
   user_email: string;
   message: string;
-  is_admin: number;
-  is_read: number;
+  is_admin: boolean;
+  is_read: boolean;
   created_at: string;
 };
 
@@ -51,7 +51,6 @@ export default function AdminSupportInbox() {
     if (!canUse) return;
     setLoading(true);
 
-    // Get all unique user conversations from chat_messages
     const { data } = await supabase
       .from("chat_messages")
       .select("*")
@@ -59,7 +58,6 @@ export default function AdminSupportInbox() {
 
     const rows = (data as ChatMessage[]) || [];
 
-    // Group by user_id
     const convMap = new Map<string, Conversation>();
     for (const msg of rows) {
       if (!convMap.has(msg.user_id)) {
@@ -69,11 +67,11 @@ export default function AdminSupportInbox() {
           user_email: msg.user_email,
           last_message: msg.message,
           last_time: msg.created_at,
-          unread: msg.is_admin === 0 && msg.is_read === 0 ? 1 : 0,
+          unread: !msg.is_admin && !msg.is_read ? 1 : 0,
         });
       } else {
         const existing = convMap.get(msg.user_id)!;
-        if (msg.is_admin === 0 && msg.is_read === 0) {
+        if (!msg.is_admin && !msg.is_read) {
           existing.unread += 1;
         }
       }
@@ -101,13 +99,13 @@ export default function AdminSupportInbox() {
 
     setMessages((data as ChatMessage[]) || []);
 
-    // Mark messages as read
+    // Mark user messages as read
     await supabase
       .from("chat_messages")
-      .update({ is_read: 1 })
+      .update({ is_read: true })
       .eq("user_id", userId)
-      .eq("is_admin", 0)
-      .eq("is_read", 0);
+      .eq("is_admin", false)
+      .eq("is_read", false);
 
     setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
   };
@@ -159,8 +157,8 @@ export default function AdminSupportInbox() {
       user_name: "Admin",
       user_email: user.email || "admin@bcai.com",
       message: content,
-      is_admin: 1,
-      is_read: 1,
+      is_admin: true,
+      is_read: true,
     });
 
     setSending(false);
@@ -258,7 +256,7 @@ export default function AdminSupportInbox() {
               <div className="text-sm text-muted-foreground">No messages yet.</div>
             ) : (
               messages.map((m) => {
-                const isUser = m.is_admin === 0;
+                const isUser = !m.is_admin;
                 return (
                   <div key={m.id} className={isUser ? "flex justify-start" : "flex justify-end"}>
                     <div

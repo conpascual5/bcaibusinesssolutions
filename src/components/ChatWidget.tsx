@@ -9,8 +9,8 @@ type ChatMessage = {
   user_name: string;
   user_email: string;
   message: string;
-  is_admin: number;
-  is_read: number;
+  is_admin: boolean;
+  is_read: boolean;
   created_at: string;
 };
 
@@ -67,7 +67,6 @@ export default function ChatWidget() {
 
     load();
 
-    // Subscribe to new messages
     const channel = supabase
       .channel("chat_messages")
       .on(
@@ -130,39 +129,22 @@ export default function ChatWidget() {
     setSendError(null);
 
     try {
-      console.log("[ChatWidget] user object:", JSON.stringify(user));
-      console.log("[ChatWidget] Sending message:", { userId: user.id, name: user.name, email: user.email, text: text.trim() });
-
-      // Get current session to ensure we're authenticated
-      const { data: sessionData } = await supabase.auth.getSession();
-      console.log("[ChatWidget] Session:", sessionData?.session?.user?.id);
-
-      const payload = {
+      const { error } = await supabase.from("chat_messages").insert({
         user_id: user.id,
         user_name: user.name || user.email?.split("@")[0] || "User",
         user_email: user.email || "",
         message: text.trim(),
-        is_admin: 0,
-        is_read: 0,
-      };
-      console.log("[ChatWidget] Insert payload:", payload);
-
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .insert(payload);
-
-      console.log("[ChatWidget] Insert result:", { data, error });
+        is_admin: false,
+        is_read: false,
+      });
 
       if (error) {
-        console.error("[ChatWidget] Insert error:", error);
         setSendError(error.message || "Failed to send message.");
       } else {
-        console.log("[ChatWidget] Message sent successfully");
         setMessage("");
         setShowServices(false);
       }
     } catch (err: any) {
-      console.error("[ChatWidget] Unexpected error:", err);
       setSendError(err?.message || "An unexpected error occurred.");
     }
 
@@ -187,7 +169,7 @@ export default function ChatWidget() {
           className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-gradient-to-br from-indigo-600 to-purple-700 text-white rounded-full shadow-lg hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center"
         >
           <MessageCircle className="w-6 h-6" />
-          {messages.some((m) => m.is_admin === 1 && m.is_read === 0) && (
+          {messages.some((m) => m.is_admin && !m.is_read) && (
             <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] font-bold flex items-center justify-center">
               !
             </span>
@@ -289,11 +271,11 @@ export default function ChatWidget() {
             {sortedMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex ${msg.is_admin === 1 ? "justify-start" : "justify-end"}`}
+                className={`flex ${msg.is_admin ? "justify-start" : "justify-end"}`}
               >
                 <div
                   className={`max-w-[80%] rounded-2xl px-3 py-2 text-sm ${
-                    msg.is_admin === 1
+                    msg.is_admin
                       ? "bg-gray-100 text-gray-800 rounded-tl-sm"
                       : "bg-indigo-600 text-white rounded-tr-sm"
                   }`}
@@ -301,7 +283,7 @@ export default function ChatWidget() {
                   <p>{msg.message}</p>
                   <p
                     className={`text-[10px] mt-1 ${
-                      msg.is_admin === 1 ? "text-gray-400" : "text-indigo-200"
+                      msg.is_admin ? "text-gray-400" : "text-indigo-200"
                     }`}
                   >
                     {new Date(msg.created_at).toLocaleTimeString("en-PH", {
