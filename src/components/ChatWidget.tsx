@@ -129,26 +129,41 @@ export default function ChatWidget() {
     setSending(true);
     setSendError(null);
 
-    console.log("[ChatWidget] Sending message:", { userId: user.id, name: user.name, email: user.email, text: text.trim() });
+    try {
+      console.log("[ChatWidget] user object:", JSON.stringify(user));
+      console.log("[ChatWidget] Sending message:", { userId: user.id, name: user.name, email: user.email, text: text.trim() });
 
-    const { data, error } = await supabase.from("chat_messages").insert({
-      user_id: user.id,
-      user_name: user.name || user.email?.split("@")[0] || "User",
-      user_email: user.email || "",
-      message: text.trim(),
-      is_admin: 0,
-      is_read: 0,
-    }).select();
+      // Get current session to ensure we're authenticated
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("[ChatWidget] Session:", sessionData?.session?.user?.id);
 
-    console.log("[ChatWidget] Insert result:", { data, error });
+      const payload = {
+        user_id: user.id,
+        user_name: user.name || user.email?.split("@")[0] || "User",
+        user_email: user.email || "",
+        message: text.trim(),
+        is_admin: 0,
+        is_read: 0,
+      };
+      console.log("[ChatWidget] Insert payload:", payload);
 
-    if (error) {
-      console.error("[ChatWidget] Insert error:", error);
-      setSendError(error.message || "Failed to send message.");
-    } else {
-      console.log("[ChatWidget] Message sent successfully");
-      setMessage("");
-      setShowServices(false);
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .insert(payload);
+
+      console.log("[ChatWidget] Insert result:", { data, error });
+
+      if (error) {
+        console.error("[ChatWidget] Insert error:", error);
+        setSendError(error.message || "Failed to send message.");
+      } else {
+        console.log("[ChatWidget] Message sent successfully");
+        setMessage("");
+        setShowServices(false);
+      }
+    } catch (err: any) {
+      console.error("[ChatWidget] Unexpected error:", err);
+      setSendError(err?.message || "An unexpected error occurred.");
     }
 
     setSending(false);
