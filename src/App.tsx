@@ -1,5 +1,7 @@
-import { Routes, Route, Navigate } from 'react-router'
+import { Routes, Route, Navigate, useLocation } from 'react-router'
+import { useEffect } from 'react'
 import { useAuth } from '@/providers/auth'
+import { trackPageView } from './lib/metaPixel'
 import Landing from './pages/Landing'
 import About from './pages/About'
 import Auth from './pages/Auth'
@@ -51,6 +53,12 @@ function AppLayoutRoute({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const location = useLocation();
+
+  useEffect(() => {
+    trackPageView();
+  }, [location.pathname]);
+
   return (
     <>
       <Routes>
