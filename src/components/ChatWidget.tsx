@@ -129,18 +129,24 @@ export default function ChatWidget() {
     setSending(true);
     setSendError(null);
 
-    const { error } = await supabase.from("chat_messages").insert({
+    console.log("[ChatWidget] Sending message:", { userId: user.id, name: user.name, email: user.email, text: text.trim() });
+
+    const { data, error } = await supabase.from("chat_messages").insert({
       user_id: user.id,
       user_name: user.name || user.email?.split("@")[0] || "User",
       user_email: user.email || "",
       message: text.trim(),
       is_admin: 0,
       is_read: 0,
-    });
+    }).select();
+
+    console.log("[ChatWidget] Insert result:", { data, error });
 
     if (error) {
+      console.error("[ChatWidget] Insert error:", error);
       setSendError(error.message || "Failed to send message.");
     } else {
+      console.log("[ChatWidget] Message sent successfully");
       setMessage("");
       setShowServices(false);
     }
