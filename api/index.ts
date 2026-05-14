@@ -39,7 +39,7 @@ app.post("/api/login", async (c) => {
     const { email, password } = await c.req.json();
     if (!email || !password) return c.json({ error: "Email and password required" }, 400);
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await (supabase as any).auth.signInWithPassword({ email, password });
     if (error) return c.json({ error: "Invalid credentials" }, 401);
     if (!data.user || !data.session) return c.json({ error: "Login failed" }, 500);
     const { data: profile } = await supabase.from("profiles").select("full_name, is_admin, is_active").eq("id", data.user.id).single();
@@ -60,7 +60,7 @@ app.post("/api/register", async (c) => {
     if (!email || !password || !name) return c.json({ error: "Email, password, and name are required" }, 400);
     if (password.length < 6) return c.json({ error: "Password must be at least 6 characters" }, 400);
     const supabase = getSupabaseClient();
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    const { data, error } = await (supabase as any).auth.signUp({ email, password, options: { data: { full_name: name } } });
     if (error) {
       if (error.message.includes("already")) return c.json({ error: "Email already registered" }, 409);
       return c.json({ error: error.message }, 400);
@@ -97,7 +97,7 @@ app.get("/api/usage/:feature", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
     const feature = c.req.param("feature");
     if (FREE_UNLIMITED.has(feature)) {
@@ -126,7 +126,7 @@ app.post("/api/usage/:feature/increment", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
     const feature = c.req.param("feature");
     if (FREE_UNLIMITED.has(feature)) {
@@ -403,7 +403,7 @@ app.post("/api/chat/send", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
 
     const { message: msg } = await c.req.json();
@@ -441,7 +441,7 @@ app.get("/api/chat/messages", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
 
     const { data, error } = await supabase
@@ -464,7 +464,7 @@ app.get("/api/chat/admin/conversations", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
 
     // Check if admin
@@ -494,7 +494,7 @@ app.post("/api/chat/admin/reply", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
 
     const { data: profile } = await supabase
@@ -534,7 +534,7 @@ app.post("/api/chat/admin/mark-read", async (c) => {
     if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
     const token = authHeader.replace("Bearer ", "");
     const supabase = getSupabaseClient(token);
-    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    const { data: { user }, error: ue } = await (supabase as any).auth.getUser(token);
     if (ue || !user) return c.json({ error: "Invalid token" }, 401);
 
     const { data: profile } = await supabase
@@ -567,7 +567,7 @@ app.post("/api/promote-admin", async (c) => {
     const { email } = await c.req.json();
     if (!email) return c.json({ error: "Email required" }, 400);
     const supabase = getSupabaseClient();
-    const { data: userData } = await supabase.auth.admin.listUsers();
+    const { data: userData } = await (supabase as any).auth.admin.listUsers();
     const user = userData?.users?.find((u: any) => u.email === email);
     if (!user) return c.json({ error: "User not found" }, 404);
     await supabase.from("profiles").update({ is_admin: true, is_active: true }).eq("id", user.id);
