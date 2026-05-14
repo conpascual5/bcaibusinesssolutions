@@ -22,6 +22,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const SESSION_TIMEOUT_MS = 8000; // 8 seconds max to resolve loading
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -33,10 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // Use the session's access token for authenticated requests
-    const authedClient = supabase;
-    
-    const { data, error } = await authedClient
+    const { data, error } = await supabase
       .from("profiles")
       .select("full_name, is_admin, plan, is_active")
       .eq("id", s.user.id)
@@ -79,11 +78,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Safety timeout — always resolve loading after SESSION_TIMEOUT_MS
+    const timeoutId = setTimeout(() => {
+      if (!resolved) {
+        console.warn("[auth] Session resolution timed out — forcing loading=false");
+        finishLoading();
+      }
+    }, SESSION_TIMEOUT_MS);
+
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
         if (!mounted) return;
-        
+
         if (data.session) {
           setSession(data.session);
           await fetchProfile(data.session);
@@ -93,7 +100,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       } catch (err) {
         console.error("[auth] getSession error:", err);
+        setSession(null);
+        setUser(null);
       } finally {
+        clearTimeout(timeoutId);
         finishLoading();
       }
     })();
@@ -111,7 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         finishLoading();
         window.location.href = "/auth";
       } else if (event === "INITIAL_SESSION") {
-        // Only set from INITIAL_SESSION if we haven't already resolved
+        // Only handle INITIAL_SESSION if we haven't already resolved
         if (!resolved) {
           setSession(newSession);
           await fetchProfile(newSession);
@@ -122,6 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
+      clearTimeout(timeoutId);
       sub.subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

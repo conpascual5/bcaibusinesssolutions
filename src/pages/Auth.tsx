@@ -5,10 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import { toast } from "sonner";
 
-function getPostAuthRedirect(isAdmin: boolean) {
-  return isAdmin ? "/admin" : "/app";
-}
-
 export default function AuthPage() {
   const navigate = useNavigate();
   const { user, isLoading, forceReset } = useAuth();
@@ -24,14 +20,14 @@ export default function AuthPage() {
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
 
-  // If already authenticated, send them where they belong (only once)
+  // If already authenticated, redirect (only once)
   useEffect(() => {
     if (isLoading) return;
     if (!user) return;
     if (redirectAttempted.current) return;
     redirectAttempted.current = true;
-    
-    const dest = getPostAuthRedirect(user.isAdmin);
+
+    const dest = user.isAdmin ? "/admin" : "/app";
     navigate(dest, { replace: true });
   }, [user, isLoading, navigate]);
 
@@ -67,18 +63,16 @@ export default function AuthPage() {
         toast.success("Check your email for the confirmation link!");
         setMode("sign_in");
       } else {
-        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
-        
-        // Immediately navigate — don't wait for onAuthStateChange
-        if (data?.user) {
-          const isAdmin = data.user.app_metadata?.is_admin ?? false;
-          const dest = getPostAuthRedirect(isAdmin);
-          navigate(dest, { replace: true });
-        }
+
+        // Don't navigate immediately — let onAuthStateChange in the provider
+        // pick up the new session and update `user`, then the useEffect above
+        // will redirect. This avoids race conditions.
+        // The button will show "Redirecting…" briefly.
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
