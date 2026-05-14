@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
+import LiveNotification from '@/components/LiveNotification';
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -558,6 +559,9 @@ export default function Landing() {
           </AnimatedSection>
         </div>
       </section>
+
+      {/* Live Notification Popup */}
+      <LiveNotification />
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
