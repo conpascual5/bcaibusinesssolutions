@@ -13,6 +13,7 @@ import {
   Target,
   Wand2,
 } from "lucide-react";
+import { saveGeneration } from "@/lib/saveGeneration";
 
 export default function FBAdsTargeting() {
   const { token } = useAuth();
@@ -112,6 +113,13 @@ export default function FBAdsTargeting() {
       }
 
       setOutput(fullText || "No output");
+      if (fullText) {
+        await saveGeneration({
+          tool: "fb-ads-targeting",
+          input: { businessName, product: productName, targetMarket },
+          output: fullText,
+        });
+      }
     } catch (e: any) {
       setError(e?.message || "Generation failed");
     } finally {

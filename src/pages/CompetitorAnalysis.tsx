@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useAuth } from "@/providers/auth";
 import { Search, Sparkles, Loader2, Copy, Check } from "lucide-react";
 import { aiChat } from "@/lib/aiClient";
+import { saveGeneration } from "@/lib/saveGeneration";
 
 export default function CompetitorAnalysis() {
   const { token } = useAuth();
@@ -35,6 +36,13 @@ export default function CompetitorAnalysis() {
       });
 
       setOutput(content || "No output");
+      if (content) {
+        await saveGeneration({
+          tool: "ad-analyzer",
+          input: { type, text },
+          output: content,
+        });
+      }
     } catch (e: any) {
       setOutput(`❌ ${e?.message || "Analysis failed"}`);
     } finally {

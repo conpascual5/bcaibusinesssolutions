@@ -1,35 +1,118 @@
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
-import { useAuth } from "@/providers/auth";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Sparkles,
-  ImageIcon,
   Search,
   Trash2,
   Clock,
-  AlertTriangle,
-  Download,
+  Loader2,
   FileText,
   Wand2,
   Copy,
   CheckCheck,
   LibraryBig,
+  LayoutTemplate,
+  Target,
+  Eye,
+  AlertCircle,
 } from "lucide-react";
 
-type LibraryTab = "images" | "searches" | "saved-copy";
+type ToolType = "sales-wizard" | "fb-ads-targeting" | "image-ad-analyzer" | "ad-analyzer";
+
+interface Generation {
+  id: string;
+  tool: ToolType;
+  input: Record<string, unknown> | null;
+  output: string;
+  created_at: string;
+}
+
+const TOOL_LABELS: Record<ToolType, string> = {
+  "sales-wizard": "Sales Wizard",
+  "fb-ads-targeting": "FB Ads Targeting",
+  "image-ad-analyzer": "Image Ad Analyzer",
+  "ad-analyzer": "Ad Analyzer",
+};
+
+const TOOL_ICONS: Record<ToolType, React.ReactNode> = {
+  "sales-wizard": <LayoutTemplate className="w-4 h-4" />,
+  "fb-ads-targeting": <Target className="w-4 h-4" />,
+  "image-ad-analyzer": <Eye className="w-4 h-4" />,
+  "ad-analyzer": <Search className="w-4 h-4" />,
+};
+
+const TOOL_COLORS: Record<ToolType, string> = {
+  "sales-wizard": "from-indigo-500 to-purple-600",
+  "fb-ads-targeting": "from-indigo-500 to-purple-600",
+  "image-ad-analyzer": "from-violet-600 to-indigo-600",
+  "ad-analyzer": "from-rose-500 to-pink-600",
+};
+
+const ALL_TOOLS: ToolType[] = ["sales-wizard", "fb-ads-targeting", "image-ad-analyzer", "ad-analyzer"];
 
 export default function Library() {
   const navigate = useNavigate();
-  const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<LibraryTab>("images");
+  const [generations, setGenerations] = useState<Generation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTool, setActiveTool] = useState<ToolType | "all">("all");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Library was previously backed by Vercel /api + tRPC (images, searches, saved-copy).
-  // Those endpoints are removed/migrated, so this page is now a clean placeholder.
-  const emptyState = useMemo(() => {
-    if (activeTab === "images") return { title: "No images yet", desc: "Your generated images will appear here." };
-    if (activeTab === "searches") return { title: "No searches yet", desc: "Your saved searches will appear here." };
-    return { title: "No saved copy yet", desc: "Your saved Sales Wizard outputs will appear here." };
-  }, [activeTab]);
+  useEffect(() => {
+    loadGenerations();
+  }, []);
+
+  const loadGenerations = async () => {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    const { data } = await supabase
+      .from("generations")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false });
+
+    setGenerations((data as Generation[]) || []);
+    setLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeletingId(id);
+    await supabase.from("generations").delete().eq("id", id);
+    setGenerations((prev) => prev.filter((g) => g.id !== id));
+    setDeletingId(null);
+  };
+
+  const handleCopy = async (text: string, id: string) => {
+    await navigator.clipboard.writeText(text);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 1500);
+  };
+
+  const filtered = activeTool === "all" ? generations : generations.filter((g) => g.tool === activeTool);
+
+  const getToolSummary = (gen: Generation): string => {
+    const input = gen.input;
+    if (gen.tool === "sales-wizard" && input) {
+      return `${(input as any).productName || ""} — ${(input as any).businessName || ""}`;
+    }
+    if (gen.tool === "fb-ads-targeting" && input) {
+      return `${(input as any).product || ""} — ${(input as any).businessName || ""}`;
+    }
+    if (gen.tool === "image-ad-analyzer" && input) {
+      return (input as any).imageDescription || "Image analysis";
+    }
+    if (gen.tool === "ad-analyzer" && input) {
+      const txt = (input as any).text || "";
+      return txt.length > 60 ? txt.slice(0, 60) + "..." : txt;
+    }
+    return gen.output.slice(0, 80) + (gen.output.length > 80 ? "..." : "");
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -42,7 +125,7 @@ export default function Library() {
               </span>
               My Library
             </h1>
-            <p className="text-gray-600">All your saved outputs in one place.</p>
+            <p className="text-gray-600">All your generated outputs in one place.</p>
           </div>
           <button
             onClick={() => navigate("/app")}
@@ -53,68 +136,118 @@ export default function Library() {
           </button>
         </div>
 
-        <div className="mb-6 p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
-          <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-semibold text-amber-800">Storage Policy</p>
-            <p className="text-sm text-amber-700 mt-1">
-              This section is being upgraded for serverless hosting (Supabase-first). Some items may be temporarily unavailable.
-            </p>
-          </div>
-        </div>
-
+        {/* Tool filter tabs */}
         <div className="flex items-center gap-2 bg-white p-1 rounded-2xl shadow-sm border border-gray-200 w-fit mb-6 flex-wrap">
-          <TabButton active={activeTab === "images"} onClick={() => setActiveTab("images")} icon={ImageIcon} label="Images" />
-          <TabButton active={activeTab === "searches"} onClick={() => setActiveTab("searches")} icon={Search} label="Searches" />
-          <TabButton active={activeTab === "saved-copy"} onClick={() => setActiveTab("saved-copy")} icon={FileText} label="Saved Copy" />
+          <TabButton
+            active={activeTool === "all"}
+            onClick={() => setActiveTool("all")}
+            icon={LibraryBig}
+            label="All"
+          />
+          {ALL_TOOLS.map((tool) => (
+            <TabButton
+              key={tool}
+              active={activeTool === tool}
+              onClick={() => setActiveTool(tool)}
+              icon={() => TOOL_ICONS[tool]}
+              label={TOOL_LABELS[tool]}
+            />
+          ))}
         </div>
 
-        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="p-5 border-b border-gray-100 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-indigo-600" />
-              <p className="text-sm font-bold text-gray-900">{activeTab === "images" ? "Images" : activeTab === "searches" ? "Searches" : "Saved Copy"}</p>
-            </div>
+        {/* Content */}
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
           </div>
-
-          <div className="p-10 text-center">
+        ) : filtered.length === 0 ? (
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-10 text-center">
             <div className="mx-auto w-14 h-14 rounded-3xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center mb-4">
-              {activeTab === "images" ? (
-                <ImageIcon className="w-6 h-6 text-slate-600" />
-              ) : activeTab === "searches" ? (
-                <Search className="w-6 h-6 text-slate-600" />
-              ) : (
-                <Wand2 className="w-6 h-6 text-slate-600" />
-              )}
+              <Wand2 className="w-6 h-6 text-slate-600" />
             </div>
-            <h2 className="text-lg font-extrabold text-gray-900">{emptyState.title}</h2>
-            <p className="text-sm text-gray-600 mt-1 max-w-md mx-auto">{emptyState.desc}</p>
-
-            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-2">
-              <button
-                onClick={() => navigate("/app")}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700"
-              >
-                <Sparkles className="w-4 h-4" />
-                Go generate
-              </button>
-              <button
-                onClick={() => navigator.clipboard.writeText(user?.email ?? "")}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-bold text-sm hover:bg-gray-50"
-              >
-                <Copy className="w-4 h-4" />
-                Copy my email
-              </button>
-            </div>
+            <h2 className="text-lg font-extrabold text-gray-900">No generations yet</h2>
+            <p className="text-sm text-gray-600 mt-1 max-w-md mx-auto">
+              {activeTool === "all"
+                ? "Your outputs from Sales Wizard, FB Ads Targeting, Image Ad Analyzer, and Ad Analyzer will appear here."
+                : `Your ${TOOL_LABELS[activeTool]} outputs will appear here.`}
+            </p>
+            <button
+              onClick={() => navigate("/app")}
+              className="mt-6 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700"
+            >
+              <Sparkles className="w-4 h-4" />
+              Go generate
+            </button>
           </div>
-        </div>
+        ) : (
+          <div className="space-y-4">
+            {filtered.map((gen) => (
+              <div
+                key={gen.id}
+                className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-md transition-shadow"
+              >
+                <div className="p-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-4 mb-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-2xl bg-gradient-to-br ${TOOL_COLORS[gen.tool]} flex items-center justify-center shadow-sm flex-shrink-0`}>
+                        {TOOL_ICONS[gen.tool]}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-extrabold text-gray-900">{TOOL_LABELS[gen.tool]}</p>
+                        <p className="text-xs text-gray-500 truncate">{getToolSummary(gen)}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button
+                        onClick={() => handleCopy(gen.output, gen.id)}
+                        className="p-2 rounded-xl hover:bg-gray-100 text-gray-400 hover:text-gray-700 transition-colors"
+                        title="Copy output"
+                      >
+                        {copiedId === gen.id ? (
+                          <CheckCheck className="w-4 h-4 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleDelete(gen.id)}
+                        disabled={deletingId === gen.id}
+                        className="p-2 rounded-xl hover:bg-red-50 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete"
+                      >
+                        {deletingId === gen.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
 
-        {/* keep these icons referenced so the page stays consistent with the app's style system */}
-        <div className="hidden">
-          <Trash2 />
-          <Download />
-          <CheckCheck />
-        </div>
+                  {/* Output preview */}
+                  <div className="bg-gray-50 rounded-2xl p-4">
+                    <pre className="text-sm text-gray-800 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
+                      {gen.output.length > 500 ? gen.output.slice(0, 500) + "..." : gen.output}
+                    </pre>
+                  </div>
+
+                  {/* Timestamp */}
+                  <div className="mt-3 flex items-center gap-1.5 text-xs text-gray-400">
+                    <Clock className="w-3.5 h-3.5" />
+                    {new Date(gen.created_at).toLocaleDateString("en-PH", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

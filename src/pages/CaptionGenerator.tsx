@@ -3,6 +3,7 @@ import { Upload, Sparkles, Copy, Check, ImageIcon, X, Target, MessageSquare, Eye
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UpgradePrompt from '@/components/UpgradePrompt';
 import { useAuth } from '@/providers/auth';
+import { saveGeneration } from '@/lib/saveGeneration';
 
 export default function ImageAdAnalyzer() {
   const { token } = useAuth();
@@ -103,6 +104,13 @@ export default function ImageAdAnalyzer() {
       }
 
       setResult(fullText || 'No output');
+      if (fullText) {
+        await saveGeneration({
+          tool: "image-ad-analyzer",
+          input: { imageDescription: imageDescription.trim() || 'a product in an advertisement image' },
+          output: fullText,
+        });
+      }
     } catch (err: any) {
       setResult(`❌ Error: ${err.message}`);
     } finally {

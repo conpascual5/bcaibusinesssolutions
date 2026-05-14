@@ -4,6 +4,7 @@ import { SALES_FRAMEWORKS, type SalesFrameworkId } from "@/lib/salesFrameworks";
 import { useUsageLimit } from "@/hooks/useUsageLimit";
 import UpgradePrompt from "@/components/UpgradePrompt";
 import SocialPostEditor from "@/components/SocialPostEditor";
+import { saveGeneration } from "@/lib/saveGeneration";
 import {
   Wand2,
   Sparkles,
@@ -193,6 +194,13 @@ export default function SalesWizard() {
       }
 
       if (!fullText) setOutput("No output");
+      else {
+        await saveGeneration({
+          tool: "sales-wizard",
+          input: { productName, businessName, message, framework: frameworkId, language },
+          output: fullText,
+        });
+      }
     } catch (e: any) {
       setError(e?.message || "Generation failed");
     } finally {
