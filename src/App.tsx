@@ -15,6 +15,7 @@ import Invoices from './pages/Invoices'
 import SalesWizard from './pages/SalesWizard'
 import FBAdsTargeting from './pages/FBAdsTargeting'
 import MyPlan from './pages/MyPlan'
+import MyAssets from './pages/MyAssets'
 import SalesReport from './pages/SalesReport'
 import AppLayout from './components/AppLayout'
 import SupportChatWidget from './components/SupportChatWidget'
@@ -65,6 +66,7 @@ export default function App() {
         <Route path="/app/fb-ads-targeting" element={<ProtectedRoute><AppLayoutRoute><FBAdsTargeting /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/image-ad-analyzer" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-plan" element={<ProtectedRoute><AppLayoutRoute><MyPlan /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/my-assets" element={<ProtectedRoute><AppLayoutRoute><MyAssets /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />
         <Route path="/setup" element={<Setup />} />

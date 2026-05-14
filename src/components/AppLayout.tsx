@@ -35,6 +35,7 @@ import {
   Crown,
   Star,
   BarChart3,
+  Package,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -51,6 +52,7 @@ const navItems = [
   { icon: Eye, label: 'Image Ad Analyzer', path: '/app/image-ad-analyzer' },
   { icon: FileSearch, label: 'Ad Analyzer', path: '/app/competitor-analysis' },
   { icon: FileText, label: 'Invoices', path: '/app/invoices' },
+  { icon: Package, label: 'My Assets', path: '/app/my-assets' },
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
 ];

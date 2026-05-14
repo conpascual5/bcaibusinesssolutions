@@ -69,6 +69,25 @@ export default function Landing() {
       color: "text-amber-500",
       badge: "bg-amber-100 text-amber-700 border-amber-200",
       gradient: "from-amber-400 to-orange-500",
+      popular: false,
+      features: [
+        "500 generations per month",
+        "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+        "Sales Report — unlimited & free",
+        "Invoice Generator — unlimited & free",
+        "Priority live chat support",
+        "30 product images included — view & download in My Assets",
+        "Subject to fair usage policy",
+      ],
+    },
+    {
+      name: "Pro Plus",
+      price: "999",
+      period: "/month",
+      icon: Crown,
+      color: "text-rose-500",
+      badge: "bg-rose-100 text-rose-700 border-rose-200",
+      gradient: "from-rose-500 to-pink-600",
       popular: true,
       features: [
         "500 generations per month",
@@ -76,6 +95,8 @@ export default function Landing() {
         "Sales Report — unlimited & free",
         "Invoice Generator — unlimited & free",
         "Priority live chat support",
+        "30 product images included — view & download in My Assets",
+        "1 UGC or Cinematic ad included — view & download in My Assets",
         "Subject to fair usage policy",
       ],
     },
@@ -204,7 +225,7 @@ export default function Landing() {
           {[
             { value: "6", label: "AI Tools", color: "text-blue-600" },
             { value: "15+", label: "Targeting Keywords", color: "text-purple-600" },
-            { value: "3", label: "Pricing Plans", color: "text-amber-600" },
+            { value: "4", label: "Pricing Plans", color: "text-amber-600" },
             { value: "Free", label: "Sales & Invoices", color: "text-emerald-600" },
           ].map((s, i) => (
             <AnimatedSection key={i} delay={i * 100} direction="down">
@@ -269,11 +290,11 @@ export default function Landing() {
                 <Crown className="w-3 h-3" /> Pricing Plans
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Choose Your Plan</h2>
-              <p className="text-gray-500 mt-3 max-w-lg mx-auto">Start free and upgrade when you need more. All plans are subject to a fair usage policy. VIP is exclusive for existing buyers of our ad creatives and website services.</p>
+              <p className="text-gray-500 mt-3 max-w-xl mx-auto">Start free and upgrade when you need more. All plans are subject to a fair usage policy. VIP is exclusive for existing buyers of our ad creatives and website services.</p>
             </div>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
             {plans.map((plan, i) => {
               const PlanIcon = plan.icon;
               return (

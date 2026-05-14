@@ -17,6 +17,13 @@ const PLAN_INFO = {
     bg: 'bg-amber-50 dark:bg-amber-900/20',
     border: 'border-amber-200 dark:border-amber-800',
   },
+  pro_plus: {
+    label: 'Pro Plus',
+    icon: Crown,
+    color: 'text-rose-500',
+    bg: 'bg-rose-50 dark:bg-rose-900/20',
+    border: 'border-rose-200 dark:border-rose-800',
+  },
   vip: {
     label: 'VIP',
     icon: Star,
@@ -104,7 +111,9 @@ export default function MyPlan() {
               {plan === 'vip'
                 ? 'VIP access — 100 generations per month across all tools'
                 : plan === 'pro'
-                ? 'Pro access — 500 generations per month across all tools'
+                ? 'Pro access — 500 generations per month across all tools + 30 product images'
+                : plan === 'pro_plus'
+                ? 'Pro Plus access — 500 generations per month + 30 product images + 1 UGC/Cinematic ad'
                 : 'Free trial — 3 total generations (one-time)'}
             </p>
           </div>
@@ -131,7 +140,7 @@ export default function MyPlan() {
             const isPro = usage?.isPro ?? plan === 'pro';
             const isVip = usage?.isVip ?? plan === 'vip';
             const used = usage?.used ?? 0;
-            const limit = usage?.limit ?? (plan === 'pro' ? 500 : plan === 'vip' ? 100 : 3);
+            const limit = usage?.limit ?? (plan === 'pro' || plan === 'pro_plus' ? 500 : plan === 'vip' ? 100 : 3);
             const remaining = usage?.remaining ?? Math.max(0, limit - used);
             const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
@@ -139,7 +148,7 @@ export default function MyPlan() {
               <div key={feat.key} className="bg-card rounded-xl border border-border p-4 card-shadow-sm">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-sm font-medium text-foreground">{feat.label}</span>
-                  {isPro ? (
+                  {isPro || plan === 'pro_plus' ? (
                     <span className="text-xs font-semibold text-amber-600 flex items-center gap-1">
                       <Crown className="w-3.5 h-3.5" />
                       {remaining} / 500 remaining

@@ -7,7 +7,7 @@ export type AuthUser = {
   email: string;
   name: string;
   isAdmin: boolean;
-  plan: "free" | "pro" | "vip";
+  plan: "free" | "pro" | "pro_plus" | "vip";
   isActive: boolean;
 };
 
