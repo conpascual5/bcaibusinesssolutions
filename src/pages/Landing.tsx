@@ -334,7 +334,7 @@ export default function Landing() {
                 <strong>Need product images or video ads?</strong> You can order them separately
                 by messaging our Facebook page.{' '}
                 <a
-                  href="https://facebook.com/BCAIBusinessSolutions"
+                  href="https://www.facebook.com/bcsocialmediaservices"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-rose-600 font-semibold hover:text-rose-700 underline"
