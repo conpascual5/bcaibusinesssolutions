@@ -19,6 +19,7 @@ export default function AuthPage() {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resetting, setResetting] = useState(false);
@@ -50,6 +51,11 @@ export default function AuthPage() {
 
     try {
       if (mode === "sign_up") {
+        if (!agreedToTerms) {
+          setError("You must agree to the terms and conditions to sign up.");
+          setSubmitting(false);
+          return;
+        }
         const { error: signUpError } = await supabase.auth.signUp({
           email,
           password,
@@ -193,9 +199,31 @@ export default function AuthPage() {
               </div>
             )}
 
+            {mode === "sign_up" && (
+              <label className="flex items-start gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                />
+                <span className="text-xs text-gray-600 leading-relaxed">
+                  I have read and agree to the{" "}
+                  <Link to="/terms" className="text-indigo-600 hover:text-indigo-700 underline font-medium">
+                    Terms and Conditions
+                  </Link>{" "}
+                  and{" "}
+                  <Link to="/privacy" className="text-indigo-600 hover:text-indigo-700 underline font-medium">
+                    Privacy Policy
+                  </Link>
+                  .
+                </span>
+              </label>
+            )}
+
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || (mode === "sign_up" && !agreedToTerms)}
               className="w-full py-2.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm shadow-sm hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
             >
               {submitting && <Loader2 className="w-4 h-4 animate-spin" />}

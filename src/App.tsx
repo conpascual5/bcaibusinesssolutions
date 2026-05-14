@@ -5,6 +5,8 @@ import { trackPageView } from './lib/metaPixel'
 import Landing from './pages/Landing'
 import About from './pages/About'
 import Auth from './pages/Auth'
+import Terms from './pages/Terms'
+import Privacy from './pages/Privacy'
 import Dashboard from './pages/Dashboard'
 
 import CaptionGenerator from './pages/CaptionGenerator'
@@ -77,6 +79,8 @@ export default function App() {
         <Route path="/app/my-assets" element={<ProtectedRoute><AppLayoutRoute><MyAssets /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route path="/setup" element={<Setup />} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
       </Routes>

@@ -240,7 +240,6 @@ export default function Landing() {
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
                   "Priority live chat support",
-                  "30 product images included — view & download in My Assets",
                   "Subject to fair usage policy",
                 ],
               },
@@ -257,8 +256,6 @@ export default function Landing() {
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
                   "Priority live chat support",
-                  "30 product images included — view & download in My Assets",
-                  "1 UGC or Cinematic ad included — view & download in My Assets",
                   "Subject to fair usage policy",
                 ],
               },
@@ -329,6 +326,25 @@ export default function Landing() {
               </AnimatedSection>
             ))}
           </div>
+
+          {/* Note about product images & video ads */}
+          <AnimatedSection delay={600} direction="up">
+            <div className="mt-10 max-w-2xl mx-auto text-center bg-gradient-to-r from-rose-50 to-amber-50 rounded-3xl p-6 border border-rose-200">
+              <p className="text-sm text-gray-700 leading-relaxed">
+                <strong>Need product images or video ads?</strong> You can order them separately
+                by messaging our Facebook page.{' '}
+                <a
+                  href="https://facebook.com/BCAIBusinessSolutions"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-rose-600 font-semibold hover:text-rose-700 underline"
+                >
+                  Message us on Facebook
+                </a>
+                {' '}for custom product photography, UGC ads, and cinematic video ads.
+              </p>
+            </div>
+          </AnimatedSection>
         </div>
       </section>
 
