@@ -25,7 +25,7 @@ export default function About() {
             <div className="w-48 h-48 md:w-56 md:h-56 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-600 p-1 shadow-lg">
               <div className="w-full h-full rounded-2xl bg-gray-100 flex items-center justify-center overflow-hidden">
                 <img
-                  src="https://scontent.fmnl4-2.fna.fbcdn.net/v/t39.30808-6/557635651_25782511578015421_542287882876519149_n.jpg?_nc_cat=105&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeFFWFAgwLJat2f8_q1juH2JvcByYRupA669wHJhG6kDrslBmyVKiyfN_7rcLyBDz-Nwclb1lskalnal-Ckgq4Vr&_nc_ohc=-3QbepV_h8kQ7kNvwGY-5Xv&_nc_oc=AdrCroEd2_rm-RzlJ_tSgi3ci2_7eJDa-4Ua8dM0w1jTM4INU4vL-zZUjV5EeVh_7V8-wEVYWfB45Kbl8xoHFwWv&_nc_zt=23&_nc_ht=scontent.fmnl4-2.fna&_nc_gid=7Xg6qPiP2HTmnW2n1hOo7w&_nc_ss=7b2a8&oh=00_Af580oIK09YP7E4JFpCqBIoezVaFPfuaC8-gnhpD4q92Wg&oe=6A0B7E40"
+                  src="https://scontent.fmnl4-7.fna.fbcdn.net/v/t39.30808-6/518954038_25083482981251621_3654805155939279022_n.jpg?_nc_cat=104&ccb=1-7&_nc_sid=a5f93a&_nc_eui2=AeFG4astgOS1lKECXTPDKQcOAD2H_1gwqy8APYf_WDCrL3S93xxbj8Jq75uf5CLtoNw9gf7B3NXUbscVAYl4NBX_&_nc_ohc=8Skj6JsHK4sQ7kNvwGC8we0&_nc_oc=Adoa4AyH7Cs2IFU0e2Ds_s_-8UA3yx297p4-pesmJGWM_RLdnqlzT9w7qhpq4-zgiYFE_HfrPXno6E2iDc_O3v9u&_nc_zt=23&_nc_ht=scontent.fmnl4-7.fna&_nc_gid=38AApxArNsB0B7JZAowz6w&_nc_ss=7b2a8&oh=00_Af7tL5ifrXgbIH8kxfJMCzVFxSphWumzXSmW_mh1T2w7RQ&oe=6A0B8EA3"
                   alt="Con Pascual"
                   className="w-full h-full object-cover"
                 />
