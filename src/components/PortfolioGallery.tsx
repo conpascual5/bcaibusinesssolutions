@@ -50,12 +50,7 @@ export default function PortfolioGallery() {
       }
     } catch (err) {
       console.error("Error loading portfolio images:", err);
-      // Fall back to local samples on error
-      const samples = SAMPLE_IMAGES.map((name) => ({
-        name,
-        url: `/samples/${name}`,
-      }));
-      setImages(samples);
+      setImages([]);
     } finally {
       setLoading(false);
     }
