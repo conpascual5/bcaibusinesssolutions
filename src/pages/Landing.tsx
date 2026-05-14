@@ -436,17 +436,9 @@ export default function Landing() {
 
           {/* Static Image Ads */}
           <AnimatedSection delay={200}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                <Camera className="w-5 h-5 text-blue-500" /> Static Ad Creatives
-              </h3>
-              <Link
-                to="/upload"
-                className="text-xs font-medium text-blue-600 hover:text-blue-700 flex items-center gap-1"
-              >
-                Manage Uploads
-              </Link>
-            </div>
+            <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-5">
+              <Camera className="w-5 h-5 text-blue-500" /> Static Ad Creatives
+            </h3>
           </AnimatedSection>
           <AnimatedSection delay={300}>
             <PortfolioGallery />
