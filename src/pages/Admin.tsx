@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
@@ -22,6 +22,14 @@ import {
   AlertCircle,
   ChevronRight,
   MessageSquare,
+  Package,
+  Upload,
+  ImageIcon,
+  Film,
+  Trash2,
+  Loader2,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 
 type ProfileRow = {
@@ -228,16 +236,321 @@ function ApiKeySettings() {
   );
 }
 
+function AdminAssetManager() {
+  const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [packageType, setPackageType] = useState<"pro" | "pro_plus">("pro");
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState<string[]>([]);
+  const [errors, setErrors] = useState<string[]>([]);
+  const [assets, setAssets] = useState<any[]>([]);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .order("full_name", { ascending: true });
+      setUsers(data || []);
+    })();
+  }, []);
+
+  const loadUserAssets = useCallback(async (userId: string) => {
+    if (!userId) return;
+    setLoadingAssets(true);
+    const { data } = await supabase
+      .from("user_assets")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false });
+    setAssets(data || []);
+    setLoadingAssets(false);
+  }, []);
+
+  useEffect(() => {
+    if (selectedUserId) loadUserAssets(selectedUserId);
+    else setAssets([]);
+  }, [selectedUserId, loadUserAssets]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(Array.from(e.target.files));
+    }
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUpload = async () => {
+    if (!selectedUserId || files.length === 0) return;
+    setUploading(true);
+    setErrors([]);
+    setUploaded([]);
+
+    const uploadedNames: string[] = [];
+    const errorMessages: string[] = [];
+
+    for (const file of files) {
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `${selectedUserId}/${Date.now()}-${Math.random().toString(36).substring(2, 8)}.${ext}`;
+      const fileType = file.type.startsWith("video/") ? "video" : "image";
+
+      // Upload to storage (private bucket, user's folder)
+      const { error: uploadError } = await supabase.storage
+        .from("user_assets")
+        .upload(fileName, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        errorMessages.push(`${file.name}: ${uploadError.message}`);
+        continue;
+      }
+
+      // Get signed URL for private bucket
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from("user_assets")
+        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
+
+      if (signedError || !signedData) {
+        errorMessages.push(`${file.name}: Failed to generate access URL`);
+        continue;
+      }
+
+      // Insert record in user_assets table
+      const { error: dbError } = await supabase.from("user_assets").insert({
+        user_id: selectedUserId,
+        file_name: file.name,
+        file_url: signedData.signedUrl,
+        file_type: fileType,
+        file_size: file.size,
+        mime_type: file.type,
+        package_type: packageType,
+      });
+
+      if (dbError) {
+        errorMessages.push(`${file.name}: ${dbError.message}`);
+      } else {
+        uploadedNames.push(file.name);
+      }
+    }
+
+    setUploaded(uploadedNames);
+    setErrors(errorMessages);
+    setFiles([]);
+    setUploading(false);
+    if (selectedUserId) loadUserAssets(selectedUserId);
+  };
+
+  const handleDelete = async (assetId: string, fileName: string) => {
+    setDeleting(assetId);
+    // Delete from storage
+    const storagePath = `${selectedUserId}/${fileName.split("/").pop()}`;
+    await supabase.storage.from("user_assets").remove([storagePath]);
+    // Delete from DB
+    await supabase.from("user_assets").delete().eq("id", assetId);
+    setDeleting(null);
+    if (selectedUserId) loadUserAssets(selectedUserId);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Select User */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5 mb-4">
+          <Package className="w-5 h-5 text-emerald-500 stroke-[1.5]" />
+          Upload Assets for a User
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Select User</label>
+            <select
+              value={selectedUserId}
+              onChange={(e) => setSelectedUserId(e.target.value)}
+              className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="">— Choose a user —</option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email || u.id}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Package Type</label>
+            <select
+              value={packageType}
+              onChange={(e) => setPackageType(e.target.value as "pro" | "pro_plus")}
+              className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            >
+              <option value="pro">Pro — 30 Product Images</option>
+              <option value="pro_plus">Pro Plus — 1 UGC / Cinematic Ad</option>
+            </select>
+          </div>
+
+          <div className="flex items-end">
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={!selectedUserId}
+              className="w-full px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <Upload className="w-4 h-4" />
+              Select Files
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+          </div>
+        </div>
+
+        {/* Selected Files */}
+        {files.length > 0 && (
+          <div className="mb-4 p-4 bg-accent/30 rounded-xl border border-border">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-sm font-semibold text-foreground">{files.length} file(s) selected</span>
+              <button
+                onClick={handleUpload}
+                disabled={uploading}
+                className="px-4 py-2 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                {uploading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin" /> Uploading...</>
+                ) : (
+                  <><Upload className="w-4 h-4" /> Upload to User</>
+                )}
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {files.map((file, i) => (
+                <div key={i} className="flex items-center gap-2 px-3 py-1.5 bg-background rounded-lg border border-border text-xs">
+                  {file.type.startsWith("video/") ? <Film className="w-3.5 h-3.5 text-rose-500" /> : <ImageIcon className="w-3.5 h-3.5 text-amber-500" />}
+                  <span className="text-foreground truncate max-w-[150px]">{file.name}</span>
+                  <button onClick={() => removeFile(i)} className="text-muted-foreground hover:text-red-500">
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Upload Results */}
+        {uploaded.length > 0 && (
+          <div className="mb-4 p-3 bg-emerald-50 border border-emerald-200 rounded-xl flex items-start gap-2.5">
+            <CheckCircle className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-emerald-800">{uploaded.length} file(s) uploaded</p>
+              <ul className="mt-0.5 text-[11px] text-emerald-700">{uploaded.map((n, i) => <li key={i}>{n}</li>)}</ul>
+            </div>
+          </div>
+        )}
+
+        {errors.length > 0 && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl flex items-start gap-2.5">
+            <AlertCircle className="w-4 h-4 text-red-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-xs font-semibold text-red-800">Errors</p>
+              <ul className="mt-0.5 text-[11px] text-red-700">{errors.map((n, i) => <li key={i}>{n}</li>)}</ul>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* User's Assets */}
+      {selectedUserId && (
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+              <Package className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
+              User's Assets
+              <span className="text-xs font-normal text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                {assets.length} file(s)
+              </span>
+            </h2>
+            <button
+              onClick={() => loadUserAssets(selectedUserId)}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+            >
+              Refresh
+            </button>
+          </div>
+
+          {loadingAssets ? (
+            <div className="text-sm text-muted-foreground py-8 text-center">Loading assets...</div>
+          ) : assets.length === 0 ? (
+            <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-xl">
+              No assets for this user yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+              {assets.map((asset: any) => (
+                <div key={asset.id} className="group relative aspect-[4/3] rounded-xl overflow-hidden bg-muted border border-border">
+                  {asset.file_type === "video" ? (
+                    <video src={asset.file_url} className="w-full h-full object-cover" preload="metadata" />
+                  ) : (
+                    <img src={asset.file_url} alt={asset.file_name} className="w-full h-full object-cover group-hover:scale-105 transition-transform" loading="lazy" />
+                  )}
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                  <div className="absolute top-1.5 left-1.5">
+                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${asset.package_type === "pro_plus" ? "bg-rose-500" : "bg-amber-500"}`}>
+                      {asset.package_type === "pro_plus" ? "Pro+" : "Pro"}
+                    </span>
+                  </div>
+                  <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <a
+                      href={asset.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-7 h-7 bg-white/90 rounded-full flex items-center justify-center text-gray-700 hover:bg-white"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                    <button
+                      onClick={() => handleDelete(asset.id, asset.file_url)}
+                      disabled={deleting === asset.id}
+                      className="w-7 h-7 bg-red-500/80 rounded-full flex items-center justify-center text-white hover:bg-red-600"
+                    >
+                      {deleting === asset.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1.5">
+                    <p className="text-[9px] text-white truncate font-medium">{asset.file_name}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const PLAN_OPTIONS = [
   { value: "free", label: "Free", icon: Sparkles },
   { value: "pro", label: "Pro", icon: Crown },
+  { value: "pro_plus", label: "Pro Plus", icon: Crown },
   { value: "vip", label: "VIP", icon: Star },
 ] as const;
 
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"users" | "support" | "settings">("users");
+  const [activeSection, setActiveSection] = useState<"users" | "assets" | "support" | "settings">("users");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -314,13 +627,14 @@ export default function Admin() {
     return (plan: string) => {
       if (plan === "vip") return "bg-purple-50 text-purple-700 border-purple-200";
       if (plan === "pro") return "bg-amber-50 text-amber-700 border-amber-200";
+      if (plan === "pro_plus") return "bg-rose-50 text-rose-700 border-rose-200";
       return "bg-slate-100 text-slate-700 border-slate-200";
     };
   }, []);
 
   const totalUsers = users.length;
 
-  const setPlan = async (userId: string, plan: "free" | "pro" | "vip") => {
+  const setPlan = async (userId: string, plan: "free" | "pro" | "pro_plus" | "vip") => {
     const { data: current } = await supabase.from("profiles").select("plan").eq("id", userId).maybeSingle();
     await supabase
       .from("profiles")
@@ -387,6 +701,15 @@ export default function Admin() {
           >
             <Users className="w-4 h-4 stroke-[1.5]" />
             Users
+          </button>
+          <button
+            onClick={() => setActiveSection("assets")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "assets" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Package className="w-4 h-4 stroke-[1.5]" />
+            Assets
           </button>
           <button
             onClick={() => setActiveSection("support")}
@@ -577,6 +900,8 @@ export default function Admin() {
             )}
           </div>
         )}
+
+        {activeSection === "assets" && <AdminAssetManager />}
 
         {activeSection === "support" && <AdminSupportInbox />}
 
