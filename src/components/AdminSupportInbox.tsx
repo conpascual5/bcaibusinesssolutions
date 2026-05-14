@@ -1,21 +1,26 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { MessageSquare, Send, User, Shield, RefreshCw } from "lucide-react";
 import { useAuth } from "@/providers/auth";
+import { supabase } from "@/integrations/supabase/client";
 
-type ChatRow = {
+type ChatMessage = {
   id: number;
   user_id: string;
-  title: string;
-  updated_at: string;
+  user_name: string;
+  user_email: string;
+  message: string;
+  is_admin: number;
+  is_read: number;
   created_at: string;
 };
 
-type MessageRow = {
-  id: number;
-  chat_id: number;
-  role: string;
-  content: string;
-  created_at: string;
+type Conversation = {
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  last_message: string;
+  last_time: string;
+  unread: number;
 };
 
 function timeAgo(ts: string) {
@@ -31,101 +36,136 @@ function timeAgo(ts: string) {
 }
 
 export default function AdminSupportInbox() {
-  const { token, user } = useAuth();
-  const [loadingChats, setLoadingChats] = useState(true);
-  const [loadingMessages, setLoadingMessages] = useState(false);
-  const [chats, setChats] = useState<ChatRow[]>([]);
-  const [selectedChatId, setSelectedChatId] = useState<number | null>(null);
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [input, setInput] = useState("");
+  const [sending, setSending] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const canUse = !!token && !!user?.isAdmin;
+  const canUse = !!user?.isAdmin;
 
-  const supportChats = useMemo(() => {
-    return chats
-      .filter((c) => String(c.title || "").toLowerCase() === "support")
-      .sort((a, b) => (b.updated_at || b.created_at).localeCompare(a.updated_at || a.created_at));
-  }, [chats]);
+  const loadConversations = async () => {
+    if (!canUse) return;
+    setLoading(true);
 
-  const loadChats = async () => {
-    if (!token) return;
-    setLoadingChats(true);
-    try {
-      const res = await fetch("/api/trpc/chat.adminList", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({}),
-      });
-      const json = await res.json();
-      const data = (json?.result?.data as ChatRow[]) ?? [];
-      setChats(data);
+    // Get all unique user conversations from chat_messages
+    const { data } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .order("created_at", { ascending: false });
 
-      if (!selectedChatId) {
-        const first = data.find((c) => String(c.title || "").toLowerCase() === "support");
-        if (first?.id) setSelectedChatId(first.id);
+    const rows = (data as ChatMessage[]) || [];
+
+    // Group by user_id
+    const convMap = new Map<string, Conversation>();
+    for (const msg of rows) {
+      if (!convMap.has(msg.user_id)) {
+        convMap.set(msg.user_id, {
+          user_id: msg.user_id,
+          user_name: msg.user_name,
+          user_email: msg.user_email,
+          last_message: msg.message,
+          last_time: msg.created_at,
+          unread: msg.is_admin === 0 && msg.is_read === 0 ? 1 : 0,
+        });
+      } else {
+        const existing = convMap.get(msg.user_id)!;
+        if (msg.is_admin === 0 && msg.is_read === 0) {
+          existing.unread += 1;
+        }
       }
-    } finally {
-      setLoadingChats(false);
     }
+
+    const convs = Array.from(convMap.values()).sort(
+      (a, b) => new Date(b.last_time).getTime() - new Date(a.last_time).getTime()
+    );
+
+    setConversations(convs);
+
+    if (!selectedUserId && convs.length > 0) {
+      setSelectedUserId(convs[0].user_id);
+    }
+
+    setLoading(false);
   };
 
-  const loadMessages = async (chatId: number) => {
-    if (!token) return;
-    setLoadingMessages(true);
-    try {
-      const res = await fetch("/api/trpc/chat.getMessages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ chatId }),
-      });
-      const json = await res.json();
-      const data = (json?.result?.data as MessageRow[]) ?? [];
-      setMessages(data);
-      setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
-    } finally {
-      setLoadingMessages(false);
-    }
+  const loadMessages = async (userId: string) => {
+    const { data } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: true });
+
+    setMessages((data as ChatMessage[]) || []);
+
+    // Mark messages as read
+    await supabase
+      .from("chat_messages")
+      .update({ is_read: 1 })
+      .eq("user_id", userId)
+      .eq("is_admin", 0)
+      .eq("is_read", 0);
+
+    setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
   };
 
   useEffect(() => {
     if (!canUse) return;
-    void loadChats();
+    loadConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canUse]);
 
   useEffect(() => {
-    if (!selectedChatId) return;
-    void loadMessages(selectedChatId);
+    if (!selectedUserId) return;
+    loadMessages(selectedUserId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedChatId]);
+  }, [selectedUserId]);
+
+  // Subscribe to new messages
+  useEffect(() => {
+    if (!canUse) return;
+
+    const channel = supabase
+      .channel("admin-chat")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "chat_messages" },
+        () => {
+          loadConversations();
+          if (selectedUserId) loadMessages(selectedUserId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canUse, selectedUserId]);
 
   const send = async () => {
-    if (!selectedChatId || !token) return;
+    if (!selectedUserId || !user) return;
     const content = input.trim();
     if (!content) return;
 
+    setSending(true);
     setInput("");
 
-    // Admin message: store as assistant message so it appears on user's side.
-    const res = await fetch("/api/trpc/chat.sendMessage", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ chatId: selectedChatId, content: `[ADMIN] ${content}` }),
+    await supabase.from("chat_messages").insert({
+      user_id: selectedUserId,
+      user_name: "Admin",
+      user_email: user.email || "admin@bcai.com",
+      message: content,
+      is_admin: 1,
+      is_read: 1,
     });
 
-    await res.json().catch(() => ({}));
-    await loadMessages(selectedChatId);
-    await loadChats();
+    setSending(false);
+    await loadMessages(selectedUserId);
+    await loadConversations();
   };
 
   if (!user?.isAdmin) {
@@ -151,44 +191,55 @@ export default function AdminSupportInbox() {
         </div>
         <button
           type="button"
-          onClick={() => void loadChats()}
+          onClick={() => loadConversations()}
           className="inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
         >
-          <RefreshCw className={`w-4 h-4 ${loadingChats ? "animate-spin" : ""}`} />
+          <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           Refresh
         </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3">
+        {/* Conversation List */}
         <div className="lg:col-span-1 border-b lg:border-b-0 lg:border-r border-border bg-background">
           <div className="p-4">
-            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Support chats</p>
+            <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Conversations</p>
           </div>
           <div className="max-h-[520px] overflow-y-auto">
-            {loadingChats ? (
+            {loading ? (
               <div className="p-4 text-sm text-muted-foreground">Loading…</div>
-            ) : supportChats.length === 0 ? (
-              <div className="p-4 text-sm text-muted-foreground">No support chats yet.</div>
+            ) : conversations.length === 0 ? (
+              <div className="p-4 text-sm text-muted-foreground">No conversations yet.</div>
             ) : (
-              supportChats.map((c) => {
-                const active = c.id === selectedChatId;
+              conversations.map((conv) => {
+                const active = conv.user_id === selectedUserId;
                 return (
                   <button
-                    key={c.id}
+                    key={conv.user_id}
                     type="button"
-                    onClick={() => setSelectedChatId(c.id)}
+                    onClick={() => setSelectedUserId(conv.user_id)}
                     className={
                       "w-full text-left px-4 py-3 border-t border-border hover:bg-accent transition-colors " +
                       (active ? "bg-accent" : "bg-background")
                     }
                   >
                     <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 rounded-2xl bg-indigo-50 flex items-center justify-center">
+                      <div className="w-8 h-8 rounded-2xl bg-indigo-50 flex items-center justify-center relative">
                         <User className="w-4 h-4 text-indigo-700" />
+                        {conv.unread > 0 && (
+                          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-[9px] font-bold text-white flex items-center justify-center">
+                            {conv.unread}
+                          </span>
+                        )}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">User {c.user_id.slice(0, 8)}…</p>
-                        <p className="text-xs text-muted-foreground">Updated {timeAgo(c.updated_at || c.created_at)}</p>
+                        <p className="text-sm font-semibold text-foreground truncate">
+                          {conv.user_name || conv.user_email || conv.user_id.slice(0, 8) + "…"}
+                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{conv.last_message}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {timeAgo(conv.last_time)}
+                        </p>
                       </div>
                     </div>
                   </button>
@@ -198,17 +249,16 @@ export default function AdminSupportInbox() {
           </div>
         </div>
 
+        {/* Messages */}
         <div className="lg:col-span-2 bg-background">
           <div ref={listRef} className="max-h-[520px] overflow-y-auto p-4 space-y-3">
-            {selectedChatId == null ? (
-              <div className="text-sm text-muted-foreground">Select a chat to view messages.</div>
-            ) : loadingMessages ? (
-              <div className="text-sm text-muted-foreground">Loading messages…</div>
+            {selectedUserId == null ? (
+              <div className="text-sm text-muted-foreground">Select a conversation to view messages.</div>
             ) : messages.length === 0 ? (
               <div className="text-sm text-muted-foreground">No messages yet.</div>
             ) : (
               messages.map((m) => {
-                const isUser = m.role === "user";
+                const isUser = m.is_admin === 0;
                 return (
                   <div key={m.id} className={isUser ? "flex justify-start" : "flex justify-end"}>
                     <div
@@ -218,7 +268,13 @@ export default function AdminSupportInbox() {
                           : "max-w-[85%] rounded-3xl rounded-br-lg bg-indigo-600 text-white px-4 py-3 text-sm leading-relaxed shadow-sm"
                       }
                     >
-                      {m.content}
+                      <p className="whitespace-pre-wrap">{m.message}</p>
+                      <p className={`text-[10px] mt-1 ${isUser ? "text-gray-400" : "text-indigo-200"}`}>
+                        {new Date(m.created_at).toLocaleTimeString("en-PH", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
                     </div>
                   </div>
                 );
@@ -231,23 +287,27 @@ export default function AdminSupportInbox() {
               <textarea
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                placeholder={selectedChatId ? "Reply to the user…" : "Select a chat first"}
-                disabled={!selectedChatId}
+                placeholder={selectedUserId ? "Reply to the user…" : "Select a conversation first"}
+                disabled={!selectedUserId}
                 rows={2}
                 className="flex-1 resize-none rounded-2xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60"
               />
               <button
                 type="button"
                 onClick={() => void send()}
-                disabled={!selectedChatId || !input.trim()}
+                disabled={!selectedUserId || !input.trim() || sending}
                 className="h-10 w-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 disabled:opacity-50"
                 title="Send"
               >
-                <Send className="w-4 h-4" />
+                {sending ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Replies are sent as assistant messages. (We prefix with <span className="font-mono">[ADMIN]</span> to distinguish.)
+              Replies are sent as admin messages and will appear in the user's chat widget.
             </p>
           </div>
         </div>
