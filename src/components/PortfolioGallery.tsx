@@ -8,6 +8,14 @@ interface PortfolioImage {
   url: string;
 }
 
+const SAMPLE_IMAGES = [
+  "1f608e4b-cee6-4069-8b6f-71ebc58b3d3e.jpg",
+  "929ce640-0d58-4597-8191-69e557286a4e.jpg",
+  "abbd3a9e-bea3-43b7-a808-34c426fab15d.jpg",
+  "4336db6d-972e-4b85-b621-8675601b4826.jpg",
+  "a33a1a17-0438-4e6a-aee8-0b7854f9099c.jpg",
+];
+
 export default function PortfolioGallery() {
   const [images, setImages] = useState<PortfolioImage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
@@ -30,9 +38,24 @@ export default function PortfolioGallery() {
           return { name: f.name, url: urlData.publicUrl };
         });
 
-      setImages(portfolioImages);
+      // If no images in portfolio bucket, fall back to local sample images
+      if (portfolioImages.length === 0) {
+        const samples = SAMPLE_IMAGES.map((name) => ({
+          name,
+          url: `/samples/${name}`,
+        }));
+        setImages(samples);
+      } else {
+        setImages(portfolioImages);
+      }
     } catch (err) {
       console.error("Error loading portfolio images:", err);
+      // Fall back to local samples on error
+      const samples = SAMPLE_IMAGES.map((name) => ({
+        name,
+        url: `/samples/${name}`,
+      }));
+      setImages(samples);
     } finally {
       setLoading(false);
     }
