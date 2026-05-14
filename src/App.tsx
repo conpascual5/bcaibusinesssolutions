@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router'
 import { useAuth } from '@/providers/auth'
 import Landing from './pages/Landing'
+import About from './pages/About'
 import Auth from './pages/Auth'
 import Dashboard from './pages/Dashboard'
 
@@ -53,6 +54,7 @@ export default function App() {
     <>
       <Routes>
         <Route path="/" element={<Landing />} />
+        <Route path="/about" element={<About />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/app" element={<ProtectedRoute><AppLayoutRoute><Dashboard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/sales-report" element={<ProtectedRoute><AppLayoutRoute><SalesReport /></AppLayoutRoute></ProtectedRoute>} />
