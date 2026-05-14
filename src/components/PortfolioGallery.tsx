@@ -1,32 +1,46 @@
-import { useState, useEffect } from 'react';
-import { X, ChevronLeft, ChevronRight, Camera, ImageOff } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { X, ChevronLeft, ChevronRight, Camera, ImageOff, ExternalLink } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router';
 
-interface SampleImage {
-  url: string;
+interface PortfolioImage {
   name: string;
+  url: string;
 }
 
 export default function PortfolioGallery() {
-  const [images, setImages] = useState<SampleImage[]>([]);
+  const [images, setImages] = useState<PortfolioImage[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    // Load sample images from the public/samples folder
-    const sampleNames = [
-      '1f608e4b-cee6-4069-8b6f-71ebc58b3d3e.jpg',
-      '929ce640-0d58-4597-8191-69e557286a4e.jpg',
-      'abbd3a9e-bea3-43b7-a808-34c426fab15d.jpg',
-      '4336db6d-972e-4b85-b621-8675601b4826.jpg',
-      'a33a1a17-0438-4e6a-aee8-0b7854f9099c.jpg',
-      'bc-ai-sample-1.jpg',
-    ];
-    setImages(sampleNames.map((name) => ({
-      url: `/samples/${name}`,
-      name,
-    })));
-    setLoading(false);
+  const loadImages = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.storage
+        .from("portfolio")
+        .list("", { sortBy: { column: "created_at", order: "desc" } });
+
+      if (error) throw error;
+
+      const portfolioImages: PortfolioImage[] = (data || [])
+        .filter((f) => f.metadata?.mimetype?.startsWith("image/"))
+        .map((f) => {
+          const { data: urlData } = supabase.storage
+            .from("portfolio")
+            .getPublicUrl(f.name);
+          return { name: f.name, url: urlData.publicUrl };
+        });
+
+      setImages(portfolioImages);
+    } catch (err) {
+      console.error("Error loading portfolio images:", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    loadImages();
+  }, [loadImages]);
 
   const openLightbox = (index: number) => setSelectedIndex(index);
   const closeLightbox = () => setSelectedIndex(null);
@@ -57,7 +71,14 @@ export default function PortfolioGallery() {
     return (
       <div className="text-center py-16 bg-gray-50 rounded-2xl border border-gray-200">
         <ImageOff className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-        <p className="text-gray-500 font-medium">No images available</p>
+        <p className="text-gray-500 font-medium">No portfolio images yet</p>
+        <Link
+          to="/upload"
+          className="inline-flex items-center gap-1.5 mt-3 text-sm text-blue-600 hover:text-blue-700 font-medium"
+        >
+          <ExternalLink className="w-3.5 h-3.5" />
+          Upload images
+        </Link>
       </div>
     );
   }
@@ -133,7 +154,7 @@ export default function PortfolioGallery() {
             />
             <div className="flex items-center justify-between mt-4 px-2">
               <p className="text-white/70 text-sm">
-                {images[selectedIndex].name.replace(/\.[^/.]+$/, '')}
+                {images[selectedIndex].name.replace(/\\.[^/.]+$/, '')}
               </p>
               <p className="text-white/50 text-sm">
                 {selectedIndex + 1} / {images.length}
