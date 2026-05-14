@@ -313,21 +313,16 @@ function AdminAssetManager() {
         continue;
       }
 
-      // Get signed URL for private bucket
-      const { data: signedData, error: signedError } = await supabase.storage
+      // Get public URL
+      const { data: urlData } = supabase.storage
         .from("user_assets")
-        .createSignedUrl(fileName, 60 * 60 * 24 * 365); // 1 year expiry
-
-      if (signedError || !signedData) {
-        errorMessages.push(`${file.name}: Failed to generate access URL`);
-        continue;
-      }
+        .getPublicUrl(fileName);
 
       // Insert record in user_assets table
       const { error: dbError } = await supabase.from("user_assets").insert({
         user_id: selectedUserId,
         file_name: file.name,
-        file_url: signedData.signedUrl,
+        file_url: urlData.publicUrl,
         file_type: fileType,
         file_size: file.size,
         mime_type: file.type,
