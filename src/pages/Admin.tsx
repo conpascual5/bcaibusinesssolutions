@@ -3,6 +3,7 @@ import { useNavigate } from "react-router";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import AdminSupportInbox from "@/components/AdminSupportInbox";
+import AdminDashboard from "@/components/AdminDashboard";
 import {
   Users,
   Settings,
@@ -30,6 +31,7 @@ import {
   Loader2,
   Download,
   ExternalLink,
+  Activity,
 } from "lucide-react";
 
 type ProfileRow = {
@@ -545,7 +547,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"users" | "assets" | "support" | "settings">("users");
+  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings">("dashboard");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -689,6 +691,15 @@ export default function Admin() {
 
         <div className="flex items-center gap-1.5 bg-card p-1 rounded-xl border border-border w-fit mb-8">
           <button
+            onClick={() => setActiveSection("dashboard")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "dashboard" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Activity className="w-4 h-4 stroke-[1.5]" />
+            Dashboard
+          </button>
+          <button
             onClick={() => setActiveSection("users")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeSection === "users" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -725,6 +736,8 @@ export default function Admin() {
             Settings
           </button>
         </div>
+
+        {activeSection === "dashboard" && <AdminDashboard />}
 
         {activeSection === "users" && (
           <div className="bg-card rounded-2xl border border-border overflow-hidden">
