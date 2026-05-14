@@ -39,7 +39,7 @@ const services = [
 ];
 
 export default function ChatWidget() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [message, setMessage] = useState("");
   const [showServices, setShowServices] = useState(true);
@@ -50,19 +50,35 @@ export default function ChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const followUpTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
+  const api = (path: string, options?: RequestInit) =>
+    fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
+
   // Load messages when chat opens
   useEffect(() => {
-    if (!isOpen || !user) return;
+    if (!isOpen || !user || !token) return;
 
     const load = async () => {
-      const { data } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(100);
-
-      setMessages((data as ChatMessage[]) || []);
+      try {
+        const res = await api("/api/chat/messages");
+        const data = await res.json();
+        setMessages(data.messages || []);
+      } catch {
+        // fallback to direct Supabase
+        const { data } = await supabase
+          .from("chat_messages")
+          .select("*")
+          .eq("user_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(100);
+        setMessages((data as ChatMessage[]) || []);
+      }
     };
 
     load();
@@ -87,7 +103,7 @@ export default function ChatWidget() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [isOpen, user]);
+  }, [isOpen, user, token]);
 
   // Auto follow-up messages
   useEffect(() => {
@@ -124,22 +140,20 @@ export default function ChatWidget() {
   }, [messages, followUps]);
 
   const handleSend = async (text: string) => {
-    if (!text.trim() || !user || sending) return;
+    if (!text.trim() || !user || !token || sending) return;
     setSending(true);
     setSendError(null);
 
     try {
-      const { error } = await supabase.from("chat_messages").insert({
-        user_id: user.id,
-        user_name: user.name || user.email?.split("@")[0] || "User",
-        user_email: user.email || "",
-        message: text.trim(),
-        is_admin: false,
-        is_read: false,
+      const res = await api("/api/chat/send", {
+        method: "POST",
+        body: JSON.stringify({ message: text.trim() }),
       });
 
-      if (error) {
-        setSendError(error.message || "Failed to send message.");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setSendError(data.error || "Failed to send message.");
       } else {
         setMessage("");
         setShowServices(false);

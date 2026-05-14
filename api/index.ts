@@ -396,6 +396,171 @@ app.post("/api/analyze-copy", async (c) => {
   }
 });
 
+// ─── Chat API ────────────────────────────────────────────────────────
+app.post("/api/chat/send", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient(token);
+    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    if (ue || !user) return c.json({ error: "Invalid token" }, 401);
+
+    const { message: msg } = await c.req.json();
+    if (!msg?.trim()) return c.json({ error: "Message is required" }, 400);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, email")
+      .eq("id", user.id)
+      .single();
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .insert({
+        user_id: user.id,
+        user_name: profile?.full_name || user.email?.split("@")[0] || "User",
+        user_email: profile?.email || user.email || "",
+        message: msg.trim(),
+        is_admin: false,
+        is_read: false,
+      })
+      .select()
+      .single();
+
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ success: true, message: data });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to send message" }, 500);
+  }
+});
+
+app.get("/api/chat/messages", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient(token);
+    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    if (ue || !user) return c.json({ error: "Invalid token" }, 401);
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ messages: data || [] });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to fetch messages" }, 500);
+  }
+});
+
+app.get("/api/chat/admin/conversations", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient(token);
+    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    if (ue || !user) return c.json({ error: "Invalid token" }, 401);
+
+    // Check if admin
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) return c.json({ error: "Admin access required" }, 403);
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ messages: data || [] });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to fetch conversations" }, 500);
+  }
+});
+
+app.post("/api/chat/admin/reply", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient(token);
+    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    if (ue || !user) return c.json({ error: "Invalid token" }, 401);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin, email")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) return c.json({ error: "Admin access required" }, 403);
+
+    const { userId, message: msg } = await c.req.json();
+    if (!userId || !msg?.trim()) return c.json({ error: "userId and message are required" }, 400);
+
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .insert({
+        user_id: userId,
+        user_name: "Admin",
+        user_email: profile.email || user.email || "admin@bcai.com",
+        message: msg.trim(),
+        is_admin: true,
+        is_read: true,
+      })
+      .select()
+      .single();
+
+    if (error) return c.json({ error: error.message }, 500);
+    return c.json({ success: true, message: data });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to send reply" }, 500);
+  }
+});
+
+app.post("/api/chat/admin/mark-read", async (c) => {
+  try {
+    const authHeader = c.req.header("Authorization");
+    if (!authHeader) return c.json({ error: "Unauthorized" }, 401);
+    const token = authHeader.replace("Bearer ", "");
+    const supabase = getSupabaseClient(token);
+    const { data: { user }, error: ue } = await supabase.auth.getUser(token);
+    if (ue || !user) return c.json({ error: "Invalid token" }, 401);
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_admin")
+      .eq("id", user.id)
+      .single();
+
+    if (!profile?.is_admin) return c.json({ error: "Admin access required" }, 403);
+
+    const { userId } = await c.req.json();
+    if (!userId) return c.json({ error: "userId is required" }, 400);
+
+    await supabase
+      .from("chat_messages")
+      .update({ is_read: true })
+      .eq("user_id", userId)
+      .eq("is_admin", false)
+      .eq("is_read", false);
+
+    return c.json({ success: true });
+  } catch (err: any) {
+    return c.json({ error: err.message || "Failed to mark as read" }, 500);
+  }
+});
+
 // ─── Promote/Reactivate admin ────────────────────────────────────────
 app.post("/api/promote-admin", async (c) => {
   try {

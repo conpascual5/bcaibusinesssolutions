@@ -36,7 +36,7 @@ function timeAgo(ts: string) {
 }
 
 export default function AdminSupportInbox() {
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -47,65 +47,122 @@ export default function AdminSupportInbox() {
 
   const canUse = !!user?.isAdmin;
 
+  const api = (path: string, options?: RequestInit) =>
+    fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
+
   const loadConversations = async () => {
-    if (!canUse) return;
+    if (!canUse || !token) return;
     setLoading(true);
 
-    const { data } = await supabase
-      .from("chat_messages")
-      .select("*")
-      .order("created_at", { ascending: false });
+    try {
+      const res = await api("/api/chat/admin/conversations");
+      const data = await res.json();
+      const rows = data.messages || [];
 
-    const rows = (data as ChatMessage[]) || [];
-
-    const convMap = new Map<string, Conversation>();
-    for (const msg of rows) {
-      if (!convMap.has(msg.user_id)) {
-        convMap.set(msg.user_id, {
-          user_id: msg.user_id,
-          user_name: msg.user_name,
-          user_email: msg.user_email,
-          last_message: msg.message,
-          last_time: msg.created_at,
-          unread: !msg.is_admin && !msg.is_read ? 1 : 0,
-        });
-      } else {
-        const existing = convMap.get(msg.user_id)!;
-        if (!msg.is_admin && !msg.is_read) {
-          existing.unread += 1;
+      const convMap = new Map<string, Conversation>();
+      for (const msg of rows) {
+        if (!convMap.has(msg.user_id)) {
+          convMap.set(msg.user_id, {
+            user_id: msg.user_id,
+            user_name: msg.user_name,
+            user_email: msg.user_email,
+            last_message: msg.message,
+            last_time: msg.created_at,
+            unread: !msg.is_admin && !msg.is_read ? 1 : 0,
+          });
+        } else {
+          const existing = convMap.get(msg.user_id)!;
+          if (!msg.is_admin && !msg.is_read) {
+            existing.unread += 1;
+          }
         }
       }
-    }
 
-    const convs = Array.from(convMap.values()).sort(
-      (a, b) => new Date(b.last_time).getTime() - new Date(a.last_time).getTime()
-    );
+      const convs = Array.from(convMap.values()).sort(
+        (a, b) => new Date(b.last_time).getTime() - new Date(a.last_time).getTime()
+      );
 
-    setConversations(convs);
+      setConversations(convs);
 
-    if (!selectedUserId && convs.length > 0) {
-      setSelectedUserId(convs[0].user_id);
+      if (!selectedUserId && convs.length > 0) {
+        setSelectedUserId(convs[0].user_id);
+      }
+    } catch {
+      // fallback to direct Supabase
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      const rows = (data as ChatMessage[]) || [];
+      const convMap = new Map<string, Conversation>();
+      for (const msg of rows) {
+        if (!convMap.has(msg.user_id)) {
+          convMap.set(msg.user_id, {
+            user_id: msg.user_id,
+            user_name: msg.user_name,
+            user_email: msg.user_email,
+            last_message: msg.message,
+            last_time: msg.created_at,
+            unread: !msg.is_admin && !msg.is_read ? 1 : 0,
+          });
+        } else {
+          const existing = convMap.get(msg.user_id)!;
+          if (!msg.is_admin && !msg.is_read) {
+            existing.unread += 1;
+          }
+        }
+      }
+      const convs = Array.from(convMap.values()).sort(
+        (a, b) => new Date(b.last_time).getTime() - new Date(a.last_time).getTime()
+      );
+      setConversations(convs);
+      if (!selectedUserId && convs.length > 0) {
+        setSelectedUserId(convs[0].user_id);
+      }
     }
 
     setLoading(false);
   };
 
   const loadMessages = async (userId: string) => {
-    const { data } = await supabase
-      .from("chat_messages")
-      .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: true });
+    if (!token) return;
 
-    setMessages((data as ChatMessage[]) || []);
+    try {
+      const res = await api(`/api/chat/admin/conversations`);
+      const data = await res.json();
+      const all = (data.messages || []) as ChatMessage[];
+      const filtered = all.filter((m) => m.user_id === userId).sort(
+        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+      setMessages(filtered);
 
-    // Mark user messages as read
-    await supabase
-      .from("chat_messages")
-      .update({ is_read: true })
-      .eq("user_id", userId)
-      .eq("is_admin", false)
-      .eq("is_read", false);
+      // Mark as read
+      await api("/api/chat/admin/mark-read", {
+        method: "POST",
+        body: JSON.stringify({ userId }),
+      });
+    } catch {
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: true });
+      setMessages((data as ChatMessage[]) || []);
+      await supabase
+        .from("chat_messages")
+        .update({ is_read: true })
+        .eq("user_id", userId)
+        .eq("is_admin", false)
+        .eq("is_read", false);
+    }
 
     setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
   };
@@ -114,13 +171,13 @@ export default function AdminSupportInbox() {
     if (!canUse) return;
     loadConversations();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canUse]);
+  }, [canUse, token]);
 
   useEffect(() => {
     if (!selectedUserId) return;
     loadMessages(selectedUserId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedUserId]);
+  }, [selectedUserId, token]);
 
   // Subscribe to new messages
   useEffect(() => {
@@ -142,24 +199,32 @@ export default function AdminSupportInbox() {
       supabase.removeChannel(channel);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canUse, selectedUserId]);
+  }, [canUse, selectedUserId, token]);
 
   const send = async () => {
-    if (!selectedUserId || !user) return;
+    if (!selectedUserId || !user || !token) return;
     const content = input.trim();
     if (!content) return;
 
     setSending(true);
     setInput("");
 
-    await supabase.from("chat_messages").insert({
-      user_id: selectedUserId,
-      user_name: "Admin",
-      user_email: user.email || "admin@bcai.com",
-      message: content,
-      is_admin: true,
-      is_read: true,
-    });
+    try {
+      await api("/api/chat/admin/reply", {
+        method: "POST",
+        body: JSON.stringify({ userId: selectedUserId, message: content }),
+      });
+    } catch {
+      // fallback
+      await supabase.from("chat_messages").insert({
+        user_id: selectedUserId,
+        user_name: "Admin",
+        user_email: user.email || "admin@bcai.com",
+        message: content,
+        is_admin: true,
+        is_read: true,
+      });
+    }
 
     setSending(false);
     await loadMessages(selectedUserId);
