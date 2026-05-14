@@ -340,7 +340,7 @@ export default function Landing() {
                   {
                     step: "1",
                     title: "Secure Payment",
-                    desc: "Pay securely via GCash or GoTyme. Your payment confirms your order and activates your account.",
+                    desc: "Pay securely via GCash or GoTyme. Your payment confirms your order. After payment, your BC AI Marketing Tool account will update within 12 hours.",
                     color: "bg-emerald-500",
                   },
                   {
@@ -397,6 +397,10 @@ export default function Landing() {
                   {
                     q: "Can I cancel after payment?",
                     a: "If we haven't started working on your order yet, we can process a full refund. Once work has begun, cancellations are handled on a case-by-case basis. Message us on Facebook for assistance.",
+                  },
+                  {
+                    q: "When will my account be activated after payment?",
+                    a: "After your payment is confirmed, your BC AI Marketing Tool account will update within 12 hours. You'll then have full access to your upgraded plan features.",
                   },
                 ].map((faq, i) => (
                   <details key={i} className="group bg-white rounded-xl border border-gray-100 overflow-hidden">
