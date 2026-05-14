@@ -70,7 +70,7 @@ export default function App() {
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />
         <Route path="/setup" element={<Setup />} />
-        <Route path="/upload" element={<Upload />} />
+        <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
       </Routes>
       <SupportChatWidget />
     </>
