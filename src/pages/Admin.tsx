@@ -374,7 +374,7 @@ function AdminAssetManager() {
               <option value="">— Choose a user —</option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
-                  {u.full_name || u.email || u.id}
+                  {u.email || u.full_name || u.id}
                 </option>
               ))}
             </select>
