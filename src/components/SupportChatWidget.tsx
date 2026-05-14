@@ -1,186 +1,145 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MessageSquare, Send, X, Sparkles, Crown } from "lucide-react";
 import { useAuth } from "@/providers/auth";
+import { supabase } from "@/integrations/supabase/client";
 
-type ChatRow = { id: number; title: string };
-
-type MessageRow = {
+type ChatMessage = {
   id: number;
-  chat_id: number;
-  role: "user" | "assistant";
-  content: string;
+  user_id: string;
+  user_name: string;
+  user_email: string;
+  message: string;
+  is_admin: boolean;
+  is_read: boolean;
   created_at: string;
 };
-
-const SUPPORT_TITLE = "Support";
-
-async function trpcCall<T>(method: "GET" | "POST", path: string, token: string, body?: unknown): Promise<T> {
-  // tRPC v11 with superjson transformer requires input wrapped in { json, meta }
-  const inputPayload = body !== undefined
-    ? { json: body, meta: { values: ["undefined"] } }
-    : { json: null, meta: { values: ["undefined"] } };
-
-  const url = method === "GET"
-    ? `/api/trpc/${path}?input=${encodeURIComponent(JSON.stringify(inputPayload))}`
-    : `/api/trpc/${path}`;
-
-  const res = await fetch(url, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: method === "POST" ? JSON.stringify(inputPayload) : undefined,
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    let msg = `HTTP ${res.status}`;
-    try {
-      const json = JSON.parse(text);
-      msg = json?.error?.message ?? json?.error?.[0]?.message ?? msg;
-    } catch {}
-    throw new Error(msg);
-  }
-
-  const json = await res.json();
-  console.log("[SupportChat] trpc response", { path, method, json });
-
-  // tRPC v11 with superjson transformer wraps data in result.data.json
-  // For queries: { result: { data: { json: actualData, meta: {...} } } }
-  // For mutations: { result: { data: { json: actualData, meta: {...} } } }
-  // Fallback: try result.data.json, then result.data, then the raw json
-  const data = json?.result?.data?.json ?? json?.result?.data ?? json;
-  return data as T;
-}
 
 export default function SupportChatWidget() {
   const { token, user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [chatId, setChatId] = useState<number | null>(null);
-  const [messages, setMessages] = useState<MessageRow[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
+  const [sendError, setSendError] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const enabled = !!user && !!token;
 
-  useEffect(() => {
-    if (!open) return;
-    setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
-  }, [open, messages.length]);
+  const api = (path: string, options?: RequestInit) =>
+    fetch(path, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...options?.headers,
+      },
+    });
 
-  const headerNote = useMemo(() => {
-    const plan = user?.plan ?? "free";
-    if (plan === "free") {
-      return "Free access: 3 total generations. Message us to activate / upgrade.";
-    }
-    if (plan === "vip") {
-      return "VIP access: 100 generations/month. Message us anytime if something is wrong.";
-    }
-    return "Pro access: 500 generations/month. Message us anytime if something is wrong.";
-  }, [user?.plan]);
-
-  const ensureSupportChat = async (): Promise<number> => {
-    if (!token) throw new Error("Not authenticated");
-
-    // 1) List chats (GET query) and find existing Support chat
-    const list = await trpcCall<ChatRow[]>("GET", "chat.list", token, {});
-    const existing = list.find((c) => String(c.title || "").toLowerCase() === SUPPORT_TITLE.toLowerCase());
-    if (existing?.id) return Number(existing.id);
-
-    // 2) Create support chat (POST mutation)
-    const created = await trpcCall<ChatRow>("POST", "chat.create", token, { title: SUPPORT_TITLE });
-    if (!created?.id) throw new Error("Failed to create support chat");
-    return created.id;
-  };
-
-  const loadMessages = async (id: number) => {
-    if (!token) return;
-    const data = await trpcCall<MessageRow[]>("GET", "chat.getMessages", token, { chatId: id });
-    setMessages(data ?? []);
-  };
-
-  const openChat = async () => {
-    if (!enabled) return;
-    setOpen(true);
-    setLoading(true);
+  const loadMessages = async () => {
+    if (!token || !user) return;
     try {
-      const id = await ensureSupportChat();
-      setChatId(id);
-      await loadMessages(id);
-    } finally {
-      setLoading(false);
+      const res = await api("/api/chat/messages");
+      const data = await res.json();
+      setMessages(data.messages || []);
+    } catch {
+      const { data } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(100);
+      setMessages((data as ChatMessage[]) || []);
     }
   };
+
+  useEffect(() => {
+    if (!open || !user || !token) return;
+    setLoading(true);
+    loadMessages().finally(() => setLoading(false));
+
+    const channel = supabase
+      .channel("support-chat")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "chat_messages",
+          filter: `user_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const newMsg = payload.new as ChatMessage;
+          setMessages((prev) => [newMsg, ...prev]);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, user, token]);
+
+  useEffect(() => {
+    setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
+  }, [messages.length]);
 
   const send = async () => {
-    if (!chatId || !token) return;
+    if (!token || !user) return;
     const content = input.trim();
     if (!content) return;
 
     setInput("");
+    setSendError(null);
+
+    // Optimistic add
+    const tempId = Date.now();
     setMessages((m) => [
-      ...m,
       {
-        id: Date.now(),
-        chat_id: chatId,
-        role: "user",
-        content,
+        id: tempId,
+        user_id: user.id,
+        user_name: user.name,
+        user_email: user.email,
+        message: content,
+        is_admin: false,
+        is_read: false,
         created_at: new Date().toISOString(),
       },
+      ...m,
     ]);
 
     try {
-      const data = await trpcCall<any>("POST", "chat.sendMessage", token, { chatId, content });
+      const res = await api("/api/chat/send", {
+        method: "POST",
+        body: JSON.stringify({ message: content }),
+      });
 
-      if (data?.saved) {
-        if (data?.aiReply?.content) {
-          setMessages((m) => [
-            ...m,
-            {
-              id: Date.now() + 1,
-              chat_id: chatId,
-              role: "assistant",
-              content: String(data.aiReply.content),
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        }
-      } else {
-        setMessages((m) => [
-          ...m,
-          {
-            id: Date.now() + 1,
-            chat_id: chatId,
-            role: "assistant",
-            content: "⚠️ Message failed to send",
-            created_at: new Date().toISOString(),
-          },
-        ]);
+      if (!res.ok) {
+        const data = await res.json();
+        setSendError(data.error || "Failed to send message.");
       }
-    } catch (err) {
-      setMessages((m) => [
-        ...m,
-        {
-          id: Date.now() + 1,
-          chat_id: chatId,
-          role: "assistant",
-          content: `⚠️ ${err instanceof Error ? err.message : "Unknown error"}`,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+    } catch (err: any) {
+      setSendError(err?.message || "An unexpected error occurred.");
     }
   };
 
+  const headerNote = (() => {
+    const plan = user?.plan ?? "free";
+    if (plan === "free") return "Free access: 3 total generations. Message us to activate / upgrade.";
+    if (plan === "vip") return "VIP access: 100 generations/month. Message us anytime if something is wrong.";
+    return "Pro access: 500 generations/month. Message us anytime if something is wrong.";
+  })();
+
   if (!user) return null;
+
+  const sortedMessages = [...messages].reverse();
 
   return (
     <>
       {/* Bubble */}
       <button
         type="button"
-        onClick={() => (open ? setOpen(false) : void openChat())}
+        onClick={() => setOpen((o) => !o)}
         className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white flex items-center justify-center"
         title="Message Support"
       >
@@ -218,19 +177,25 @@ export default function SupportChatWidget() {
           <div ref={listRef} className="max-h-[360px] overflow-y-auto p-4 space-y-3 bg-white">
             {loading ? (
               <div className="text-sm text-slate-500">Loading chat…</div>
-            ) : messages.length === 0 ? (
+            ) : sortedMessages.length === 0 ? (
               <div className="text-sm text-slate-500">Send us a message to get started.</div>
             ) : (
-              messages.map((m) => (
-                <div key={m.id} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              sortedMessages.map((m) => (
+                <div key={m.id} className={m.is_admin ? "flex justify-start" : "flex justify-end"}>
                   <div
                     className={
-                      m.role === "user"
-                        ? "max-w-[85%] rounded-3xl rounded-br-lg bg-indigo-600 text-white px-4 py-3 text-sm leading-relaxed shadow-sm"
-                        : "max-w-[85%] rounded-3xl rounded-bl-lg bg-slate-100 text-slate-900 px-4 py-3 text-sm leading-relaxed"
+                      m.is_admin
+                        ? "max-w-[85%] rounded-3xl rounded-bl-lg bg-slate-100 text-slate-900 px-4 py-3 text-sm leading-relaxed"
+                        : "max-w-[85%] rounded-3xl rounded-br-lg bg-indigo-600 text-white px-4 py-3 text-sm leading-relaxed shadow-sm"
                     }
                   >
-                    {m.content}
+                    {m.message}
+                    <p className={`text-[10px] mt-1 ${m.is_admin ? "text-gray-400" : "text-indigo-200"}`}>
+                      {new Date(m.created_at).toLocaleTimeString("en-PH", {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </p>
                   </div>
                 </div>
               ))
@@ -238,10 +203,18 @@ export default function SupportChatWidget() {
           </div>
 
           <div className="p-3 border-t border-slate-100 bg-white">
+            {sendError && (
+              <div className="mb-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+                {sendError}
+              </div>
+            )}
             <div className="flex items-end gap-2">
               <textarea
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  setSendError(null);
+                }}
                 placeholder={enabled ? "Type your message…" : "Please log in to message support"}
                 disabled={!enabled}
                 rows={2}
