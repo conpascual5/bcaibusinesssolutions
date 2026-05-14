@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { MessageSquare, Send, X, Sparkles, Crown } from "lucide-react";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { MessageSquare, Send, X, Sparkles, Crown, RefreshCw } from "lucide-react";
 import { useAuth } from "@/providers/auth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -18,6 +18,7 @@ export default function SupportChatWidget() {
   const { token, user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [sendError, setSendError] = useState<string | null>(null);
@@ -35,7 +36,7 @@ export default function SupportChatWidget() {
       },
     });
 
-  const loadMessages = async () => {
+  const loadMessages = useCallback(async () => {
     if (!token || !user) return;
     try {
       const res = await api("/api/chat/messages");
@@ -50,6 +51,12 @@ export default function SupportChatWidget() {
         .limit(100);
       setMessages((data as ChatMessage[]) || []);
     }
+  }, [token, user]);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadMessages();
+    setTimeout(() => setRefreshing(false), 600);
   };
 
   useEffect(() => {
@@ -57,6 +64,7 @@ export default function SupportChatWidget() {
     setLoading(true);
     loadMessages().finally(() => setLoading(false));
 
+    // Real-time subscription
     const channel = supabase
       .channel("support-chat")
       .on(
@@ -74,11 +82,16 @@ export default function SupportChatWidget() {
       )
       .subscribe();
 
+    // Periodic auto-refresh every 10 seconds as a fallback
+    const interval = setInterval(() => {
+      loadMessages();
+    }, 10000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(interval);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, user, token]);
+  }, [open, user, token, loadMessages]);
 
   useEffect(() => {
     setTimeout(() => listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" }), 50);
@@ -151,20 +164,29 @@ export default function SupportChatWidget() {
         <div className="fixed bottom-24 right-6 z-50 w-[min(420px,calc(100vw-2.5rem))] rounded-3xl border border-slate-200 bg-white shadow-2xl overflow-hidden">
           <div className="p-4 border-b border-slate-100 bg-slate-50">
             <div className="flex items-start justify-between gap-3">
-              <div>
+              <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-sm font-extrabold text-slate-900">Support Chat</p>
-                    <p className="text-xs text-slate-600">Report issues, request activation, or ask questions.</p>
+                    <p className="text-xs text-slate-600 truncate">Report issues, request activation, or ask questions.</p>
                   </div>
                 </div>
                 <p className="mt-2 text-xs text-slate-500">{headerNote}</p>
               </div>
 
-              <div className="shrink-0">
+              <div className="shrink-0 flex items-start gap-1.5">
+                <button
+                  type="button"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="h-8 w-8 rounded-full border border-slate-200 bg-white flex items-center justify-center hover:bg-slate-50 disabled:opacity-50"
+                  title="Refresh messages"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-slate-500 ${refreshing ? "animate-spin" : ""}`} />
+                </button>
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-700">
                   {user.plan === "pro" ? <Crown className="w-3.5 h-3.5 text-amber-500" /> : null}
                   {user.plan === "vip" ? <Sparkles className="w-3.5 h-3.5 text-purple-600" /> : null}
@@ -180,7 +202,13 @@ export default function SupportChatWidget() {
             ) : sortedMessages.length === 0 ? (
               <div className="text-sm text-slate-500">Send us a message to get started.</div>
             ) : (
-              sortedMessages.map((m) => (
+              <>
+                <div className="text-center mb-2">
+                  <span className="text-[10px] text-slate-400 italic">
+                    Chat refreshes automatically. If you don't see new replies, tap the refresh button above.
+                  </span>
+                </div>
+                {sortedMessages.map((m) => (
                 <div key={m.id} className={m.is_admin ? "flex justify-start" : "flex justify-end"}>
                   <div
                     className={
@@ -198,7 +226,8 @@ export default function SupportChatWidget() {
                     </p>
                   </div>
                 </div>
-              ))
+              ))}
+              </>
             )}
           </div>
 
