@@ -241,6 +241,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "Priority live chat support",
                   "Customize 30 product images",
+                  "📦 Delivery: Submit your images/theme after payment — receive your content in 2–3 business days",
                   "Subject to fair usage policy",
                 ],
               },
@@ -258,6 +259,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "Priority live chat support",
                   "1 30-60 UGC or Cinematic Video Ad",
+                  "📦 Delivery: Submit your script after payment — receive your video in 2–3 business days",
                   "Subject to fair usage policy",
                 ],
               },
@@ -328,6 +330,84 @@ export default function Landing() {
               </AnimatedSection>
             ))}
           </div>
+
+          {/* What Happens Next — 1-2-3 Steps */}
+          <AnimatedSection delay={500} direction="up">
+            <div className="mt-12 bg-white rounded-3xl border border-gray-100 p-8 shadow-sm">
+              <h3 className="text-xl font-extrabold text-gray-900 text-center mb-8">What Happens After You Upgrade?</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {[
+                  {
+                    step: "1",
+                    title: "Secure Payment",
+                    desc: "Pay securely via GCash, Maya, or bank transfer. Your payment confirms your order and starts the process.",
+                    color: "bg-emerald-500",
+                  },
+                  {
+                    step: "2",
+                    title: "Submit Your Assets",
+                    desc: "Upload your product images and theme preferences (Pro) or your script (Pro Plus) through the app or message us on Facebook.",
+                    color: "bg-amber-500",
+                  },
+                  {
+                    step: "3",
+                    title: "Receive Your Content",
+                    desc: "We'll deliver your customized product images or video ad within 2–3 business days. We'll notify you as soon as it's ready.",
+                    color: "bg-purple-500",
+                  },
+                ].map((item, i) => (
+                  <div key={i} className="text-center">
+                    <div className={`w-14 h-14 ${item.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                      <span className="text-xl font-extrabold text-white">{item.step}</span>
+                    </div>
+                    <h4 className="font-bold text-gray-900 mb-1.5">{item.title}</h4>
+                    <p className="text-sm text-gray-500 leading-relaxed">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* FAQ Section */}
+          <AnimatedSection delay={550} direction="up">
+            <div className="mt-8 bg-gradient-to-br from-gray-50 to-white rounded-3xl border border-gray-200 p-8">
+              <h3 className="text-xl font-extrabold text-gray-900 text-center mb-6">Frequently Asked Questions</h3>
+              <div className="max-w-3xl mx-auto space-y-4">
+                {[
+                  {
+                    q: "Do I need to pay first before you start working?",
+                    a: "Yes. We operate on a payment-first policy. Once your payment is confirmed, we begin processing your order immediately. This ensures we can dedicate our full attention to your project.",
+                  },
+                  {
+                    q: "How long does it take to receive my content?",
+                    a: "Standard delivery is 2–3 business days after payment confirmation and asset submission. If you need it sooner, message us on Facebook and we'll see what we can do.",
+                  },
+                  {
+                    q: "What if I need revisions?",
+                    a: "We respond to all inquiries within 24 hours. If you need changes to your delivered content, simply reach out through the app's live chat or our Facebook page and we'll work with you to get it right.",
+                  },
+                  {
+                    q: "What payment methods do you accept?",
+                    a: "We accept GCash, Maya, and bank transfers. All prices are in Philippine Pesos (PHP).",
+                  },
+                  {
+                    q: "Can I cancel after payment?",
+                    a: "If we haven't started working on your order yet, we can process a full refund. Once work has begun, cancellations are handled on a case-by-case basis. Message us on Facebook for assistance.",
+                  },
+                ].map((faq, i) => (
+                  <details key={i} className="group bg-white rounded-xl border border-gray-100 overflow-hidden">
+                    <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors list-none">
+                      {faq.q}
+                      <ChevronRight className="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform flex-shrink-0" />
+                    </summary>
+                    <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed border-t border-gray-100 pt-3">
+                      {faq.a}
+                    </div>
+                  </details>
+                ))}
+              </div>
+            </div>
+          </AnimatedSection>
 
           {/* Note about product images & video ads */}
           <AnimatedSection delay={600} direction="up">
