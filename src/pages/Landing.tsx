@@ -198,6 +198,140 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Plans Section */}
+      <section id="plans" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
+        <div className="max-w-6xl mx-auto">
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" /> Pricing Plans
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Choose Your Plan</h2>
+              <p className="text-gray-500 mt-3 max-w-xl mx-auto">Start free and upgrade when you need more. All plans are subject to a fair usage policy.</p>
+            </div>
+          </AnimatedSection>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+            {[
+              {
+                name: "Free",
+                price: "0",
+                icon: Sparkles,
+                gradient: "from-gray-400 to-gray-500",
+                popular: false,
+                features: [
+                  "Sales Report — unlimited & free",
+                  "Invoice Generator — unlimited & free",
+                  "3 trial generations for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+                  "Live chat support",
+                  "Subject to fair usage policy",
+                ],
+              },
+              {
+                name: "Pro",
+                price: "499",
+                period: "/month",
+                icon: Sparkles,
+                gradient: "from-amber-400 to-orange-500",
+                popular: false,
+                features: [
+                  "500 generations per month",
+                  "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+                  "Sales Report — unlimited & free",
+                  "Invoice Generator — unlimited & free",
+                  "Priority live chat support",
+                  "30 product images included — view & download in My Assets",
+                  "Subject to fair usage policy",
+                ],
+              },
+              {
+                name: "Pro Plus",
+                price: "999",
+                period: "/month",
+                icon: Sparkles,
+                gradient: "from-rose-500 to-pink-600",
+                popular: true,
+                features: [
+                  "500 generations per month",
+                  "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+                  "Sales Report — unlimited & free",
+                  "Invoice Generator — unlimited & free",
+                  "Priority live chat support",
+                  "30 product images included — view & download in My Assets",
+                  "1 UGC or Cinematic ad included — view & download in My Assets",
+                  "Subject to fair usage policy",
+                ],
+              },
+              {
+                name: "VIP",
+                price: "Exclusive",
+                icon: Sparkles,
+                gradient: "from-purple-500 to-indigo-600",
+                popular: false,
+                features: [
+                  "Exclusive for existing buyers of Static Images, Cinematic Ads & Website Creation",
+                  "100 generations per month for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
+                  "Sales Report — unlimited & free",
+                  "Invoice Generator — unlimited & free",
+                  "Dedicated live chat support",
+                  "Subject to fair usage policy",
+                ],
+              },
+            ].map((plan, i) => (
+              <AnimatedSection key={i} delay={i * 150} direction="up">
+                <div className={`relative bg-white rounded-3xl p-6 border-2 transition-all hover:shadow-lg ${
+                  plan.popular ? 'border-amber-300 shadow-xl shadow-amber-100' : 'border-gray-100 hover:border-gray-200'
+                }`}>
+                  {plan.popular && (
+                    <div className={`absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r ${plan.gradient} text-white rounded-full text-xs font-bold shadow-md flex items-center gap-1`}>
+                      <Sparkles className="w-3 h-3" />
+                      Most Popular
+                    </div>
+                  )}
+                  
+                  {/* Plan Header */}
+                  <div className="text-center mb-6">
+                    <h3 className="text-2xl font-extrabold text-gray-900">{plan.name}</h3>
+                    <div className="flex items-baseline justify-center gap-1 mt-2">
+                      {plan.name !== "VIP" && <span className="text-sm text-gray-400">PHP</span>}
+                      <span className="text-5xl font-extrabold text-gray-900">{plan.price}</span>
+                      {plan.period && <span className="text-sm text-gray-400">{plan.period}</span>}
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-3 mb-6">
+                    {plan.features.map((f, j) => (
+                      <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
+                        <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <Link
+                    to="/auth"
+                    className={`w-full py-3 rounded-xl font-bold text-center flex items-center justify-center gap-2 transition-all ${
+                      plan.popular
+                        ? `bg-gradient-to-r ${plan.gradient} text-white hover:opacity-90 shadow-md`
+                        : 'bg-gray-900 text-white hover:bg-gray-800'
+                    }`}
+                  >
+                    {plan.price === "0" ? "Get Started Free" : plan.name === "VIP" ? "Request Access" : "Upgrade Now"}
+                    <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section id="how" className="py-24 px-4 bg-gradient-to-b from-purple-50 to-blue-50">
         <div className="max-w-4xl mx-auto">
