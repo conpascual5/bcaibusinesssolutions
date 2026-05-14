@@ -192,9 +192,29 @@ const CONTENT_TYPE_INSTRUCTIONS: Record<string, string> = {
 };
 
 const LANGUAGE_INSTRUCTIONS: Record<string, string> = {
-  taglish: "IMPORTANT: Write the copy in TAGLISH (a natural mix of Tagalog and English). Use conversational Filipino phrases mixed with English terms.",
-  filipino: "IMPORTANT: Write the copy in PURE FILIPINO (Tagalog). Use deep, natural Filipino language. Avoid English words as much as possible.",
-  english: "IMPORTANT: Write the copy in PURE ENGLISH. Use professional, persuasive English language suitable for a global audience.",
+  taglish: `CRITICAL LANGUAGE INSTRUCTION — YOU MUST FOLLOW THIS EXACTLY:
+Write the ENTIRE copy in TAGLISH (Tagalog + English mix).
+- At least 70% of the text MUST be in Tagalog/Filipino words and phrases
+- The remaining can be in English business/marketing terms
+- Use conversational Filipino phrases like: "mga ka-", "kaya naman", "talaga", "naman", "po", "kasi", "diba", "kaya"
+- Examples of correct Taglish: "Mga ka-entrepreneur, gusto niyo bang dumami ang benta niyo? Ito ang solusyon!"
+- DO NOT write in pure English. DO NOT write in pure Filipino. Mix them naturally.
+- Think like a Filipino online seller talking to their customers on Facebook.`,
+  filipino: `CRITICAL LANGUAGE INSTRUCTION — YOU MUST FOLLOW THIS EXACTLY:
+Write the ENTIRE copy in PURE FILIPINO (Tagalog) language.
+- Use deep, natural Filipino words and phrases
+- AVOID English words as much as possible — translate marketing terms to Filipino
+- Use Filipino phrases like: "mga", "po", "talaga", "kaya", "ngunit", "samakatuwid", "gayunpaman"
+- Write like a native Filipino speaker talking to fellow Filipinos
+- DO NOT use English words unless there is absolutely no Filipino equivalent
+- The entire output must be in Filipino/Tagalog only`,
+  english: `CRITICAL LANGUAGE INSTRUCTION — YOU MUST FOLLOW THIS EXACTLY:
+Write the ENTIRE copy in PURE ENGLISH.
+- Use professional, persuasive English language
+- Suitable for a global/international audience
+- DO NOT use any Tagalog or Filipino words
+- Use standard American/British English spelling and grammar
+- Write like a professional English copywriter`,
 };
 
 app.post("/api/sales-wizard", async (c) => {
