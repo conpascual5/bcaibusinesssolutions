@@ -340,7 +340,7 @@ export default function Landing() {
                   {
                     step: "1",
                     title: "Secure Payment",
-                    desc: "Pay securely via GCash, Maya, or bank transfer. Your payment confirms your order and starts the process.",
+                    desc: "Pay securely via GCash or GoTyme. Your payment confirms your order and activates your account.",
                     color: "bg-emerald-500",
                   },
                   {
@@ -352,7 +352,7 @@ export default function Landing() {
                   {
                     step: "3",
                     title: "Receive Your Content",
-                    desc: "We'll deliver your customized product images or video ad within 2–3 business days. We'll notify you as soon as it's ready.",
+                    desc: "We'll deliver your customized product images or video ad within 2–3 business days. Your files will appear in the My Assets tab of your account.",
                     color: "bg-purple-500",
                   },
                 ].map((item, i) => (
@@ -388,7 +388,11 @@ export default function Landing() {
                   },
                   {
                     q: "What payment methods do you accept?",
-                    a: "We accept GCash, Maya, and bank transfers. All prices are in Philippine Pesos (PHP).",
+                    a: "We accept GCash and GoTyme for account activation and upgrades. All prices are in Philippine Pesos (PHP).",
+                  },
+                  {
+                    q: "Where will I receive my images or video?",
+                    a: "All delivered content appears in the My Assets tab inside your account. You can view and download your files anytime from there.",
                   },
                   {
                     q: "Can I cancel after payment?",
