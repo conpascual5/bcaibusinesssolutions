@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Users,
@@ -9,6 +9,7 @@ import {
   Star,
   TrendingUp,
   Activity,
+  RefreshCw,
 } from "lucide-react";
 
 type DashboardStats = {
@@ -24,44 +25,63 @@ type DashboardStats = {
 export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    (async () => {
+  const fetchStats = useCallback(async (showLoader: boolean) => {
+    if (showLoader) {
       setLoading(true);
-      setError(null);
-      try {
-        const { data, error: err } = await supabase
-          .from("profiles")
-          .select("is_active, plan");
+    } else {
+      setRefreshing(true);
+    }
+    setError(null);
+    try {
+      const { data, error: err } = await supabase
+        .from("profiles")
+        .select("is_active, plan");
 
-        if (err) {
-          setError(err.message);
-          return;
-        }
-
-        const rows = (data ?? []) as { is_active: boolean; plan: string }[];
-        const total = rows.length;
-        const active = rows.filter((r) => r.is_active).length;
-        const inactive = rows.filter((r) => !r.is_active).length;
-        const free = rows.filter((r) => r.plan === "free").length;
-        const pro = rows.filter((r) => r.plan === "pro").length;
-        const pro_plus = rows.filter((r) => r.plan === "pro_plus").length;
-        const vip = rows.filter((r) => r.plan === "vip").length;
-
-        setStats({ total, active, inactive, free, pro, pro_plus, vip });
-      } catch (err: any) {
-        setError(err?.message || "Failed to load stats");
-      } finally {
-        setLoading(false);
+      if (err) {
+        setError(err.message);
+        return;
       }
-    })();
+
+      const rows = (data ?? []) as { is_active: boolean; plan: string }[];
+      const total = rows.length;
+      const active = rows.filter((r) => r.is_active).length;
+      const inactive = rows.filter((r) => !r.is_active).length;
+      const free = rows.filter((r) => r.plan === "free").length;
+      const pro = rows.filter((r) => r.plan === "pro").length;
+      const pro_plus = rows.filter((r) => r.plan === "pro_plus").length;
+      const vip = rows.filter((r) => r.plan === "vip").length;
+
+      setStats({ total, active, inactive, free, pro, pro_plus, vip });
+    } catch (err: any) {
+      setError(err?.message || "Failed to load stats");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchStats(true);
+  }, [fetchStats]);
+
+  // Auto-refresh every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchStats(false);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [fetchStats]);
 
   if (loading) {
     return (
       <div className="bg-card rounded-2xl border border-border p-8">
-        <div className="text-sm text-muted-foreground">Loading dashboard…</div>
+        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+          <RefreshCw className="w-4 h-4 animate-spin" />
+          Loading dashboard…
+        </div>
       </div>
     );
   }
@@ -144,14 +164,16 @@ export default function AdminDashboard() {
             Dashboard Overview
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Real-time snapshot of all registered users.
+            Auto-refreshes every 15 seconds.
           </p>
         </div>
         <button
-          onClick={() => window.location.reload()}
-          className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100"
+          onClick={() => fetchStats(false)}
+          disabled={refreshing}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100 disabled:opacity-50 transition-all"
         >
-          Refresh
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 
