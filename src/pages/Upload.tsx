@@ -11,6 +11,7 @@ import {
   Trash2,
   ExternalLink,
   Sparkles,
+  Database,
 } from "lucide-react";
 
 interface PortfolioImage {
@@ -279,6 +280,77 @@ export default function Upload() {
             </div>
           </div>
         )}
+
+        {/* Seed Samples Button */}
+        <div className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-bold text-gray-900 flex items-center gap-2">
+                <Database className="w-4 h-4 text-amber-500" />
+                Seed Sample Images
+              </h2>
+              <p className="text-sm text-gray-500 mt-0.5">
+                Upload the 5 sample images from the project to the portfolio
+              </p>
+            </div>
+            <button
+              onClick={async () => {
+                setUploading(true);
+                const sampleFiles = [
+                  "1f608e4b-cee6-4069-8b6f-71ebc58b3d3e.jpg",
+                  "929ce640-0d58-4597-8191-69e557286a4e.jpg",
+                  "abbd3a9e-bea3-43b7-a808-34c426fab15d.jpg",
+                  "4336db6d-972e-4b85-b621-8675601b4826.jpg",
+                  "a33a1a17-0438-4e6a-aee8-0b7854f9099c.jpg",
+                ];
+                const uploadedNames: string[] = [];
+                const errorMessages: string[] = [];
+
+                for (const fileName of sampleFiles) {
+                  try {
+                    const response = await fetch(`/samples/${fileName}`);
+                    const blob = await response.blob();
+                    const file = new File([blob], fileName, { type: "image/jpeg" });
+
+                    const { error } = await supabase.storage
+                      .from("portfolio")
+                      .upload(fileName, file, {
+                        cacheControl: "3600",
+                        upsert: true,
+                      });
+
+                    if (error) {
+                      errorMessages.push(`${fileName}: ${error.message}`);
+                    } else {
+                      uploadedNames.push(fileName);
+                    }
+                  } catch (err) {
+                    errorMessages.push(`${fileName}: Failed to fetch`);
+                  }
+                }
+
+                setUploaded(uploadedNames);
+                setErrors(errorMessages);
+                setUploading(false);
+                loadPortfolioImages();
+              }}
+              disabled={uploading}
+              className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-semibold text-sm hover:opacity-90 transition-all shadow-md shadow-amber-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              {uploading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Seeding...
+                </>
+              ) : (
+                <>
+                  <Database className="w-4 h-4" />
+                  Seed Samples
+                </>
+              )}
+            </button>
+          </div>
+        </div>
 
         {/* Upload Results */}
         {uploaded.length > 0 && (
