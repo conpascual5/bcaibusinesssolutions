@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import {
   Sparkles, ArrowRight, Zap, Target, BarChart3,
@@ -11,15 +11,42 @@ import {
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
 import LiveNotification from '@/components/LiveNotification';
+import { trackEvent } from '@/lib/metaPixel';
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const plansTracked = useRef(false);
+  const plansRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Fire ViewContent when user scrolls to pricing section
+  useEffect(() => {
+    const el = plansRef.current;
+    if (!el || plansTracked.current) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !plansTracked.current) {
+          plansTracked.current = true;
+          trackEvent('ViewContent', {
+            content_name: 'Pricing Plans',
+            content_type: 'product_group',
+            content_ids: ['free', 'pro', 'pro_plus', 'vip'],
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
   }, []);
 
   const features = [
@@ -199,7 +226,7 @@ export default function Landing() {
       </section>
 
       {/* Plans Section */}
-      <section id="plans" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
+      <section ref={plansRef} id="plans" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-6xl mx-auto">
           <AnimatedSection>
             <div className="text-center mb-14">

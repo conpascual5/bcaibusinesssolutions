@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import AdminSupportInbox from "@/components/AdminSupportInbox";
 import AdminDashboard from "@/components/AdminDashboard";
+import { trackEvent } from "@/lib/metaPixel";
 import {
   Users,
   Settings,
@@ -646,6 +647,14 @@ export default function Admin() {
       notes: "",
       created_at: new Date().toISOString(),
     } as any);
+
+    trackEvent("CompleteRegistration", {
+      plan,
+      previous_plan: (current as any)?.plan ?? "none",
+      user_id: userId,
+      currency: "PHP",
+      value: plan === "pro" ? 499 : plan === "pro_plus" ? 999 : 0,
+    });
 
     await loadUsers("reset");
   };
