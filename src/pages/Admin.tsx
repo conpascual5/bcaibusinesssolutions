@@ -44,6 +44,7 @@ type ProfileRow = {
   is_active: boolean;
   activated_at: string | null;
   created_at: string;
+  email_confirmed_at: string | null;
 };
 
 type PlanHistoryRow = {
@@ -567,7 +568,7 @@ export default function Admin() {
 
     let q = supabase
       .from("profiles")
-      .select("id,email,full_name,is_admin,plan,is_active,activated_at,created_at")
+      .select("id,email,full_name,is_admin,plan,is_active,activated_at,created_at,email_confirmed_at")
       .order("created_at", { ascending: false })
       .limit(limit + 1);
 
@@ -774,6 +775,7 @@ export default function Admin() {
                   <tr className="border-b border-border">
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Name</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Confirmed</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
@@ -785,6 +787,18 @@ export default function Admin() {
                     <tr key={u.id} className="hover:bg-accent/50 transition-colors">
                       <td className="px-6 py-4 text-sm font-medium text-foreground">{u.full_name || "—"}</td>
                       <td className="px-6 py-4 text-sm text-muted-foreground">{u.email ?? ""}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
+                            u.email_confirmed_at
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "bg-amber-100 text-amber-700"
+                          }`}
+                        >
+                          {u.email_confirmed_at ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                          {u.email_confirmed_at ? "Confirmed" : "Pending"}
+                        </span>
+                      </td>
                       <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
@@ -853,7 +867,7 @@ export default function Admin() {
 
                   {loadingUsers && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-6 text-sm text-muted-foreground">
+                      <td colSpan={7} className="px-6 py-6 text-sm text-muted-foreground">
                         Loading users...
                       </td>
                     </tr>
@@ -861,7 +875,7 @@ export default function Admin() {
 
                   {!loadingUsers && users.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="px-6 py-10 text-center text-sm text-muted-foreground">
+                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-muted-foreground">
                         No users found.
                       </td>
                     </tr>
