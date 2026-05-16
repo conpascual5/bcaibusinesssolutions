@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ArrowLeft, Play, Wand2, Target, BarChart3, FileSearch, Sparkles, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Play, Wand2, Target, BarChart3, FileSearch, FileText, Sparkles, ChevronRight } from 'lucide-react';
 import AnimatedSection from '@/components/AnimatedSection';
 
 interface TutorialVideo {
@@ -53,6 +53,16 @@ const tutorials: TutorialVideo[] = [
     gradient: "from-emerald-500 to-teal-400",
     reelId: "1531899181612088",
     duration: "2:20",
+  },
+  {
+    id: "invoice-generator",
+    title: "Invoice Generator",
+    description: "Create professional invoices in seconds. Generate PDF invoices with your business details, client info, itemized billing, and payment terms.",
+    icon: <FileText className="w-6 h-6" />,
+    color: "bg-amber-500",
+    gradient: "from-amber-500 to-orange-400",
+    reelId: "997436722769451",
+    duration: "2:10",
   },
 ];
 
