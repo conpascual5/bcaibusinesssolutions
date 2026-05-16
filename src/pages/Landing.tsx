@@ -88,6 +88,7 @@ export default function Landing() {
               <a href="#plans" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Plans</a>
               <a href="#how" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
               <Link to="/about" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">About</Link>
+              <Link to="/tutorial" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Tutorial</Link>
               <Link to="/auth" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Sign In</Link>
               <Link to="/auth" className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors shadow-md shadow-blue-200">
                 Get Started Free
@@ -104,6 +105,7 @@ export default function Landing() {
             <a href="#plans" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Plans</a>
             <a href="#how" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
             <Link to="/about" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>About</Link>
+            <Link to="/tutorial" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Tutorial</Link>
             <Link to="/auth" className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold">Get Started Free</Link>
           </div>
         )}
@@ -660,6 +662,7 @@ export default function Landing() {
               <a href="#plans" className="hover:text-white transition-colors">Plans</a>
               <a href="#terms" className="hover:text-white transition-colors">Terms</a>
               <Link to="/about" className="hover:text-white transition-colors">About</Link>
+              <Link to="/tutorial" className="hover:text-white transition-colors">Tutorial</Link>
               <Link to="/auth" className="hover:text-white transition-colors">Sign Up</Link>
             </div>
             <p className="text-xs text-gray-600">2026 BC AI Business Solutions. All rights reserved.</p>

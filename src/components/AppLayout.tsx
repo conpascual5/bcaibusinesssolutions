@@ -36,6 +36,7 @@ import {
   Star,
   BarChart3,
   Package,
+  Play,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -55,6 +56,7 @@ const navItems = [
   { icon: Package, label: 'My Assets', path: '/app/my-assets' },
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
+  { icon: Play, label: 'Tutorial', path: '/tutorial' },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
