@@ -21,7 +21,7 @@ const tutorials: TutorialVideo[] = [
     icon: <Wand2 className="w-6 h-6" />,
     color: "bg-blue-500",
     gradient: "from-blue-500 to-cyan-400",
-    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/18hG2fAotC/&show_text=false&width=734",
+    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/18hG2fAotC/&show_text=false&width=734&t=0",
     duration: "2:30",
   },
   {
@@ -31,7 +31,7 @@ const tutorials: TutorialVideo[] = [
     icon: <BarChart3 className="w-6 h-6" />,
     color: "bg-rose-500",
     gradient: "from-rose-500 to-pink-400",
-    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/1CyHiphgB4/&show_text=false&width=734",
+    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/1CyHiphgB4/&show_text=false&width=734&t=0",
     duration: "2:15",
   },
   {
@@ -41,7 +41,7 @@ const tutorials: TutorialVideo[] = [
     icon: <FileSearch className="w-6 h-6" />,
     color: "bg-indigo-500",
     gradient: "from-indigo-500 to-purple-400",
-    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/18YrPTSs8N/&show_text=false&width=734",
+    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/18YrPTSs8N/&show_text=false&width=734&t=0",
     duration: "2:45",
   },
   {
@@ -51,7 +51,7 @@ const tutorials: TutorialVideo[] = [
     icon: <Target className="w-6 h-6" />,
     color: "bg-emerald-500",
     gradient: "from-emerald-500 to-teal-400",
-    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/1B1XeKJfcb/&show_text=false&width=734",
+    videoUrl: "https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/share/v/1B1XeKJfcb/&show_text=false&width=734&t=0",
     duration: "2:20",
   },
 ];
