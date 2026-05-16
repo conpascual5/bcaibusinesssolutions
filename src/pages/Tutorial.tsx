@@ -1,4 +1,3 @@
-import { useEffect, useRef } from 'react';
 import { Link } from 'react-router';
 import { ArrowLeft, Play, Wand2, Target, BarChart3, FileSearch, Sparkles, ChevronRight } from 'lucide-react';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -10,16 +9,9 @@ interface TutorialVideo {
   icon: React.ReactNode;
   color: string;
   gradient: string;
-  videoHref: string;
+  reelId: string;
   duration: string;
 }
-
-const shareLinks = [
-  "https://www.facebook.com/share/v/18hG2fAotC/",
-  "https://www.facebook.com/share/v/1CyHiphgB4/",
-  "https://www.facebook.com/share/v/18YrPTSs8N/",
-  "https://www.facebook.com/share/v/1B1XeKJfcb/",
-];
 
 const tutorials: TutorialVideo[] = [
   {
@@ -29,7 +21,7 @@ const tutorials: TutorialVideo[] = [
     icon: <Wand2 className="w-6 h-6" />,
     color: "bg-blue-500",
     gradient: "from-blue-500 to-cyan-400",
-    videoHref: shareLinks[0],
+    reelId: "1334334298589942",
     duration: "2:30",
   },
   {
@@ -39,7 +31,7 @@ const tutorials: TutorialVideo[] = [
     icon: <BarChart3 className="w-6 h-6" />,
     color: "bg-rose-500",
     gradient: "from-rose-500 to-pink-400",
-    videoHref: shareLinks[1],
+    reelId: "4679296552300710",
     duration: "2:15",
   },
   {
@@ -49,7 +41,7 @@ const tutorials: TutorialVideo[] = [
     icon: <FileSearch className="w-6 h-6" />,
     color: "bg-indigo-500",
     gradient: "from-indigo-500 to-purple-400",
-    videoHref: shareLinks[2],
+    reelId: "1312536147072262",
     duration: "2:45",
   },
   {
@@ -59,45 +51,14 @@ const tutorials: TutorialVideo[] = [
     icon: <Target className="w-6 h-6" />,
     color: "bg-emerald-500",
     gradient: "from-emerald-500 to-teal-400",
-    videoHref: shareLinks[3],
+    reelId: "1531899181612088",
     duration: "2:20",
   },
 ];
 
-function FacebookVideoEmbed({ href }: { href: string }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    // Load Facebook SDK if not already loaded
-    if (!(window as any).FB) {
-      const script = document.createElement('script');
-      script.src = 'https://connect.facebook.net/en_US/sdk.js#xfbml=1&version=v19.0';
-      script.async = true;
-      script.defer = true;
-      script.crossOrigin = 'anonymous';
-      document.body.appendChild(script);
-    }
-
-    // Re-parse XFBML when component mounts (handles dynamic content)
-    const timer = setTimeout(() => {
-      if ((window as any).FB) {
-        (window as any).FB.XFBML.parse();
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, []);
-
-  return (
-    <div ref={containerRef} className="fb-video w-full h-full" data-href={href} data-width="auto" data-show-text="false" data-allowfullscreen="true" />
-  );
-}
-
 export default function Tutorial() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
-      {/* Required for Facebook SDK embed */}
-      <div id="fb-root" />
       {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
@@ -143,7 +104,16 @@ export default function Tutorial() {
                   {/* Video */}
                   <div className="lg:col-span-3 bg-gray-100 relative overflow-hidden">
                     <div className="aspect-video relative">
-                      <FacebookVideoEmbed href={tutorial.videoHref} />
+                      <iframe
+                        src={`https://www.facebook.com/plugins/video.php?height=314&href=${encodeURIComponent(`https://www.facebook.com/reel/${tutorial.reelId}/`)}&show_text=false&width=560&t=0`}
+                        className="absolute inset-0 w-full h-full"
+                        style={{ border: 'none', overflow: 'hidden' }}
+                        scrolling="no"
+                        frameBorder="0"
+                        allowFullScreen
+                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                        title={tutorial.title}
+                      />
                     </div>
                   </div>
 
