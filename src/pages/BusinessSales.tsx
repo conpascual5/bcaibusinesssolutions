@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, DollarSign, TrendingUp, BarChart3, Calendar } from 'lucide-react';
 
@@ -113,7 +114,7 @@ export default function BusinessSales() {
             <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Total Revenue</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">${totalRevenue.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{formatCurrency(totalRevenue)}</p>
           </CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
@@ -121,7 +122,7 @@ export default function BusinessSales() {
             <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">Total Profit</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">${totalProfit.toFixed(2)}</p>
+            <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{formatCurrency(totalProfit)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -137,7 +138,7 @@ export default function BusinessSales() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Avg per Sale</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">${totalTransactions ? (totalRevenue / totalTransactions).toFixed(2) : '0.00'}</p>
+            <p className="text-2xl font-bold">{totalTransactions ? formatCurrency(totalRevenue / totalTransactions) : formatCurrency(0)}</p>
           </CardContent>
         </Card>
       </div>
@@ -175,7 +176,7 @@ export default function BusinessSales() {
                       <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                       <SelectContent>
                         {products.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name} - ${p.unit_price}</SelectItem>
+                          <SelectItem key={p.id} value={p.id}>{p.name} - {formatCurrency(p.unit_price)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -186,7 +187,7 @@ export default function BusinessSales() {
                       <Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
-                      <Label>Unit Price ($) *</Label>
+                      <Label>Unit Price (₱) *</Label>
                       <Input type="number" step="0.01" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} />
                     </div>
                   </div>

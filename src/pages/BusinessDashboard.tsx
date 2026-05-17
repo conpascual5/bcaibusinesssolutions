@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router';
+import { formatCurrency } from '@/lib/currency';
 import {
   DollarSign, TrendingUp, TrendingDown, Package, Users,
   FileText, Target, Wallet, ArrowRight, ShoppingCart,
@@ -87,10 +88,10 @@ export default function BusinessDashboard() {
   const profitMargin = stats.totalRevenue > 0 ? (stats.totalProfit / stats.totalRevenue) * 100 : 0;
 
   const kpiCards = [
-    { title: 'Revenue (MTD)', value: `$${stats.totalRevenue.toFixed(2)}`, icon: DollarSign, color: 'emerald', path: '/app/business/sales' },
-    { title: 'Profit (MTD)', value: `$${stats.totalProfit.toFixed(2)}`, icon: TrendingUp, color: 'blue', path: '/app/business/sales' },
-    { title: 'Expenses (MTD)', value: `$${stats.totalExpenses.toFixed(2)}`, icon: TrendingDown, color: 'rose', path: '/app/business/expenses' },
-    { title: 'Net Cash Flow', value: `$${netCash.toFixed(2)}`, icon: Wallet, color: netCash >= 0 ? 'indigo' : 'orange', path: '/app/business/finance' },
+    { title: 'Revenue (MTD)', value: formatCurrency(stats.totalRevenue), icon: DollarSign, color: 'emerald', path: '/app/business/sales' },
+    { title: 'Profit (MTD)', value: formatCurrency(stats.totalProfit), icon: TrendingUp, color: 'blue', path: '/app/business/sales' },
+    { title: 'Expenses (MTD)', value: formatCurrency(stats.totalExpenses), icon: TrendingDown, color: 'rose', path: '/app/business/expenses' },
+    { title: 'Net Cash Flow', value: formatCurrency(netCash), icon: Wallet, color: netCash >= 0 ? 'indigo' : 'orange', path: '/app/business/finance' },
     { title: 'Products', value: stats.totalProducts.toString(), icon: Package, color: 'violet', path: '/app/business/products' },
     { title: 'Customers', value: stats.totalCustomers.toString(), icon: Users, color: 'cyan', path: '/app/business/customers' },
     { title: 'Invoices', value: stats.totalInvoices.toString(), icon: FileText, color: 'amber', path: '/app/business/invoices' },
@@ -164,9 +165,9 @@ export default function BusinessDashboard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-xs">${sale.total_amount.toFixed(2)}</p>
+                      <p className="font-bold text-xs">{formatCurrency(sale.total_amount)}</p>
                       <p className={`text-[10px] ${sale.profit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                        {sale.profit >= 0 ? '+' : ''}${sale.profit.toFixed(2)}
+                        {sale.profit >= 0 ? '+' : ''}{formatCurrency(sale.profit)}
                       </p>
                     </div>
                   </div>

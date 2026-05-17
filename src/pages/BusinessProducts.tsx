@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react';
 
@@ -137,7 +138,7 @@ export default function BusinessProducts() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Avg Unit Price</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl font-bold">${products.length ? (totalValue / products.length).toFixed(2) : '0.00'}</p>
+            <p className="text-2xl font-bold">{products.length ? formatCurrency(totalValue / products.length) : formatCurrency(0)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -208,11 +209,11 @@ export default function BusinessProducts() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label>Unit Price ($) *</Label>
+                    <Label>Unit Price (₱) *</Label>
                     <Input type="number" step="0.01" value={form.unit_price} onChange={e => setForm(f => ({ ...f, unit_price: e.target.value }))} placeholder="0.00" />
                   </div>
                   <div className="space-y-2">
-                    <Label>Cost Price ($)</Label>
+                    <Label>Cost Price (₱)</Label>
                     <Input type="number" step="0.01" value={form.cost_price} onChange={e => setForm(f => ({ ...f, cost_price: e.target.value }))} placeholder="0.00" />
                   </div>
                 </div>
@@ -268,8 +269,8 @@ export default function BusinessProducts() {
                           <Badge variant="secondary" className="capitalize">{product.category}</Badge>
                         </TableCell>
                         <TableCell>{product.unit}</TableCell>
-                        <TableCell className="text-right">${product.cost_price?.toFixed(2) || '—'}</TableCell>
-                        <TableCell className="text-right font-medium">${product.unit_price.toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{product.cost_price ? formatCurrency(product.cost_price) : '—'}</TableCell>
+                        <TableCell className="text-right font-medium">{formatCurrency(product.unit_price)}</TableCell>
                         <TableCell className="text-right">
                           {margin !== null ? (
                             <Badge variant={margin >= 30 ? 'default' : margin >= 10 ? 'secondary' : 'destructive'} className="text-xs">
