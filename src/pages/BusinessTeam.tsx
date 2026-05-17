@@ -69,7 +69,14 @@ export default function BusinessTeam() {
         .eq("email", email.trim().toLowerCase())
         .maybeSingle();
 
-      if (profileError || !profile) {
+      if (profileError) {
+        console.error("[BusinessTeam] profile lookup error", profileError);
+        setError("Error looking up user. Please try again.");
+        setAdding(false);
+        return;
+      }
+      if (!profile) {
+        console.error("[BusinessTeam] no profile found for email:", email.trim().toLowerCase());
         setError("No user found with that email address.");
         setAdding(false);
         return;
