@@ -50,6 +50,8 @@ import {
   ClipboardList,
   Database,
   ChevronDown,
+  Clock,
+  Umbrella,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -86,6 +88,10 @@ const businessNavItems = [
   { icon: FileSearch, label: 'Receipts', path: '/app/business/receipts' },
   { icon: Target, label: 'Targets', path: '/app/business/targets' },
   { icon: Database, label: 'Records', path: '/app/business/records' },
+  { icon: BarChart3, label: 'HR Dashboard', path: '/app/business/hr' },
+  { icon: Users, label: 'Employees', path: '/app/business/hr/employees' },
+  { icon: Clock, label: 'Attendance', path: '/app/business/hr/attendance' },
+  { icon: Umbrella, label: 'Leave Mgmt', path: '/app/business/hr/leave' },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {

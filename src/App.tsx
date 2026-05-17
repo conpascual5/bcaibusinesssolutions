@@ -40,6 +40,10 @@ import BusinessReceipts from './pages/BusinessReceipts'
 import BusinessTargets from './pages/BusinessTargets'
 import BusinessRecords from './pages/BusinessRecords'
 import BusinessTeam from './pages/BusinessTeam'
+import BusinessEmployees from './pages/BusinessEmployees'
+import BusinessAttendance from './pages/BusinessAttendance'
+import BusinessLeave from './pages/BusinessLeave'
+import BusinessHRDashboard from './pages/BusinessHRDashboard'
 import { BusinessTeamProvider } from '@/providers/business-team'
 import AppShop from './pages/AppShop'
 import Shop from './pages/Shop'
@@ -112,6 +116,10 @@ export default function App() {
         <Route path="/app/business/targets" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessTargets /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/records" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessRecords /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/team" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessTeam /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessHRDashboard /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/employees" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessEmployees /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/attendance" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessAttendance /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/leave" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessLeave /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
