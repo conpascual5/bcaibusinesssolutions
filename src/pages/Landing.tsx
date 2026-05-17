@@ -257,7 +257,7 @@ export default function Landing() {
               { icon: <Calculator className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Pricing Calculator", desc: "Calculate optimal selling prices based on cost, overhead, and target profit margin." },
               { icon: <Wallet className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Finance", desc: "Cash flow management with inflow/outflow tracking, balance monitoring, and financial summaries." },
               { icon: <Users className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Customers", desc: "Build and manage your customer database with contact details and notes." },
-              { icon: <FileText className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Invoices", desc: "Create, manage, and track invoices with status updates (paid, sent, overdue)." },
+              { icon: <FileText className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Invoices", desc: "Create customizable invoices with e-signature support, business branding, and status tracking." },
               { icon: <FileSearchIcon className="w-5 h-5" />, color: "from-cyan-500 to-blue-400", title: "Receipts", desc: "View and search all receipts with detailed line items and payment status." },
               { icon: <Target className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Targets", desc: "Set business goals with progress tracking, target values, and status monitoring." },
               { icon: <Database className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Records", desc: "Yearly record keeping with search, filter by type, and comprehensive data management." },
@@ -274,7 +274,139 @@ export default function Landing() {
             ))}
           </div>
 
+          {/* Inventory System Highlight */}
+          <AnimatedSection delay={150} direction="up">
+            <div className="mt-12 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border border-emerald-200 shadow-sm">
+              <div className="flex flex-col lg:flex-row items-center gap-8">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-200 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                    <ClipboardList className="w-3 h-3" /> Featured Module
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Inventory Management System</h3>
+                  <p className="text-gray-600 leading-relaxed mb-4">
+                    A complete inventory solution for small to medium businesses. Track stock levels,
+                    record movements, monitor daily sales, and get low-stock alerts — all in one place.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Product Catalog", desc: "SKU, pricing, cost tracking" },
+                      { label: "Stock Movements", desc: "Stock-in / stock-out records" },
+                      { label: "Daily Sold", desc: "Track daily sales & revenue" },
+                      { label: "Low Stock Alerts", desc: "Get notified when stock runs low" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="w-5 h-5 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+                          <p className="text-xs text-gray-500">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 max-w-sm">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border border-emerald-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-sm text-gray-800">Stock Overview</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Live</span>
+                    </div>
+                    <div className="space-y-3">
+                      {[
+                        { name: "Rice (50kg)", qty: 24, max: 50, color: "bg-emerald-500" },
+                        { name: "Cooking Oil (1L)", qty: 12, max: 30, color: "bg-amber-500" },
+                        { name: "Sardines (cans)", qty: 3, max: 40, color: "bg-red-500" },
+                        { name: "Coffee (3in1)", qty: 8, max: 60, color: "bg-amber-500" },
+                      ].map((item, i) => (
+                        <div key={i}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="font-medium text-gray-700">{item.name}</span>
+                            <span className="text-gray-500">{item.qty} / {item.max}</span>
+                          </div>
+                          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className={`h-full rounded-full ${item.color} transition-all`} style={{ width: `${(item.qty / item.max) * 100}%` }} />
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs">
+                      <span className="text-red-600 font-semibold flex items-center gap-1">
+                        <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> 2 items low stock
+                      </span>
+                      <span className="text-gray-400">Updated just now</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* Invoice Customization Highlight */}
           <AnimatedSection delay={200} direction="up">
+            <div className="mt-6 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-3xl p-8 border border-blue-200 shadow-sm">
+              <div className="flex flex-col lg:flex-row items-center gap-8">
+                <div className="flex-1 max-w-sm order-last lg:order-first">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border border-blue-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-sm text-gray-800">Sample Invoice</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700">Preview</span>
+                    </div>
+                    <div className="border-b pb-3 mb-3">
+                      <p className="font-bold text-gray-900 text-sm">Your Business Name</p>
+                      <p className="text-[10px] text-gray-400">123 Main St., City</p>
+                      <p className="text-[10px] text-gray-400">TIN: 123-456-789</p>
+                    </div>
+                    <div className="space-y-1 text-xs">
+                      <div className="flex justify-between"><span>Item 1</span><span>₱500.00</span></div>
+                      <div className="flex justify-between"><span>Item 2</span><span>₱1,200.00</span></div>
+                      <div className="flex justify-between border-t pt-1 font-bold"><span>Total</span><span>₱1,700.00</span></div>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-gray-100">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-6 bg-gray-200 rounded flex items-center justify-center text-[8px] text-gray-400 italic">sig</div>
+                        <span className="text-[10px] text-gray-500">Authorized Signature</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1 px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                    <FileText className="w-3 h-3" /> New Feature
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Customizable Invoices with E-Signature</h3>
+                  <p className="text-gray-600 leading-relaxed mb-4">
+                    Create professional, fully customizable invoices for your business. Add your
+                    business name, logo, address, and TIN. Include your e-signature for authenticity.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Business Branding", desc: "Add your logo, name & address" },
+                      { label: "E-Signature", desc: "Sign invoices digitally" },
+                      { label: "Custom Items", desc: "Add items with qty & price" },
+                      { label: "Status Tracking", desc: "Sent, paid, overdue" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+                          <p className="text-xs text-gray-500">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          <AnimatedSection delay={250} direction="up">
             <div className="mt-10 text-center">
               <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
                 <Crown className="w-5 h-5 text-amber-600" />
