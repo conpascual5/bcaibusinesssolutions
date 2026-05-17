@@ -178,7 +178,6 @@ export default function BusinessProducts() {
                 Add Product
               </Button>
             </DialogTrigger>
-          </div>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>{editing ? 'Edit Product' : 'Add New Product'}</DialogTitle>
@@ -242,6 +241,7 @@ export default function BusinessProducts() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="relative mb-4">

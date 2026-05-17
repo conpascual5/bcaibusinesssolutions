@@ -147,7 +147,6 @@ export default function BusinessCustomers() {
             <DialogTrigger asChild>
               <Button className="gap-2"><Plus className="w-4 h-4" /> Add Customer</Button>
             </DialogTrigger>
-          </div>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader><DialogTitle>{editing ? 'Edit Customer' : 'Add New Customer'}</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-4">
@@ -180,6 +179,7 @@ export default function BusinessCustomers() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="relative mb-4">
