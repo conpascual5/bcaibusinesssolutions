@@ -1,26 +1,25 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency } from '@/lib/currency';
-import { toast } from 'sonner';
-import { Plus, Package, ArrowDownUp, TrendingDown, TrendingUp } from 'lucide-react';
-import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
-import ExportButton from '@/components/ExportButton';
+import { Activity, Package, ArrowDownUp, Calendar } from 'lucide-react';
+import { KPISkeleton } from '@/components/BusinessSkeleton';
+import InventoryDashboard from '@/components/inventory/InventoryDashboard';
+import InventoryProducts from '@/components/inventory/InventoryProducts';
+import InventoryMovements from '@/components/inventory/InventoryMovements';
+import InventoryDailySold from '@/components/inventory/InventoryDailySold';
 
 interface Product {
   id: string;
   name: string;
   sku: string | null;
   unit: string;
+  unit_price: number;
+  cost_price: number | null;
+  category: string;
 }
 
 interface StockMovement {
@@ -31,7 +30,7 @@ interface StockMovement {
   reference: string | null;
   notes: string | null;
   created_at: string;
-  products: { name: string; sku: string | null } | null;
+  products: { name: string; sku: string | null; unit: string } | null;
 }
 
 export default function BusinessInventory() {
@@ -39,242 +38,115 @@ export default function BusinessInventory() {
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ product_id: '', quantity: '1', type: 'in' as 'in' | 'out', reference: '', notes: '' });
+  const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    if (user) { fetchProducts(); fetchMovements(); }
+    if (user) { fetchData(); }
   }, [user]);
 
-  async function fetchProducts() {
-    const { data } = await supabase.from('products').select('id, name, sku, unit').eq('user_id', user!.id);
-    if (data) setProducts(data);
-  }
-
-  async function fetchMovements() {
-    const { data } = await supabase
-      .from('inventory')
-      .select('*, products:product_id(name, sku)')
-      .eq('user_id', user!.id)
-      .order('created_at', { ascending: false });
-    if (data) setMovements(data);
+  async function fetchData() {
+    const [prodRes, movRes] = await Promise.all([
+      supabase.from('products').select('id, name, sku, unit, unit_price, cost_price, category').eq('user_id', user!.id).order('name', { ascending: true }),
+      supabase.from('inventory').select('*, products:product_id(name, sku, unit)').eq('user_id', user!.id).order('created_at', { ascending: false }),
+    ]);
+    if (prodRes.data) setProducts(prodRes.data);
+    if (movRes.data) setMovements(movRes.data);
     setLoading(false);
   }
 
-  const stockLevels: Record<string, { product: Product; quantity: number }> = {};
-  products.forEach(p => { stockLevels[p.id] = { product: p, quantity: 0 }; });
-  movements.forEach(m => {
-    if (stockLevels[m.product_id]) {
-      stockLevels[m.product_id].quantity += m.type === 'in' ? m.quantity : -m.quantity;
-    }
-  });
-
-  async function handleSave() {
-    if (!form.product_id) { toast.error('Select a product'); return; }
-    const qty = parseInt(form.quantity) || 1;
-    const { error } = await supabase.from('inventory').insert({
-      user_id: user!.id, product_id: form.product_id, quantity: qty,
-      type: form.type, reference: form.reference || null, notes: form.notes || null,
+  const stockLevels = useMemo(() => {
+    const map: Record<string, { product: Product; quantity: number }> = {};
+    products.forEach(p => { map[p.id] = { product: p, quantity: 0 }; });
+    movements.forEach(m => {
+      if (map[m.product_id]) {
+        map[m.product_id].quantity += m.type === 'in' ? m.quantity : -m.quantity;
+      }
     });
-    if (error) { toast.error(error.message); return; }
-    toast.success(`Stock ${form.type === 'in' ? 'added' : 'removed'} successfully`);
-    setDialogOpen(false);
-    setForm({ product_id: '', quantity: '1', type: 'in', reference: '', notes: '' });
-    fetchMovements();
+    return map;
+  }, [products, movements]);
+
+  const stats = useMemo(() => {
+    const totalProducts = products.length;
+    const totalMovements = movements.length;
+    const lowStock = Object.values(stockLevels).filter(sl => sl.quantity > 0 && sl.quantity <= 5).length;
+    const outOfStock = Object.values(stockLevels).filter(sl => sl.quantity <= 0).length;
+    const totalStockIn = movements.filter(m => m.type === 'in').reduce((s, m) => s + m.quantity, 0);
+    const totalStockOut = movements.filter(m => m.type === 'out').reduce((s, m) => s + m.quantity, 0);
+    const totalInventoryValue = Object.values(stockLevels).reduce((s, sl) => s + (sl.quantity * sl.product.unit_price), 0);
+    const totalCostValue = Object.values(stockLevels).reduce((s, sl) => s + (sl.quantity * (sl.product.cost_price || 0)), 0);
+    return { totalProducts, totalMovements, lowStock, outOfStock, totalStockIn, totalStockOut, totalInventoryValue, totalCostValue };
+  }, [products, movements, stockLevels]);
+
+  if (loading) {
+    return (
+      <BusinessLayout title="Inventory System" description="Accurate inventory tracking in seconds">
+        <KPISkeleton count={6} />
+      </BusinessLayout>
+    );
   }
 
   return (
-    <BusinessLayout title="Inventory System" description="Track stock-in and stock-out movements">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Products Tracked</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{products.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Movements</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{movements.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Low Stock Items</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-amber-600">
-              {Object.values(stockLevels).filter(sl => sl.quantity > 0 && sl.quantity <= 5).length}
-            </p>
-          </CardContent>
-        </Card>
+    <BusinessLayout title="Inventory System" description="Accurate inventory tracking in seconds">
+      {/* KPI Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+        {[
+          { label: 'Products', value: stats.totalProducts, color: 'emerald' },
+          { label: 'Stock In', value: stats.totalStockIn.toLocaleString(), color: 'blue' },
+          { label: 'Stock Out', value: stats.totalStockOut.toLocaleString(), color: 'rose' },
+          { label: 'Low Stock', value: stats.lowStock, color: 'amber', highlight: stats.lowStock > 0 },
+          { label: 'Out of Stock', value: stats.outOfStock, color: 'red', highlight: stats.outOfStock > 0 },
+          { label: 'Inventory Value', value: formatCurrency(stats.totalInventoryValue), color: 'purple' },
+        ].map((kpi, i) => {
+          const colorMap: Record<string, string> = {
+            emerald: 'from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300',
+            blue: 'from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-300',
+            rose: 'from-rose-50 to-red-50 dark:from-rose-950/20 dark:to-red-950/20 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300',
+            amber: 'from-amber-50 to-yellow-50 dark:from-amber-950/20 dark:to-amber-950/20 border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300',
+            red: 'from-red-50 to-orange-50 dark:from-red-950/20 dark:to-orange-950/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300',
+            purple: 'from-purple-50 to-violet-50 dark:from-purple-950/20 dark:to-violet-950/20 border-purple-200 dark:border-purple-800 text-purple-800 dark:text-purple-300',
+          };
+          return (
+            <Card key={i} className={`bg-gradient-to-br ${colorMap[kpi.color]}`}>
+              <CardHeader className="pb-1"><CardTitle className="text-[10px] font-medium uppercase tracking-wider">{kpi.label}</CardTitle></CardHeader>
+              <CardContent><p className={`text-xl font-bold ${kpi.highlight ? 'text-red-600 dark:text-red-400' : ''}`}>{kpi.value}</p></CardContent>
+            </Card>
+          );
+        })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Package className="w-4 h-4" />
-              Current Stock Levels
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Object.values(stockLevels).length === 0 ? (
-              <p className="text-center py-6 text-muted-foreground text-sm">No products yet</p>
-            ) : (
-              <div className="space-y-2">
-                {Object.values(stockLevels).map(sl => (
-                  <div key={sl.product.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30">
-                    <div>
-                      <p className="text-sm font-medium">{sl.product.name}</p>
-                      {sl.product.sku && <p className="text-[10px] text-muted-foreground">{sl.product.sku}</p>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <p className={`text-lg font-bold ${sl.quantity <= 0 ? 'text-red-500' : sl.quantity < 10 ? 'text-amber-500' : 'text-green-500'}`}>
-                        {sl.quantity}
-                      </p>
-                      <span className="text-xs text-muted-foreground">{sl.product.unit || 'pcs'}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="bg-card border border-border p-1 rounded-xl">
+          <TabsTrigger value="dashboard" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2">
+            <Activity className="w-4 h-4" /> Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="products" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2">
+            <Package className="w-4 h-4" /> Products
+          </TabsTrigger>
+          <TabsTrigger value="movements" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2">
+            <ArrowDownUp className="w-4 h-4" /> Stock Movements
+          </TabsTrigger>
+          <TabsTrigger value="daily" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2">
+            <Calendar className="w-4 h-4" /> Daily Sold
+          </TabsTrigger>
+        </TabsList>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ArrowDownUp className="w-4 h-4" />
-              Recent Movements
-            </CardTitle>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" className="gap-1"><Plus className="w-3 h-3" /> New Movement</Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader><DialogTitle>Record Stock Movement</DialogTitle></DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="space-y-2">
-                    <Label>Product</Label>
-                    <Select value={form.product_id} onValueChange={v => setForm(f => ({ ...f, product_id: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
-                      <SelectContent>
-                        {products.map(p => (<SelectItem key={p.id} value={p.id}>{p.name} {p.sku ? `(${p.sku})` : ''}</SelectItem>))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Type</Label>
-                      <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as 'in' | 'out' }))}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="in">Stock In</SelectItem>
-                          <SelectItem value="out">Stock Out</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Quantity</Label>
-                      <Input type="number" min="1" value={form.quantity} onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Reference (optional)</Label>
-                    <Input value={form.reference} onChange={e => setForm(f => ({ ...f, reference: e.target.value }))} placeholder="e.g. PO-001, Invoice #" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
-                    <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-                  <Button onClick={handleSave}>Record Movement</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
-          </CardHeader>
-          <CardContent>
-            {movements.length === 0 ? (
-              <p className="text-center py-6 text-muted-foreground text-sm">No movements recorded</p>
-            ) : (
-              <div className="space-y-2">
-                {movements.slice(0, 10).map(m => (
-                  <div key={m.id} className="flex items-center justify-between p-2.5 rounded-lg bg-muted/30 text-sm">
-                    <div className="flex items-center gap-2">
-                      {m.type === 'in' ? (
-                        <TrendingUp className="w-4 h-4 text-green-500" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-500" />
-                      )}
-                      <div>
-                        <p className="font-medium text-xs">{m.products?.name || 'Unknown'}</p>
-                        <p className="text-[10px] text-muted-foreground">{new Date(m.created_at).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                    <p className={`font-bold ${m.type === 'in' ? 'text-green-600' : 'text-red-500'}`}>
-                      {m.type === 'in' ? '+' : '-'}{m.quantity}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+        <TabsContent value="dashboard" className="mt-0">
+          <InventoryDashboard stockLevels={stockLevels} stats={stats} />
+        </TabsContent>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Movement History</CardTitle>
-          <ExportButton
-            data={movements}
-            filename="inventory-movements"
-            title="Inventory Movement History"
-            columns={[
-              { key: 'created_at', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
-              { key: 'products', header: 'Product', formatter: (_, row) => row.products?.name || '—' },
-              { key: 'type', header: 'Type', formatter: v => v === 'in' ? 'Stock In' : 'Stock Out' },
-              { key: 'quantity', header: 'Quantity', formatter: (v, row) => `${row.type === 'in' ? '+' : '-'}${v}` },
-              { key: 'reference', header: 'Reference', formatter: v => v || '—' },
-              { key: 'notes', header: 'Notes', formatter: v => v || '—' },
-            ]}
-          />
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <TableSkeleton rows={5} />
-          ) : movements.length === 0 ? (
-            <p className="text-center py-8 text-muted-foreground">No movements recorded</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Product</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead className="text-right">Quantity</TableHead>
-                    <TableHead>Reference</TableHead>
-                    <TableHead>Notes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {movements.map(m => (
-                    <TableRow key={m.id}>
-                      <TableCell className="text-sm">{new Date(m.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell className="font-medium">{m.products?.name || '—'}</TableCell>
-                      <TableCell>
-                        <Badge variant={m.type === 'in' ? 'default' : 'destructive'} className="text-xs">
-                          {m.type === 'in' ? 'Stock In' : 'Stock Out'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right font-bold">{m.type === 'in' ? '+' : '-'}{m.quantity}</TableCell>
-                      <TableCell className="text-sm">{m.reference || '—'}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{m.notes || '—'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        <TabsContent value="products" className="mt-0">
+          <InventoryProducts products={products} stockLevels={stockLevels} onRefresh={fetchData} />
+        </TabsContent>
+
+        <TabsContent value="movements" className="mt-0">
+          <InventoryMovements movements={movements} products={products} onRefresh={fetchData} />
+        </TabsContent>
+
+        <TabsContent value="daily" className="mt-0">
+          <InventoryDailySold movements={movements} products={products} />
+        </TabsContent>
+      </Tabs>
     </BusinessLayout>
   );
 }
