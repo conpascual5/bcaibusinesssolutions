@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import BusinessLayout from "@/components/BusinessLayout";
 import {
   Loader2, Clock, ChevronLeft, ChevronRight, AlertTriangle,
-  Sun, Moon, Calendar, CheckCircle2, XCircle, Filter
+  Sun, Moon, Calendar, CheckCircle2, XCircle, Filter, Plus, X, Settings
 } from "lucide-react";
 
 type Employee = { id: string; first_name: string; last_name: string; is_active: boolean };
@@ -326,6 +326,89 @@ export default function BusinessAttendance() {
             </div>
           </div>
         )}
+
+        {/* Holidays & Rest Days Management */}
+        <details className="bg-card rounded-2xl border border-border overflow-hidden">
+          <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/20 transition-colors">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-500" />
+              <span className="font-semibold">Holidays & Rest Days</span>
+            </div>
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </summary>
+          <div className="border-t border-border p-4 space-y-6">
+            {/* Holidays */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold">Company Holidays</h4>
+                <button onClick={async () => {
+                  const name = prompt("Holiday name:");
+                  if (!name) return;
+                  const date = prompt("Date (YYYY-MM-DD):");
+                  if (!date) return;
+                  await supabase.from("hr_holidays").insert({ business_id: businessOwnerId, name, date });
+                  await loadData();
+                }} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Holiday
+                </button>
+              </div>
+              {holidays.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No holidays configured.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {holidays.map(h => (
+                    <div key={h.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full text-xs">
+                      <span className="font-medium text-amber-700 dark:text-amber-400">{h.name}</span>
+                      <span className="text-amber-500">{new Date(h.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                      <button onClick={async () => {
+                        await supabase.from("hr_holidays").delete().eq("id", h.id);
+                        await loadData();
+                      }} className="p-0.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Rest Days */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold">Rest Days</h4>
+                <button onClick={async () => {
+                  const day = prompt("Day of week (0=Sunday, 1=Monday, ..., 6=Saturday):");
+                  if (day === null) return;
+                  const dayNum = parseInt(day);
+                  if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) return;
+                  const existing = restDays.find(r => r.day_of_week === dayNum);
+                  if (existing) { alert("Rest day already set for this day."); return; }
+                  await supabase.from("hr_rest_days").insert({ business_id: businessOwnerId, day_of_week: dayNum });
+                  await loadData();
+                }} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Rest Day
+                </button>
+              </div>
+              {restDays.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No rest days configured.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {restDays.map(r => (
+                    <div key={r.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full text-xs">
+                      <span className="font-medium text-amber-700 dark:text-amber-400">{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][r.day_of_week]}</span>
+                      <button onClick={async () => {
+                        await supabase.from("hr_rest_days").delete().eq("id", r.id);
+                        await loadData();
+                      }} className="p-0.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </details>
 
         {/* Legend */}
         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
