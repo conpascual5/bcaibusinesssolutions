@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2 } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;
@@ -26,6 +26,7 @@ const trackerItems = [
   { icon: FileSearch, label: 'Receipts', path: '/app/business/receipts' },
   { icon: Target, label: 'Targets', path: '/app/business/targets' },
   { icon: Database, label: 'Records', path: '/app/business/records' },
+  { icon: UserPlus, label: 'Team', path: '/app/business/team' },
 ];
 
 export default function BusinessLayout({ children, title, description }: BusinessLayoutProps) {
@@ -42,12 +43,12 @@ export default function BusinessLayout({ children, title, description }: Busines
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from('user_business_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      setHasAccess(!!data);
+      // Check if user has direct BMS access OR is a team member of someone
+      const [accessRes, teamRes] = await Promise.all([
+        supabase.from('user_business_access').select('id').eq('user_id', user.id).maybeSingle(),
+        supabase.from('business_team_members').select('id').eq('member_id', user.id).maybeSingle(),
+      ]);
+      setHasAccess(!!accessRes.data || !!teamRes.data);
     })();
   }, [user]);
 

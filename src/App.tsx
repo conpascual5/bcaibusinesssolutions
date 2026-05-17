@@ -39,6 +39,8 @@ import BusinessInvoices from './pages/BusinessInvoices'
 import BusinessReceipts from './pages/BusinessReceipts'
 import BusinessTargets from './pages/BusinessTargets'
 import BusinessRecords from './pages/BusinessRecords'
+import BusinessTeam from './pages/BusinessTeam'
+import { BusinessTeamProvider } from '@/providers/business-team'
 import AppShop from './pages/AppShop'
 import Shop from './pages/Shop'
 
@@ -96,19 +98,20 @@ export default function App() {
         <Route path="/app/sales-report" element={<ProtectedRoute><AppLayoutRoute><SalesReport /></AppLayoutRoute></ProtectedRoute>} />
 
         {/* Business Management System */}
-        <Route path="/app/business" element={<ProtectedRoute><AppLayoutRoute><BusinessDashboard /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/dashboard" element={<ProtectedRoute><AppLayoutRoute><BusinessDashboard /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/products" element={<ProtectedRoute><AppLayoutRoute><BusinessProducts /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/inventory" element={<ProtectedRoute><AppLayoutRoute><BusinessInventory /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/sales" element={<ProtectedRoute><AppLayoutRoute><BusinessSales /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/expenses" element={<ProtectedRoute><AppLayoutRoute><BusinessExpenses /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/pricing" element={<ProtectedRoute><AppLayoutRoute><BusinessPricing /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/finance" element={<ProtectedRoute><AppLayoutRoute><BusinessFinance /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/customers" element={<ProtectedRoute><AppLayoutRoute><BusinessCustomers /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/invoices" element={<ProtectedRoute><AppLayoutRoute><BusinessInvoices /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/receipts" element={<ProtectedRoute><AppLayoutRoute><BusinessReceipts /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/targets" element={<ProtectedRoute><AppLayoutRoute><BusinessTargets /></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/records" element={<ProtectedRoute><AppLayoutRoute><BusinessRecords /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessDashboard /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/dashboard" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessDashboard /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/products" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessProducts /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/inventory" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessInventory /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/sales" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessSales /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/expenses" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessExpenses /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/pricing" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessPricing /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/finance" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessFinance /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/customers" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessCustomers /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/invoices" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessInvoices /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/receipts" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessReceipts /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/targets" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessTargets /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/records" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessRecords /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/team" element={<ProtectedRoute><AppLayoutRoute><BusinessTeam /></AppLayoutRoute></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
