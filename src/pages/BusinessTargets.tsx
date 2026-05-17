@@ -14,6 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Target, TrendingUp, Users, DollarSign } from 'lucide-react';
+import { KPISkeleton } from '@/components/BusinessSkeleton';
 
 interface TargetItem {
   id: string;
@@ -160,7 +161,7 @@ export default function BusinessTargets() {
       </div>
 
       {loading ? (
-        <p className="text-center py-8 text-muted-foreground">Loading...</p>
+        <KPISkeleton count={4} />
       ) : targets.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
           <Target className="w-12 h-12 mx-auto mb-3 opacity-30" />

@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Receipt, Users, TrendingDown, Calendar } from 'lucide-react';
+import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
 
 interface Expense {
   id: string;
@@ -147,7 +148,7 @@ export default function BusinessExpenses() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
+            <TableSkeleton rows={5} />
           ) : expenses.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Receipt className="w-12 h-12 mx-auto mb-3 opacity-30" />

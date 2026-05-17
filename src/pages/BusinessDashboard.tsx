@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +6,9 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router';
 import { formatCurrency } from '@/lib/currency';
+import { useCachedQuery } from '@/hooks/useCachedQuery';
+import { supabase } from '@/integrations/supabase/client';
+import { KPISkeleton, TableSkeleton, CardSkeleton } from '@/components/BusinessSkeleton';
 import {
   DollarSign, TrendingUp, TrendingDown, Package, Users,
   FileText, Target, Wallet, ArrowRight, ShoppingCart,
@@ -17,22 +18,13 @@ import {
 export default function BusinessDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [stats, setStats] = useState({
-    totalProducts: 0, totalSales: 0, totalRevenue: 0, totalProfit: 0,
-    totalExpenses: 0, totalCustomers: 0, totalInvoices: 0, activeTargets: 0,
-    cashInflow: 0, cashOutflow: 0, recentSales: [] as any[], lowStock: 0,
-  });
-  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (user) fetchDashboardData();
-  }, [user]);
+  const today = new Date();
+  const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
 
-  async function fetchDashboardData() {
-    try {
-      const today = new Date();
-      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
-
+  const { data: stats, loading } = useCachedQuery(
+    user ? `biz-dashboard-${user.id}-${monthStart}` : null,
+    async () => {
       const [
         { count: prodCount },
         { data: salesData },
@@ -59,7 +51,6 @@ export default function BusinessDashboard() {
       const cashInflow = (cashData || []).filter((c: any) => c.type === 'inflow').reduce((s: number, c: any) => s + c.amount, 0);
       const cashOutflow = (cashData || []).filter((c: any) => c.type === 'outflow').reduce((s: number, c: any) => s + c.amount, 0);
 
-      // Calculate stock levels
       const stockMap: Record<string, number> = {};
       (invMovements || []).forEach((m: any) => {
         if (!stockMap[m.product_id]) stockMap[m.product_id] = 0;
@@ -67,7 +58,7 @@ export default function BusinessDashboard() {
       });
       const lowStock = Object.values(stockMap).filter(q => q <= 5).length;
 
-      setStats({
+      return {
         totalProducts: prodCount || 0,
         totalSales: (salesData || []).length,
         totalRevenue, totalProfit, totalExpenses,
@@ -77,12 +68,24 @@ export default function BusinessDashboard() {
         cashInflow, cashOutflow,
         recentSales: (salesData || []).slice(0, 5),
         lowStock,
-      });
-    } catch (err) {
-      console.error('Dashboard fetch error:', err);
-    }
-    setLoading(false);
+      };
+    },
+    30_000
+  );
+
+  if (loading) {
+    return (
+      <BusinessLayout title="Business Dashboard" description="Dynamic KPIs and business insights">
+        <KPISkeleton count={8} />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2"><TableSkeleton rows={4} /></div>
+          <CardSkeleton />
+        </div>
+      </BusinessLayout>
+    );
   }
+
+  if (!stats) return null;
 
   const netCash = stats.cashInflow - stats.cashOutflow;
   const profitMargin = stats.totalRevenue > 0 ? (stats.totalProfit / stats.totalRevenue) * 100 : 0;
@@ -98,17 +101,8 @@ export default function BusinessDashboard() {
     { title: 'Active Targets', value: stats.activeTargets.toString(), icon: Target, color: 'pink', path: '/app/business/targets' },
   ];
 
-  if (loading) {
-    return (
-      <BusinessLayout title="Business Dashboard" description="Dynamic KPIs and business insights">
-        <div className="text-center py-12 text-muted-foreground">Loading dashboard...</div>
-      </BusinessLayout>
-    );
-  }
-
   return (
     <BusinessLayout title="Business Dashboard" description="Dynamic KPIs and real-time business insights">
-      {/* KPI Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         {kpiCards.map((kpi, i) => {
           const colorMap: Record<string, string> = {
@@ -137,7 +131,6 @@ export default function BusinessDashboard() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Sales */}
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="flex items-center gap-2 text-base">
@@ -177,7 +170,6 @@ export default function BusinessDashboard() {
           </CardContent>
         </Card>
 
-        {/* Quick Insights */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">

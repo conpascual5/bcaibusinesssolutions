@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react';
+import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
 
 interface Product {
   id: string;
@@ -237,7 +238,7 @@ export default function BusinessProducts() {
           </div>
 
           {loading ? (
-            <div className="text-center py-8 text-muted-foreground">Loading...</div>
+            <TableSkeleton rows={5} />
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Package className="w-12 h-12 mx-auto mb-3 opacity-30" />

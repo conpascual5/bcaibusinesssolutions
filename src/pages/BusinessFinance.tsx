@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Wallet, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
 
 interface CashFlowEntry {
   id: string;
@@ -157,7 +158,7 @@ export default function BusinessFinance() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
+            <TableSkeleton rows={5} />
           ) : entries.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />

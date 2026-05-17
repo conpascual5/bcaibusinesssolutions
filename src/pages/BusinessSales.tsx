@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, DollarSign, TrendingUp, BarChart3, Calendar } from 'lucide-react';
+import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
 
 interface Product {
   id: string;
@@ -180,7 +181,7 @@ export default function BusinessSales() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
+            <TableSkeleton rows={5} />
           ) : sales.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
