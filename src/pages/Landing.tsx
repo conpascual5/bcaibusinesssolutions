@@ -6,7 +6,10 @@ import {
   MessageCircle, Film, ChevronRight,
   Palette, Camera,
   FileSearch, FileText, Receipt, Brain,
-  Wand2, Eye,
+  Wand2, Eye, Building2, ShoppingCart,
+  ClipboardList, DollarSign, Calculator, Wallet,
+  Users, FileSearch as FileSearchIcon, Database,
+  Crown,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -69,6 +72,7 @@ export default function Landing() {
     { icon: <FileSearch className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Ad Analyzer", desc: "Paste competitor ad copy and get psychological trigger analysis, counter-positioning strategies, and improvement tips.", badge: "3 trial" },
     { icon: <BarChart3 className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually. Charts and summaries included.", badge: "Free" },
     { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF instantly.", badge: "Free" },
+    { icon: <Building2 className="w-5 h-5" />, color: "from-violet-500 to-indigo-500", title: "Business Management", desc: "Complete business operations suite — products, inventory, sales tracker, expenses, pricing calculator, finance, customers, invoices, receipts, targets, and records.", badge: "Pro+" },
   ];
 
   return (
@@ -121,21 +125,21 @@ export default function Landing() {
           <AnimatedSection delay={100}>
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/15 border border-white/20 rounded-full mb-6 backdrop-blur">
               <Zap className="w-4 h-4 text-amber-300" />
-              <span className="text-sm text-white font-medium">Marketing Tool Kit — All-in-One AI Suite (3 free trial generations)</span>
+              <span className="text-sm text-white font-medium">Marketing Tool Kit + Business Management — All-in-One Suite</span>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={200}>
             <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight mb-6">
               Your Complete{' '}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-300 via-pink-300 to-cyan-300">
-                Marketing Tool Kit
+                Business &amp; Marketing Suite
               </span>
             </h1>
           </AnimatedSection>
           <AnimatedSection delay={300}>
             <p className="text-lg sm:text-xl text-blue-100 max-w-3xl mx-auto mb-6 leading-relaxed">
-              From audience targeting and competitor analysis to invoice generation and ad captions — 
-              everything you need to run smarter Facebook ad campaigns, all in one place.
+              From AI-powered ad targeting and competitor analysis to full business management —
+              track products, sales, expenses, inventory, invoices, and more. Everything you need to run and grow your business.
             </p>
           </AnimatedSection>
           <AnimatedSection delay={400}>
@@ -169,8 +173,8 @@ export default function Landing() {
       <section className="py-12 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { value: "6", label: "AI Tools", color: "text-blue-600" },
-            { value: "15+", label: "Targeting Keywords", color: "text-purple-600" },
+            { value: "18+", label: "Powerful Tools", color: "text-blue-600" },
+            { value: "12", label: "Business Trackers", color: "text-purple-600" },
             { value: "4", label: "Pricing Plans", color: "text-amber-600" },
             { value: "Free", label: "Sales & Invoices", color: "text-emerald-600" },
           ].map((s, i) => (
@@ -192,10 +196,10 @@ export default function Landing() {
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
                 <Palette className="w-3 h-3" /> All Tools
               </span>
-              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">6 Powerful AI Tools</h2>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">7 Powerful Tools</h2>
               <p className="text-gray-500 mt-3 max-w-xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
-                The other 4 tools come with <strong>3 free trial generations</strong> on the Free plan. Upgrade to Pro or VIP for more.
+                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management</strong> is available on <strong>Pro, Pro+, and VIP</strong> plans.
               </p>
             </div>
           </AnimatedSection>
@@ -224,6 +228,63 @@ export default function Landing() {
               </AnimatedSection>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* Business Management System Section */}
+      <section className="py-24 px-4 bg-gradient-to-b from-indigo-50 via-violet-50 to-white">
+        <div className="max-w-6xl mx-auto">
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Building2 className="w-3 h-3" /> New Product
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business Management System</h2>
+              <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
+                A complete business operations suite — available exclusively on <strong>Pro</strong>, <strong>Pro+</strong>, and <strong>VIP</strong> plans.
+                Manage every aspect of your business from one dashboard.
+              </p>
+            </div>
+          </AnimatedSection>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {[
+              { icon: <Building2 className="w-5 h-5" />, color: "from-violet-500 to-indigo-500", title: "Dashboard", desc: "At-a-glance overview of revenue, profit, expenses, active targets, and low-stock alerts — all in one place." },
+              { icon: <ShoppingCart className="w-5 h-5" />, color: "from-blue-500 to-cyan-400", title: "Products", desc: "Manage your product catalog with SKU, pricing, cost tracking, and margin analysis." },
+              { icon: <ClipboardList className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "Inventory", desc: "Track stock levels, record stock-in/stock-out movements, and get low-stock alerts." },
+              { icon: <DollarSign className="w-5 h-5" />, color: "from-green-500 to-emerald-400", title: "Sales Tracker", desc: "Log daily sales with product, quantity, payment method, and automatic profit calculation." },
+              { icon: <Receipt className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Expenses", desc: "Record and categorize business expenses. Filter by date range and track spending patterns." },
+              { icon: <Calculator className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Pricing Calculator", desc: "Calculate optimal selling prices based on cost, overhead, and target profit margin." },
+              { icon: <Wallet className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Finance", desc: "Cash flow management with inflow/outflow tracking, balance monitoring, and financial summaries." },
+              { icon: <Users className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Customers", desc: "Build and manage your customer database with contact details and notes." },
+              { icon: <FileText className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Invoices", desc: "Create, manage, and track invoices with status updates (paid, sent, overdue)." },
+              { icon: <FileSearchIcon className="w-5 h-5" />, color: "from-cyan-500 to-blue-400", title: "Receipts", desc: "View and search all receipts with detailed line items and payment status." },
+              { icon: <Target className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Targets", desc: "Set business goals with progress tracking, target values, and status monitoring." },
+              { icon: <Database className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Records", desc: "Yearly record keeping with search, filter by type, and comprehensive data management." },
+            ].map((tool, i) => (
+              <AnimatedSection key={i} delay={i * 60} direction="up">
+                <div className="group bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className={`w-11 h-11 bg-gradient-to-r ${tool.color} rounded-xl flex items-center justify-center text-white mb-3 group-hover:scale-110 transition-transform shadow-sm`}>
+                    {tool.icon}
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-1.5 text-sm">{tool.title}</h3>
+                  <p className="text-xs text-gray-500 leading-relaxed">{tool.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+
+          <AnimatedSection delay={200} direction="up">
+            <div className="mt-10 text-center">
+              <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
+                <Crown className="w-5 h-5 text-amber-600" />
+                <p className="text-sm text-gray-700">
+                  <strong className="text-amber-700">Pro, Pro+, and VIP</strong> plans include full access to all 12 Business Management trackers.
+                  <Link to="/auth" className="ml-2 text-indigo-600 font-semibold hover:text-indigo-700 underline">Upgrade now →</Link>
+                </p>
+              </div>
+            </div>
+          </AnimatedSection>
         </div>
       </section>
 
@@ -268,6 +329,7 @@ export default function Landing() {
                   "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
+                  "✅ Business Management System — Products, Inventory, Sales, Expenses, Pricing, Finance, Customers, Invoices, Receipts, Targets & Records",
                   "Priority live chat support",
                   "Customize 30 product images",
                   "📦 Delivery: Submit your images/theme after payment — receive your content in 2–3 business days",
@@ -286,6 +348,7 @@ export default function Landing() {
                   "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
+                  "✅ Business Management System — Products, Inventory, Sales, Expenses, Pricing, Finance, Customers, Invoices, Receipts, Targets & Records",
                   "Priority live chat support",
                   "1 30-60 UGC or Cinematic Video Ad",
                   "📦 Delivery: Submit your script after payment — receive your video in 2–3 business days",
@@ -303,6 +366,7 @@ export default function Landing() {
                   "100 generations per month for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
+                  "✅ Business Management System — Products, Inventory, Sales, Expenses, Pricing, Finance, Customers, Invoices, Receipts, Targets & Records",
                   "Dedicated live chat support",
                   "Subject to fair usage policy",
                 ],
@@ -481,8 +545,8 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { num: "01", title: "Sign Up", desc: "Create your free account in seconds. No credit card needed.", color: "bg-blue-500" },
-              { num: "02", title: "Choose Your Tool", desc: "Pick from 6 AI tools — Sales Wizard, FB Ads Targeting, Image Analyzer, Ad Analyzer, Sales Report, and Invoices.", color: "bg-purple-500" },
-              { num: "03", title: "Get Results", desc: "Personas, keywords, ad analysis, invoices, sales reports, and AI-generated copy — instantly.", color: "bg-emerald-500" },
+              { num: "02", title: "Choose Your Tool", desc: "Pick from 7 powerful tools — AI marketing tools, Sales Report, Invoices, and the full Business Management System.", color: "bg-purple-500" },
+              { num: "03", title: "Get Results", desc: "Personas, keywords, ad analysis, invoices, sales reports, business insights, and AI-generated copy — instantly.", color: "bg-emerald-500" },
             ].map((step, i) => (
               <AnimatedSection key={i} delay={i * 150} direction="up">
                 <div className="text-center">
@@ -568,8 +632,8 @@ export default function Landing() {
             <div className="absolute top-0 right-0 w-64 h-64 bg-pink-500/30 rounded-full blur-[80px]" />
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Ads?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to all 6 AI tools — Sales Wizard, FB Ads Targeting, Image Analyzer, Ad Analyzer, Sales Report, and Invoice Generator. No credit card needed.</p>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Business?</h2>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator. Upgrade to Pro for the full Business Management System. No credit card needed.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                   Get Started Free <ChevronRight className="w-5 h-5" />
