@@ -168,9 +168,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
               defaultOpen={location.pathname.startsWith('/app/business')}
               className="group-data-[collapsible=icon]:hidden"
             >
-              <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 hover:text-sidebar-foreground/70 transition-colors">
+              <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors">
                 <span>Business Management</span>
-                <ChevronDown className="w-3 h-3 transition-transform group-data-[state=open]:rotate-180" />
+                <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarGroup>
