@@ -111,7 +111,7 @@ export default function App() {
         <Route path="/app/business/receipts" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessReceipts /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/targets" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessTargets /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/records" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessRecords /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/team" element={<ProtectedRoute><AppLayoutRoute><BusinessTeam /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/team" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessTeam /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
