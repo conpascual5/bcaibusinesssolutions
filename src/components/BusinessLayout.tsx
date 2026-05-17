@@ -1,11 +1,11 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/providers/auth';
-import { hasBusinessAccess } from '@/lib/planConfig';
+import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2 } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;
@@ -33,10 +33,35 @@ export default function BusinessLayout({ children, title, description }: Busines
   const navigate = useNavigate();
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [hasAccess, setHasAccess] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.isAdmin) {
+      setHasAccess(true);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from('user_business_access')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setHasAccess(!!data);
+    })();
+  }, [user]);
 
   if (!user) return null;
 
-  if (!hasBusinessAccess(user.plan)) {
+  if (hasAccess === null) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
     return (
       <div className="min-h-[80vh] flex items-center justify-center">
         <Card className="max-w-md w-full p-8 text-center space-y-6">
@@ -44,16 +69,12 @@ export default function BusinessLayout({ children, title, description }: Busines
             <Lock className="w-8 h-8 text-amber-600 dark:text-amber-400" />
           </div>
           <div>
-            <h2 className="text-xl font-bold mb-2">Premium Feature</h2>
+            <h2 className="text-xl font-bold mb-2">Access Required</h2>
             <p className="text-muted-foreground text-sm">
-              The Business Management System is available on <strong>Pro</strong>, <strong>Pro+</strong>, and <strong>VIP</strong> plans.
+              You don't have access to the Business Management System yet. Contact the admin to request access.
             </p>
           </div>
           <div className="flex flex-col gap-3">
-            <Button onClick={() => navigate('/app/my-plan')} className="w-full gap-2">
-              <Crown className="w-4 h-4" />
-              Upgrade Your Plan
-            </Button>
             <Button variant="outline" onClick={() => navigate('/app')} className="w-full gap-2">
               <ArrowLeft className="w-4 h-4" />
               Back to Dashboard

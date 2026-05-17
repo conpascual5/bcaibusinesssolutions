@@ -1,6 +1,7 @@
 import { type ReactNode, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/providers/auth';
+import { supabase } from '@/integrations/supabase/client';
 import {
   SidebarProvider,
   Sidebar,
@@ -98,6 +99,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
     }
     return false;
   });
+  const [hasBMSAccess, setHasBMSAccess] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.isAdmin) {
+      setHasBMSAccess(true);
+      return;
+    }
+    (async () => {
+      const { data } = await supabase
+        .from('user_business_access')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      setHasBMSAccess(!!data);
+    })();
+  }, [user]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -164,40 +182,44 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </SidebarGroup>
 
             {/* Business Management Section - Collapsible */}
-            <SidebarSeparator className="mx-4 w-auto opacity-30" />
-            <Collapsible
-              defaultOpen={location.pathname.startsWith('/app/business')}
-              className="group-data-[collapsible=icon]:hidden"
-            >
-              <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors">
-                <span>Business Management</span>
-                <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarGroup>
-                  <SidebarGroupContent>
-                    <SidebarMenu>
-                      {businessNavItems.map((item) => {
-                        const isActive = location.pathname.startsWith(item.path);
-                        return (
-                          <SidebarMenuItem key={item.path}>
-                            <SidebarMenuButton
-                              isActive={isActive}
-                              onClick={() => navigate(item.path)}
-                              tooltip={item.label}
-                              className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
-                            >
-                              <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
-                              <span>{item.label}</span>
-                            </SidebarMenuButton>
-                          </SidebarMenuItem>
-                        );
-                      })}
-                    </SidebarMenu>
-                  </SidebarGroupContent>
-                </SidebarGroup>
-              </CollapsibleContent>
-            </Collapsible>
+            {hasBMSAccess && (
+              <>
+                <SidebarSeparator className="mx-4 w-auto opacity-30" />
+                <Collapsible
+                  defaultOpen={location.pathname.startsWith('/app/business')}
+                  className="group-data-[collapsible=icon]:hidden"
+                >
+                  <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors">
+                    <span>Business Management</span>
+                    <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroup>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {businessNavItems.map((item) => {
+                            const isActive = location.pathname.startsWith(item.path);
+                            return (
+                              <SidebarMenuItem key={item.path}>
+                                <SidebarMenuButton
+                                  isActive={isActive}
+                                  onClick={() => navigate(item.path)}
+                                  tooltip={item.label}
+                                  className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
+                                >
+                                  <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
+                                  <span>{item.label}</span>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
           </SidebarContent>
 
           <SidebarSeparator className="mx-4 w-auto opacity-30" />
