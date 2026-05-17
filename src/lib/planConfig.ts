@@ -1,16 +1,23 @@
-export type PlanKey = "free" | "pro" | "vip";
+export type PlanKey = "free" | "pro" | "pro_plus" | "vip";
 
 export const PLAN_GENERATION_LIMITS: Record<PlanKey, number> = {
-  // Free: one-time trial (not monthly)
   free: 3,
-  // Pro: up to 500 generations
   pro: 500,
-  // VIP: up to 100 generations
-  vip: 100,
+  pro_plus: 1000,
+  vip: 9999,
 };
 
 export const PLAN_LABELS: Record<PlanKey, string> = {
   free: "Free",
   pro: "Pro",
+  pro_plus: "Pro+",
   vip: "VIP",
 };
+
+// Plans that have access to the Business Management System
+export const BUSINESS_ACCESS_PLANS: PlanKey[] = ["pro", "pro_plus", "vip"];
+
+export function hasBusinessAccess(plan: string | undefined | null): boolean {
+  if (!plan) return false;
+  return BUSINESS_ACCESS_PLANS.includes(plan as PlanKey);
+}

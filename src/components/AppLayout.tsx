@@ -37,6 +37,16 @@ import {
   BarChart3,
   Package,
   Play,
+  Building2,
+  DollarSign,
+  TrendingUp,
+  Receipt,
+  Calculator,
+  Wallet,
+  Users,
+  ShoppingCart,
+  ClipboardList,
+  Database,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -57,6 +67,21 @@ const navItems = [
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
   { icon: Play, label: 'Tutorial', path: '/tutorial' },
+];
+
+const businessNavItems = [
+  { icon: Building2, label: 'Biz Dashboard', path: '/app/business' },
+  { icon: ShoppingCart, label: 'Products', path: '/app/business/products' },
+  { icon: ClipboardList, label: 'Inventory', path: '/app/business/inventory' },
+  { icon: DollarSign, label: 'Sales Tracker', path: '/app/business/sales' },
+  { icon: Receipt, label: 'Expenses', path: '/app/business/expenses' },
+  { icon: Calculator, label: 'Pricing', path: '/app/business/pricing' },
+  { icon: Wallet, label: 'Finance', path: '/app/business/finance' },
+  { icon: Users, label: 'Customers', path: '/app/business/customers' },
+  { icon: FileText, label: 'Invoices', path: '/app/business/invoices' },
+  { icon: FileSearch, label: 'Receipts', path: '/app/business/receipts' },
+  { icon: Target, label: 'Targets', path: '/app/business/targets' },
+  { icon: Database, label: 'Records', path: '/app/business/records' },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
@@ -117,6 +142,36 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <SidebarMenu>
                   {navItems.map((item) => {
                     const isActive = location.pathname === item.path;
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => navigate(item.path)}
+                          tooltip={item.label}
+                          className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
+                        >
+                          <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
+                          <span>{item.label}</span>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            {/* Business Management Section */}
+            <SidebarSeparator className="mx-4 w-auto opacity-30" />
+            <div className="px-4 py-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
+                Business Management
+              </p>
+            </div>
+            <SidebarGroup>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {businessNavItems.map((item) => {
+                    const isActive = location.pathname.startsWith(item.path);
                     return (
                       <SidebarMenuItem key={item.path}>
                         <SidebarMenuButton
