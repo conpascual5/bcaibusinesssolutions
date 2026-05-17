@@ -45,6 +45,7 @@ import {
   Calculator,
   Wallet,
   Users,
+  ShoppingCart,
   ClipboardList,
   Database,
   ChevronDown,
