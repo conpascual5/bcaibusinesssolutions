@@ -18,7 +18,7 @@ type TeamMember = {
 
 export default function BusinessTeam() {
   const { user } = useAuth();
-  const { businessOwnerId } = useBusinessTeam();
+  const { businessOwnerId, isTeamMember } = useBusinessTeam();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -101,6 +101,7 @@ export default function BusinessTeam() {
         .insert({ owner_id: businessOwnerId, member_id: profile.id, role: "viewer" });
 
       if (insertError) {
+        console.error("[BusinessTeam] insert error", insertError);
         setError("Failed to add member. Please try again.");
         setAdding(false);
         return;
@@ -135,7 +136,8 @@ export default function BusinessTeam() {
       description="Invite people to view and manage your business data"
     >
       <div className="space-y-6">
-        {/* Add Member Form */}
+        {/* Add Member Form — only the owner can add members */}
+        {!isTeamMember && (
         <div className="bg-card rounded-2xl border border-border p-6">
           <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
             <UserPlus className="w-5 h-5 text-indigo-500" />
@@ -181,6 +183,7 @@ export default function BusinessTeam() {
           )}
         </div>
 
+        )}
         {/* Members List */}
         <div className="bg-card rounded-2xl border border-border overflow-hidden">
           <div className="px-6 py-4 border-b border-border flex items-center justify-between">
