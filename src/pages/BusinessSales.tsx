@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, DollarSign, TrendingUp, BarChart3, Calendar } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Product {
   id: string;
@@ -122,6 +123,21 @@ export default function BusinessSales() {
           <div className="flex items-center gap-3">
             <Input type="date" value={dateRange.from} onChange={e => setDateRange(d => ({ ...d, from: e.target.value }))} className="w-[140px]" />
             <Input type="date" value={dateRange.to} onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))} className="w-[140px]" />
+            <ExportButton
+              data={sales}
+              filename="sales"
+              title="Sales Transactions"
+              columns={[
+                { key: 'sale_date', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+                { key: 'products', header: 'Product', formatter: (_, row) => row.products?.name || '—' },
+                { key: 'quantity', header: 'Qty' },
+                { key: 'unit_price', header: 'Unit Price', formatter: v => `₱${v.toFixed(2)}` },
+                { key: 'total_amount', header: 'Total', formatter: v => `₱${v.toFixed(2)}` },
+                { key: 'profit', header: 'Profit', formatter: v => `₱${v.toFixed(2)}` },
+                { key: 'payment_method', header: 'Payment' },
+                { key: 'status', header: 'Status' },
+              ]}
+            />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> Record Sale</Button>

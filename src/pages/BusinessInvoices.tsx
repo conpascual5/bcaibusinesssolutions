@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, FileText, Search, Eye, Printer } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Customer {
   id: string;
@@ -171,6 +172,19 @@ export default function BusinessInvoices() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-[180px]" />
             </div>
+            <ExportButton
+              data={filtered}
+              filename="invoices"
+              title="Invoice List"
+              columns={[
+                { key: 'invoice_number', header: 'Invoice #' },
+                { key: 'customer_name', header: 'Customer', formatter: v => v || '—' },
+                { key: 'created_at', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+                { key: 'due_date', header: 'Due Date', formatter: v => v ? new Date(v).toLocaleDateString() : '—' },
+                { key: 'total', header: 'Total', formatter: v => `₱${v.toFixed(2)}` },
+                { key: 'status', header: 'Status' },
+              ]}
+            />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> New Invoice</Button>

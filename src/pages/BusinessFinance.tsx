@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Wallet, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface CashFlowEntry {
   id: string;
@@ -101,6 +102,18 @@ export default function BusinessFinance() {
           <div className="flex items-center gap-3">
             <Input type="date" value={dateRange.from} onChange={e => setDateRange(d => ({ ...d, from: e.target.value }))} className="w-[140px]" />
             <Input type="date" value={dateRange.to} onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))} className="w-[140px]" />
+            <ExportButton
+              data={entries}
+              filename="cash-flow"
+              title="Cash Flow Entries"
+              columns={[
+                { key: 'entry_date', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+                { key: 'type', header: 'Type' },
+                { key: 'category', header: 'Category' },
+                { key: 'description', header: 'Description', formatter: v => v || '—' },
+                { key: 'amount', header: 'Amount', formatter: (v, row) => `${row.type === 'inflow' ? '+' : '-'}₱${v.toFixed(2)}` },
+              ]}
+            />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> Add Entry</Button>

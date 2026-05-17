@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Package, ArrowDownUp, TrendingDown, TrendingUp } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Product {
   id: string;
@@ -221,6 +222,19 @@ export default function BusinessInventory() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Movement History</CardTitle>
+          <ExportButton
+            data={movements}
+            filename="inventory-movements"
+            title="Inventory Movement History"
+            columns={[
+              { key: 'created_at', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+              { key: 'products', header: 'Product', formatter: (_, row) => row.products?.name || '—' },
+              { key: 'type', header: 'Type', formatter: v => v === 'in' ? 'Stock In' : 'Stock Out' },
+              { key: 'quantity', header: 'Quantity', formatter: (v, row) => `${row.type === 'in' ? '+' : '-'}${v}` },
+              { key: 'reference', header: 'Reference', formatter: v => v || '—' },
+              { key: 'notes', header: 'Notes', formatter: v => v || '—' },
+            ]}
+          />
         </CardHeader>
         <CardContent>
           {loading ? (

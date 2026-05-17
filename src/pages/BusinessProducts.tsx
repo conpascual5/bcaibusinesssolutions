@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Package, Search } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Product {
   id: string;
@@ -155,6 +156,21 @@ export default function BusinessProducts() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>All Products</CardTitle>
+          <div className="flex items-center gap-2">
+          <ExportButton
+            data={filtered}
+            filename="products"
+            title="Products List"
+            columns={[
+              { key: 'name', header: 'Name' },
+              { key: 'sku', header: 'SKU', formatter: v => v || '—' },
+              { key: 'category', header: 'Category' },
+              { key: 'unit', header: 'Unit' },
+              { key: 'cost_price', header: 'Cost Price', formatter: (v) => v ? `₱${v.toFixed(2)}` : '—' },
+              { key: 'unit_price', header: 'Unit Price', formatter: (v) => `₱${v.toFixed(2)}` },
+              { key: 'unit_price', header: 'Margin', formatter: (_, row) => row.cost_price ? `${(((row.unit_price - row.cost_price) / row.unit_price) * 100).toFixed(0)}%` : '—' },
+            ]}
+          />
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="gap-2">
@@ -162,6 +178,7 @@ export default function BusinessProducts() {
                 Add Product
               </Button>
             </DialogTrigger>
+          </div>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>{editing ? 'Edit Product' : 'Add New Product'}</DialogTitle>

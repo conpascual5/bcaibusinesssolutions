@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Receipt, Users, TrendingDown, Calendar } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Expense {
   id: string;
@@ -96,6 +97,18 @@ export default function BusinessExpenses() {
           <div className="flex items-center gap-3">
             <Input type="date" value={dateRange.from} onChange={e => setDateRange(d => ({ ...d, from: e.target.value }))} className="w-[140px]" />
             <Input type="date" value={dateRange.to} onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))} className="w-[140px]" />
+            <ExportButton
+              data={expenses}
+              filename="expenses"
+              title="Expense Entries"
+              columns={[
+                { key: 'expense_date', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+                { key: 'expense_type', header: 'Type' },
+                { key: 'category', header: 'Category' },
+                { key: 'description', header: 'Description', formatter: v => v || '—' },
+                { key: 'amount', header: 'Amount', formatter: v => `₱${v.toFixed(2)}` },
+              ]}
+            />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> Add Expense</Button>

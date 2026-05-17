@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { toast } from 'sonner';
 import { Plus, Pencil, Trash2, Users, Search, Phone, Mail } from 'lucide-react';
 import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Customer {
   id: string;
@@ -129,10 +130,24 @@ export default function BusinessCustomers() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>All Customers</CardTitle>
+          <div className="flex items-center gap-2">
+          <ExportButton
+            data={filtered}
+            filename="customers"
+            title="Customer List"
+            columns={[
+              { key: 'name', header: 'Name' },
+              { key: 'email', header: 'Email', formatter: v => v || '—' },
+              { key: 'phone', header: 'Phone', formatter: v => v || '—' },
+              { key: 'address', header: 'Address', formatter: v => v || '—' },
+              { key: 'created_at', header: 'Date Added', formatter: v => new Date(v).toLocaleDateString() },
+            ]}
+          />
           <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="gap-2"><Plus className="w-4 h-4" /> Add Customer</Button>
             </DialogTrigger>
+          </div>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader><DialogTitle>{editing ? 'Edit Customer' : 'Add New Customer'}</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-4">
