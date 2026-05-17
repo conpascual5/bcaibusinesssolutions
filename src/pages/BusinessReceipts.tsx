@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -29,20 +30,21 @@ interface Invoice {
 
 export default function BusinessReceipts() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [previewInvoice, setPreviewInvoice] = useState<Invoice | null>(null);
 
   useEffect(() => {
-    if (user) fetchInvoices();
-  }, [user]);
+    if (user && businessOwnerId) fetchInvoices();
+  }, [user, businessOwnerId]);
 
   async function fetchInvoices() {
     const { data } = await supabase
       .from('invoices')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .order('created_at', { ascending: false });
     if (data) setInvoices(data);
     setLoading(false);

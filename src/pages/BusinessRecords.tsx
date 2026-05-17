@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ const RECORD_CATEGORIES = ['Sales', 'Expense', 'Payroll', 'Invoice', 'Inventory'
 
 export default function BusinessRecords() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [records, setRecords] = useState<RecordEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -42,8 +44,8 @@ export default function BusinessRecords() {
   });
 
   useEffect(() => {
-    if (user) fetchRecords();
-  }, [user, yearFilter]);
+    if (user && businessOwnerId) fetchRecords();
+  }, [user, businessOwnerId, yearFilter]);
 
   async function fetchRecords() {
     const startDate = `${yearFilter}-01-01`;
@@ -51,7 +53,7 @@ export default function BusinessRecords() {
     const { data } = await supabase
       .from('cash_flow')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .gte('entry_date', startDate)
       .lte('entry_date', endDate)
       .order('entry_date', { ascending: false });
@@ -69,7 +71,7 @@ export default function BusinessRecords() {
       return;
     }
     const { error } = await supabase.from('cash_flow').insert({
-      user_id: user!.id, type: form.record_type === 'income' ? 'inflow' : 'outflow',
+      user_id: businessOwnerId!, type: form.record_type === 'income' ? 'inflow' : 'outflow',
       category: form.category, description: form.description || null,
       amount: parseFloat(form.amount), entry_date: form.record_date, notes: form.notes || null,
     });

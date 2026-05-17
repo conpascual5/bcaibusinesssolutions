@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ interface TargetItem {
 
 export default function BusinessTargets() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [targets, setTargets] = useState<TargetItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -41,11 +43,11 @@ export default function BusinessTargets() {
   });
 
   useEffect(() => {
-    if (user) fetchTargets();
-  }, [user]);
+    if (user && businessOwnerId) fetchTargets();
+  }, [user, businessOwnerId]);
 
   async function fetchTargets() {
-    const { data } = await supabase.from('targets').select('*').eq('user_id', user!.id).order('created_at', { ascending: false });
+    const { data } = await supabase.from('targets').select('*').eq('user_id', businessOwnerId!).order('created_at', { ascending: false });
     if (data) setTargets(data);
     setLoading(false);
   }
@@ -56,7 +58,7 @@ export default function BusinessTargets() {
       return;
     }
     const { error } = await supabase.from('targets').insert({
-      user_id: user!.id, title: form.title, description: form.description || null,
+      user_id: businessOwnerId!, title: form.title, description: form.description || null,
       target_type: form.target_type, target_value: parseFloat(form.target_value),
       start_date: form.start_date, end_date: form.end_date,
     });

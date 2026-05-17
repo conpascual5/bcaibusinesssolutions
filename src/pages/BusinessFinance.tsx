@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ const CATEGORIES = ['Sales', 'Investment', 'Loan', 'Refund', 'Rent', 'Utilities'
 
 export default function BusinessFinance() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [entries, setEntries] = useState<CashFlowEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -38,14 +40,14 @@ export default function BusinessFinance() {
   const [form, setForm] = useState({ type: 'inflow' as 'inflow' | 'outflow', category: 'Sales', description: '', amount: '', entry_date: new Date().toISOString().split('T')[0], notes: '' });
 
   useEffect(() => {
-    if (user) fetchEntries();
-  }, [user, dateRange]);
+    if (user && businessOwnerId) fetchEntries();
+  }, [user, businessOwnerId, dateRange]);
 
   async function fetchEntries() {
     const { data } = await supabase
       .from('cash_flow')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .gte('entry_date', dateRange.from)
       .lte('entry_date', dateRange.to)
       .order('entry_date', { ascending: false });
@@ -56,7 +58,7 @@ export default function BusinessFinance() {
   async function handleSave() {
     if (!form.amount) { toast.error('Amount is required'); return; }
     const { error } = await supabase.from('cash_flow').insert({
-      user_id: user!.id, type: form.type, category: form.category,
+      user_id: businessOwnerId!, type: form.type, category: form.category,
       description: form.description || null, amount: parseFloat(form.amount),
       entry_date: form.entry_date, notes: form.notes || null,
     });

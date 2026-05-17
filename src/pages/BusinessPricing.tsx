@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,17 +22,18 @@ interface Product {
 
 export default function BusinessPricing() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [products, setProducts] = useState<Product[]>([]);
   const [costPrice, setCostPrice] = useState(50);
   const [overhead, setOverhead] = useState(10);
   const [margin, setMargin] = useState([30]);
 
   useEffect(() => {
-    if (user) fetchProducts();
-  }, [user]);
+    if (user && businessOwnerId) fetchProducts();
+  }, [user, businessOwnerId]);
 
   async function fetchProducts() {
-    const { data } = await supabase.from('products').select('id, name, unit_price, cost_price').eq('user_id', user!.id);
+    const { data } = await supabase.from('products').select('id, name, unit_price, cost_price').eq('user_id', businessOwnerId!);
     if (data) setProducts(data);
   }
 
