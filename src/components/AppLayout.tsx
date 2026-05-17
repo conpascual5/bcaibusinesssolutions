@@ -60,7 +60,7 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-const navItems = [
+const navItems: { icon: any; label: string; path: string; premium?: boolean }[] = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/app' },
   { icon: Wand2, label: 'Sales Wizard', path: '/app/sales-wizard' },
   { icon: BarChart3, label: 'Sales Report', path: '/app/sales-report' },
@@ -72,6 +72,7 @@ const navItems = [
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
   { icon: ShoppingCart, label: 'Tracker Shop', path: '/app/shop' },
+  { icon: Smartphone, label: 'GCash', path: '/app/gcash', premium: true },
   { icon: Play, label: 'Tutorial', path: '/tutorial' },
 ];
 
@@ -166,7 +167,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <SidebarGroup>
               <SidebarGroupContent>
                 <SidebarMenu>
-                  {navItems.map((item) => {
+                  {navItems
+                    .filter(item => !item.premium || (usage?.plan && usage.plan !== 'free'))
+                    .map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
                       <SidebarMenuItem key={item.path}>

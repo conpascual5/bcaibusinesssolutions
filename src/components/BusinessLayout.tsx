@@ -32,7 +32,6 @@ const trackerItems = [
   { icon: Users, label: 'Employees', path: '/app/business/hr/employees' },
   { icon: Clock, label: 'Attendance', path: '/app/business/hr/attendance' },
   { icon: Umbrella, label: 'Leave Mgmt', path: '/app/business/hr/leave' },
-  { icon: Smartphone, label: 'GCash', path: '/app/business/gcash' },
   { icon: BookOpen, label: 'Help & Guide', path: '/app/business/help' },
 ];
 

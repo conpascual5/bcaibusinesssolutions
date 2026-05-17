@@ -122,7 +122,6 @@ export default function App() {
         <Route path="/app/business/hr/employees" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessEmployees /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr/attendance" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessAttendance /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr/leave" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessLeave /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
-        <Route path="/app/business/gcash" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessGCash /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/help" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessHelp /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
@@ -132,6 +131,7 @@ export default function App() {
         <Route path="/app/image-ad-analyzer" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-plan" element={<ProtectedRoute><AppLayoutRoute><MyPlan /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-assets" element={<ProtectedRoute><AppLayoutRoute><MyAssets /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/gcash" element={<ProtectedRoute><AppLayoutRoute><BusinessGCash /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/shop" element={<ProtectedRoute><AppLayoutRoute><AppShop /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />

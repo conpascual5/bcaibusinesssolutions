@@ -1,8 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
-import { useBusinessTeam } from '@/providers/business-team';
-import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,7 +15,6 @@ import {
   Search, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   History, CheckCheck, CreditCard, Clock, Trash2
 } from 'lucide-react';
-import { TableSkeleton } from '@/components/BusinessSkeleton';
 import ExportButton from '@/components/ExportButton';
 import { NewTransactionDialog, ReplenishDialog, ReconciliationDialog } from '@/components/GCashDialogs';
 
@@ -59,7 +56,6 @@ const TRANSACTION_TYPES = [
 
 export default function BusinessGCash() {
   const { user } = useAuth();
-  const { businessOwnerId } = useBusinessTeam();
   const [transactions, setTransactions] = useState<GcashTransaction[]>([]);
   const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,7 +81,7 @@ export default function BusinessGCash() {
     amount: '', fee: '', reference_number: '', notes: '',
   });
 
-  const ownerId = businessOwnerId || user?.id;
+  const ownerId = user?.id;
 
   const fetchData = useCallback(async () => {
     if (!ownerId) return;
@@ -219,7 +215,12 @@ export default function BusinessGCash() {
   };
 
   return (
-    <BusinessLayout title="GCash Cash In/Out" description="Monitor digital wallet, physical cash, and transaction logs">
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">GCash Cash In/Out</h1>
+        <p className="text-sm text-muted-foreground mt-1">Monitor digital wallet, physical cash, and transaction logs</p>
+      </div>
+
       {/* Dual-Balance Tracker */}
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
         <Card className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 border-green-200 dark:border-green-800">
@@ -524,6 +525,6 @@ export default function BusinessGCash() {
         open={reconDialogOpen} onOpenChange={setReconDialogOpen}
         form={reconForm} setForm={setReconForm} onSave={handleSaveReconciliation}
       />
-    </BusinessLayout>
+    </div>
   );
 }
