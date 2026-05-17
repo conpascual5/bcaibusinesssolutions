@@ -203,8 +203,9 @@ export default function AppShop() {
 
                 {gsheetsPurchase?.is_downloadable && (
                   <a
-                    href="#"
+                    href={`https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/generate-bms-template?format=gsheets`}
                     className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all"
+                    download
                   >
                     <Download className="w-4 h-4" /> Download Now
                   </a>
@@ -267,8 +268,9 @@ export default function AppShop() {
 
                 {excelPurchase?.is_downloadable && (
                   <a
-                    href="#"
+                    href={`https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/generate-bms-template?format=excel`}
                     className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all"
+                    download
                   >
                     <Download className="w-4 h-4" /> Download Now
                   </a>

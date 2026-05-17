@@ -12,8 +12,8 @@ serve(async (req) => {
   }
 
   try {
-    const { format } = await req.json()
-    const isGsheets = format === 'gsheets'
+    const url = new URL(req.url)
+    const format = url.searchParams.get('format') || 'excel'
 
     console.log("[generate-bms-template] Generating template", { format })
 
@@ -264,79 +264,19 @@ serve(async (req) => {
     // Generate the file buffer
     const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'buffer' })
 
-    // Upload to Supabase Storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
+    const fileName = `BMS-Tracker-${format}.xlsx`
 
-    const fileName = `bms-tracker-${format}.xlsx`
-    const filePath = `templates/${fileName}`
+    console.log("[generate-bms-template] File generated successfully", { fileName, size: wbout.byteLength })
 
-    const storageUrl = `${supabaseUrl}/storage/v1/object/tracker_templates/${filePath}`
-
-    const uploadRes = await fetch(storageUrl, {
-      method: 'POST',
+    return new Response(wbout, {
       headers: {
-        'Authorization': `Bearer ${supabaseServiceKey}`,
+        ...corsHeaders,
         'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'x-upsert': 'true',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': wbout.byteLength.toString(),
       },
-      body: wbout,
+      status: 200,
     })
-
-    if (!uploadRes.ok) {
-      const uploadError = await uploadRes.text()
-      console.error("[generate-bms-template] Upload failed", { status: uploadRes.status, error: uploadError })
-      throw new Error(`Upload failed: ${uploadError}`)
-    }
-
-    console.log("[generate-bms-template] Upload successful", { filePath })
-
-    // Update the tracker_templates record with the storage path
-    const supabaseClient = createSupabaseClient(supabaseUrl, supabaseServiceKey)
-    const column = format === 'gsheets' ? 'storage_path_gsheets' : 'storage_path_excel'
-    const { error: updateError } = await supabaseClient
-      .from('tracker_templates')
-      .update({ [column]: filePath })
-      .eq('slug', 'business-management-system')
-
-    if (updateError) {
-      console.error("[generate-bms-template] Failed to update template record", { error: updateError })
-    }
-
-    // Generate a signed URL for download (valid for 1 hour)
-    const signedUrlRes = await fetch(
-      `${supabaseUrl}/storage/v1/object/sign/tracker_templates/${filePath}`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseServiceKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ expiresIn: 3600 }),
-      }
-    )
-
-    let downloadUrl = ''
-    if (signedUrlRes.ok) {
-      const signedData = await signedUrlRes.json()
-      downloadUrl = `${supabaseUrl}/storage/v1/object/sign/tracker_templates/${filePath}?token=${signedData.token}`
-    } else {
-      // Fallback to public URL
-      downloadUrl = `${supabaseUrl}/storage/v1/object/public/tracker_templates/${filePath}`
-    }
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        format,
-        downloadUrl,
-        filePath,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
-      }
-    )
   } catch (error) {
     console.error("[generate-bms-template] Error", { error: error.message })
     return new Response(
@@ -348,29 +288,3 @@ serve(async (req) => {
     )
   }
 })
-
-function createSupabaseClient(url: string, key: string) {
-  // Simple fetch-based client for Supabase REST API
-  const from = (table: string) => ({
-    update: (data: Record<string, unknown>) => ({
-      eq: async (column: string, value: string) => {
-        const res = await fetch(`${url}/rest/v1/${table}?${column}=eq.${value}`, {
-          method: 'PATCH',
-          headers: {
-            'Authorization': `Bearer ${key}`,
-            'apikey': key,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal',
-          },
-          body: JSON.stringify(data),
-        })
-        if (!res.ok) {
-          const errText = await res.text()
-          return { error: new Error(errText) }
-        }
-        return { error: null }
-      },
-    }),
-  })
-  return { from }
-}
