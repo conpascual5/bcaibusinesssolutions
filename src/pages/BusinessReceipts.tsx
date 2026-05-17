@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { formatCurrency } from '@/lib/currency';
 import { Search, FileText, Eye, Printer } from 'lucide-react';
 
 interface Invoice {
@@ -101,7 +102,7 @@ export default function BusinessReceipts() {
                       <TableCell className="font-mono text-sm">{inv.invoice_number}</TableCell>
                       <TableCell>{inv.customer_name || '—'}</TableCell>
                       <TableCell className="text-sm">{new Date(inv.created_at).toLocaleDateString()}</TableCell>
-                      <TableCell className="text-right font-medium">${inv.total.toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(inv.total)}</TableCell>
                       <TableCell>
                         <Badge variant={inv.status === 'paid' ? 'default' : inv.status === 'sent' ? 'secondary' : 'outline'} className="capitalize">
                           {inv.status}
@@ -148,17 +149,17 @@ export default function BusinessReceipts() {
                       <TableRow key={i}>
                         <TableCell>{item.description}</TableCell>
                         <TableCell className="text-right">{item.quantity}</TableCell>
-                        <TableCell className="text-right">${item.unit_price.toFixed(2)}</TableCell>
-                        <TableCell className="text-right">${(item.quantity * item.unit_price).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.unit_price)}</TableCell>
+                        <TableCell className="text-right">{formatCurrency(item.quantity * item.unit_price)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 <div className="space-y-1 text-sm border-t pt-3">
-                  <div className="flex justify-between"><span>Subtotal</span><span>${previewInvoice.subtotal.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Tax</span><span>${previewInvoice.tax.toFixed(2)}</span></div>
-                  <div className="flex justify-between"><span>Discount</span><span>-${previewInvoice.discount.toFixed(2)}</span></div>
-                  <div className="flex justify-between font-bold text-base"><span>Total</span><span>${previewInvoice.total.toFixed(2)}</span></div>
+                  <div className="flex justify-between"><span>Subtotal</span><span>{formatCurrency(previewInvoice.subtotal)}</span></div>
+                  <div className="flex justify-between"><span>Tax</span><span>{formatCurrency(previewInvoice.tax)}</span></div>
+                  <div className="flex justify-between"><span>Discount</span><span>-{formatCurrency(previewInvoice.discount)}</span></div>
+                  <div className="flex justify-between font-bold text-base"><span>Total</span><span>{formatCurrency(previewInvoice.total)}</span></div>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>

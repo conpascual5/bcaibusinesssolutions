@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
-import { Plus, Database, Search, Calendar, Download } from 'lucide-react';
+import { Plus, Database, Search } from 'lucide-react';
 
 interface RecordEntry {
   id: string;
@@ -103,17 +104,17 @@ export default function BusinessRecords() {
         </Card>
         <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Total Income</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">${totalIncome.toFixed(2)}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{formatCurrency(totalIncome)}</p></CardContent>
         </Card>
         <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950/20 dark:to-red-950/20">
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-rose-700 dark:text-rose-400">Total Expenses</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-rose-800 dark:text-rose-300">${totalExpense.toFixed(2)}</p></CardContent>
+          <CardContent><p className="text-2xl font-bold text-rose-800 dark:text-rose-300">{formatCurrency(totalExpense)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Net Balance</CardTitle></CardHeader>
           <CardContent>
             <p className={`text-2xl font-bold ${totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-red-500'}`}>
-              ${(totalIncome - totalExpense).toFixed(2)}
+              {formatCurrency(totalIncome - totalExpense)}
             </p>
           </CardContent>
         </Card>
@@ -161,7 +162,7 @@ export default function BusinessRecords() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Amount ($) *</Label>
+                      <Label>Amount (₱) *</Label>
                       <Input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
@@ -214,7 +215,7 @@ export default function BusinessRecords() {
                       <TableCell>{r.category}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{r.description || '—'}</TableCell>
                       <TableCell className={`text-right font-medium ${r.record_type === 'income' ? 'text-green-600' : 'text-red-600'}`}>
-                        {r.record_type === 'income' ? '+' : '-'}${r.amount.toFixed(2)}
+                        {r.record_type === 'income' ? '+' : '-'}{formatCurrency(r.amount)}
                       </TableCell>
                     </TableRow>
                   ))}

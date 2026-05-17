@@ -23,7 +23,7 @@ interface Product {
 
 interface Sale {
   id: string;
-  product_id: string | null;
+  product_id: string;
   quantity: number;
   unit_price: number;
   total_amount: number;
@@ -31,9 +31,7 @@ interface Sale {
   payment_method: string;
   status: string;
   sale_date: string;
-  notes: string | null;
-  created_at: string;
-  products: Product | null;
+  products: { name: string } | null;
 }
 
 export default function BusinessSales() {
@@ -42,13 +40,8 @@ export default function BusinessSales() {
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dateRange, setDateRange] = useState('7');
-  const [form, setForm] = useState({
-    product_id: '', quantity: '1', unit_price: '',
-    payment_method: 'cash',
-    sale_date: new Date().toISOString().split('T')[0],
-    notes: ''
-  });
+  const [dateRange, setDateRange] = useState({ from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState({ product_id: '', quantity: '1', unit_price: '', payment_method: 'cash', sale_date: new Date().toISOString().split('T')[0] });
 
   useEffect(() => {
     if (user) { fetchProducts(); fetchSales(); }
@@ -60,124 +53,87 @@ export default function BusinessSales() {
   }
 
   async function fetchSales() {
-    const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - parseInt(dateRange));
     const { data } = await supabase
       .from('sales')
-      .select('*, products:product_id(name, unit_price, cost_price)')
+      .select('*, products:product_id(name)')
       .eq('user_id', user!.id)
-      .gte('sale_date', daysAgo.toISOString().split('T')[0])
+      .gte('sale_date', dateRange.from)
+      .lte('sale_date', dateRange.to)
       .order('sale_date', { ascending: false });
-    if (data) setSales(data as any);
+    if (data) setSales(data);
     setLoading(false);
   }
 
-  async function handleSave() {
-    if (!form.unit_price) {
-      toast.error('Unit price is required');
-      return;
-    }
-    const qty = parseInt(form.quantity) || 1;
-    const unitPrice = parseFloat(form.unit_price);
-    const total = qty * unitPrice;
-    const product = products.find(p => p.id === form.product_id);
-    const costPrice = product?.cost_price || 0;
-    const profit = (unitPrice - costPrice) * qty;
-
-    const { error } = await supabase.from('sales').insert({
-      user_id: user!.id,
-      product_id: form.product_id || null,
-      quantity: qty,
-      unit_price: unitPrice,
-      total_amount: total,
-      profit,
-      payment_method: form.payment_method,
-      sale_date: form.sale_date,
-      notes: form.notes || null,
-    });
-    if (error) { toast.error(error.message); return; }
-    toast.success('Sale recorded!');
-    setDialogOpen(false);
-    setForm({ product_id: '', quantity: '1', unit_price: '', payment_method: 'cash', sale_date: new Date().toISOString().split('T')[0], notes: '' });
-    fetchSales();
+  function selectProduct(id: string) {
+    const p = products.find(p => p.id === id);
+    if (p) setForm(f => ({ ...f, product_id: id, unit_price: p.unit_price.toString() }));
   }
 
   const totalRevenue = sales.reduce((s, r) => s + r.total_amount, 0);
   const totalProfit = sales.reduce((s, r) => s + r.profit, 0);
   const totalTransactions = sales.length;
 
+  async function handleSave() {
+    if (!form.product_id) { toast.error('Select a product'); return; }
+    const qty = parseInt(form.quantity) || 1;
+    const price = parseFloat(form.unit_price) || 0;
+    const total = qty * price;
+    const product = products.find(p => p.id === form.product_id);
+    const cost = (product?.cost_price || 0) * qty;
+    const profit = total - cost;
+
+    const { error } = await supabase.from('sales').insert({
+      user_id: user!.id, product_id: form.product_id, quantity: qty,
+      unit_price: price, total_amount: total, profit,
+      payment_method: form.payment_method, sale_date: form.sale_date,
+    });
+    if (error) { toast.error(error.message); return; }
+    toast.success('Sale recorded!');
+    setDialogOpen(false);
+    setForm({ product_id: '', quantity: '1', unit_price: '', payment_method: 'cash', sale_date: new Date().toISOString().split('T')[0] });
+    fetchSales();
+  }
+
   return (
     <BusinessLayout title="Profit & Sales Tracker" description="Monitor daily revenue and profit">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200 dark:border-emerald-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Total Revenue</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{formatCurrency(totalRevenue)}</p>
-          </CardContent>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Transactions</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{totalTransactions}</p></CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200 dark:border-blue-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">Total Profit</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{formatCurrency(totalProfit)}</p>
-          </CardContent>
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Total Revenue</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{formatCurrency(totalRevenue)}</p></CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-blue-700 dark:text-blue-400">Total Profit</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-blue-800 dark:text-blue-300">{formatCurrency(totalProfit)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalTransactions}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Avg per Sale</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{totalTransactions ? formatCurrency(totalRevenue / totalTransactions) : formatCurrency(0)}</p>
-          </CardContent>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Avg per Sale</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{totalTransactions ? formatCurrency(totalRevenue / totalTransactions) : formatCurrency(0)}</p></CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
-          <CardTitle>Sales Records</CardTitle>
+          <CardTitle>Sales Transactions</CardTitle>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">Today</SelectItem>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                  <SelectItem value="365">This year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Input type="date" value={dateRange.from} onChange={e => setDateRange(d => ({ ...d, from: e.target.value }))} className="w-[140px]" />
+            <Input type="date" value={dateRange.to} onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))} className="w-[140px]" />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> Record Sale</Button>
               </DialogTrigger>
               <DialogContent>
-                <DialogHeader><DialogTitle>Record New Sale</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>Record Sale</DialogTitle></DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="space-y-2">
-                    <Label>Product (optional)</Label>
-                    <Select value={form.product_id} onValueChange={v => {
-                      const p = products.find(pr => pr.id === v);
-                      setForm(f => ({ ...f, product_id: v, unit_price: p ? String(p.unit_price) : f.unit_price }));
-                    }}>
+                    <Label>Product</Label>
+                    <Select value={form.product_id} onValueChange={selectProduct}>
                       <SelectTrigger><SelectValue placeholder="Select product" /></SelectTrigger>
                       <SelectContent>
-                        {products.map(p => (
-                          <SelectItem key={p.id} value={p.id}>{p.name} - {formatCurrency(p.unit_price)}</SelectItem>
-                        ))}
+                        {products.map(p => (<SelectItem key={p.id} value={p.id}>{p.name} - {formatCurrency(p.unit_price)}</SelectItem>))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -199,8 +155,8 @@ export default function BusinessSales() {
                         <SelectContent>
                           <SelectItem value="cash">Cash</SelectItem>
                           <SelectItem value="card">Card</SelectItem>
-                          <SelectItem value="transfer">Bank Transfer</SelectItem>
-                          <SelectItem value="mobile">Mobile Money</SelectItem>
+                          <SelectItem value="gcash">GCash</SelectItem>
+                          <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>
                       </Select>
@@ -210,9 +166,8 @@ export default function BusinessSales() {
                       <Input type="date" value={form.sale_date} onChange={e => setForm(f => ({ ...f, sale_date: e.target.value }))} />
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <Label>Notes</Label>
-                    <Input value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+                  <div className="rounded-lg bg-muted p-3 text-sm">
+                    <div className="flex justify-between"><span>Total Amount</span><span className="font-bold">{formatCurrency((parseInt(form.quantity) || 1) * (parseFloat(form.unit_price) || 0))}</span></div>
                   </div>
                 </div>
                 <div className="flex justify-end gap-3">
@@ -228,7 +183,7 @@ export default function BusinessSales() {
             <p className="text-center py-8 text-muted-foreground">Loading...</p>
           ) : sales.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
-              <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
+              <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>No sales recorded in this period</p>
             </div>
           ) : (
@@ -252,11 +207,11 @@ export default function BusinessSales() {
                       <TableCell>{new Date(sale.sale_date).toLocaleDateString()}</TableCell>
                       <TableCell className="font-medium">{sale.products?.name || '—'}</TableCell>
                       <TableCell>{sale.quantity}</TableCell>
-                      <TableCell className="text-right">${sale.unit_price.toFixed(2)}</TableCell>
-                      <TableCell className="text-right font-medium">${sale.total_amount.toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(sale.unit_price)}</TableCell>
+                      <TableCell className="text-right font-medium">{formatCurrency(sale.total_amount)}</TableCell>
                       <TableCell className="text-right">
                         <span className={sale.profit >= 0 ? 'text-green-600' : 'text-red-500'}>
-                          ${sale.profit.toFixed(2)}
+                          {formatCurrency(sale.profit)}
                         </span>
                       </TableCell>
                       <TableCell className="capitalize">{sale.payment_method}</TableCell>

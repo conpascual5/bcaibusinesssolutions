@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
+import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, ArrowUpCircle, ArrowDownCircle, Wallet, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 
@@ -21,68 +22,46 @@ interface CashFlowEntry {
   amount: number;
   entry_date: string;
   notes: string | null;
+  created_at: string;
 }
 
-const INFLOW_CATEGORIES = ['Sales', 'Investment', 'Loan', 'Refund', 'Other Income'];
-const OUTFLOW_CATEGORIES = ['Expenses', 'Payroll', 'Purchase', 'Loan Payment', 'Withdrawal', 'Other Payment'];
+const CATEGORIES = ['Sales', 'Investment', 'Loan', 'Refund', 'Rent', 'Utilities', 'Salaries', 'Supplies', 'Marketing', 'Other'];
 
 export default function BusinessFinance() {
   const { user } = useAuth();
   const [entries, setEntries] = useState<CashFlowEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [dateRange, setDateRange] = useState('30');
-  const [form, setForm] = useState({
-    type: 'inflow' as 'inflow' | 'outflow',
-    category: 'Sales',
-    description: '',
-    amount: '',
-    entry_date: new Date().toISOString().split('T')[0],
-    notes: ''
-  });
+  const [dateRange, setDateRange] = useState({ from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState({ type: 'inflow' as 'inflow' | 'outflow', category: 'Sales', description: '', amount: '', entry_date: new Date().toISOString().split('T')[0], notes: '' });
 
   useEffect(() => {
     if (user) fetchEntries();
   }, [user, dateRange]);
 
   async function fetchEntries() {
-    const daysAgo = new Date();
-    daysAgo.setDate(daysAgo.getDate() - parseInt(dateRange));
     const { data } = await supabase
       .from('cash_flow')
       .select('*')
       .eq('user_id', user!.id)
-      .gte('entry_date', daysAgo.toISOString().split('T')[0])
+      .gte('entry_date', dateRange.from)
+      .lte('entry_date', dateRange.to)
       .order('entry_date', { ascending: false });
     if (data) setEntries(data);
     setLoading(false);
   }
 
   async function handleSave() {
-    if (!form.amount) {
-      toast.error('Amount is required');
-      return;
-    }
+    if (!form.amount) { toast.error('Amount is required'); return; }
     const { error } = await supabase.from('cash_flow').insert({
-      user_id: user!.id,
-      type: form.type,
-      category: form.category,
-      description: form.description || null,
-      amount: parseFloat(form.amount),
-      entry_date: form.entry_date,
-      notes: form.notes || null,
+      user_id: user!.id, type: form.type, category: form.category,
+      description: form.description || null, amount: parseFloat(form.amount),
+      entry_date: form.entry_date, notes: form.notes || null,
     });
     if (error) { toast.error(error.message); return; }
-    toast.success('Cash flow entry added');
+    toast.success('Entry recorded!');
     setDialogOpen(false);
     setForm({ type: 'inflow', category: 'Sales', description: '', amount: '', entry_date: new Date().toISOString().split('T')[0], notes: '' });
-    fetchEntries();
-  }
-
-  async function handleDelete(id: string) {
-    const { error } = await supabase.from('cash_flow').delete().eq('id', id);
-    if (error) { toast.error(error.message); return; }
-    toast.success('Entry deleted');
     fetchEntries();
   }
 
@@ -93,60 +72,34 @@ export default function BusinessFinance() {
   return (
     <BusinessLayout title="Finance Accounting" description="Track cash flow and financial health">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 border-emerald-200 dark:border-emerald-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Total Inflow</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2">
-            <ArrowUpCircle className="w-5 h-5 text-emerald-500" />
-            <p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">${totalInflow.toFixed(2)}</p>
-          </CardContent>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Transactions</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">{entries.length}</p></CardContent>
         </Card>
-        <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950/20 dark:to-red-950/20 border-rose-200 dark:border-rose-800">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-rose-700 dark:text-rose-400">Total Outflow</CardTitle>
-          </CardHeader>
-          <CardContent className="flex items-center gap-2">
-            <ArrowDownCircle className="w-5 h-5 text-rose-500" />
-            <p className="text-2xl font-bold text-rose-800 dark:text-rose-300">${totalOutflow.toFixed(2)}</p>
-          </CardContent>
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Total Inflow</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-emerald-800 dark:text-emerald-300">{formatCurrency(totalInflow)}</p></CardContent>
+        </Card>
+        <Card className="bg-gradient-to-br from-rose-50 to-red-50 dark:from-rose-950/20 dark:to-red-950/20">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-rose-700 dark:text-rose-400">Total Outflow</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-rose-800 dark:text-rose-300">{formatCurrency(totalOutflow)}</p></CardContent>
         </Card>
         <Card className={`bg-gradient-to-br ${netCashFlow >= 0 ? 'from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border-blue-200' : 'from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-orange-200'}`}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Net Cash Flow</CardTitle>
-          </CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Net Cash Flow</CardTitle></CardHeader>
           <CardContent>
             <p className={`text-2xl font-bold ${netCashFlow >= 0 ? 'text-blue-800 dark:text-blue-300' : 'text-orange-800 dark:text-orange-300'}`}>
-              ${netCashFlow.toFixed(2)}
+              {formatCurrency(netCashFlow)}
             </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Transactions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">{entries.length}</p>
           </CardContent>
         </Card>
       </div>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-3">
-          <CardTitle>Cash Flow Records</CardTitle>
+          <CardTitle>Cash Flow Entries</CardTitle>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-muted-foreground" />
-              <Select value={dateRange} onValueChange={setDateRange}>
-                <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="7">Last 7 days</SelectItem>
-                  <SelectItem value="30">Last 30 days</SelectItem>
-                  <SelectItem value="90">Last 90 days</SelectItem>
-                  <SelectItem value="365">This year</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <Input type="date" value={dateRange.from} onChange={e => setDateRange(d => ({ ...d, from: e.target.value }))} className="w-[140px]" />
+            <Input type="date" value={dateRange.to} onChange={e => setDateRange(d => ({ ...d, to: e.target.value }))} className="w-[140px]" />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> Add Entry</Button>
@@ -157,14 +110,11 @@ export default function BusinessFinance() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Type</Label>
-                      <Select value={form.type} onValueChange={v => {
-                        const type = v as 'inflow' | 'outflow';
-                        setForm(f => ({ ...f, type, category: type === 'inflow' ? 'Sales' : 'Expenses' }));
-                      }}>
+                      <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as 'inflow' | 'outflow' }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="inflow">Inflow (Money In)</SelectItem>
-                          <SelectItem value="outflow">Outflow (Money Out)</SelectItem>
+                          <SelectItem value="inflow">Inflow</SelectItem>
+                          <SelectItem value="outflow">Outflow</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -173,9 +123,7 @@ export default function BusinessFinance() {
                       <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          {(form.type === 'inflow' ? INFLOW_CATEGORIES : OUTFLOW_CATEGORIES).map(c => (
-                            <SelectItem key={c} value={c}>{c}</SelectItem>
-                          ))}
+                          {CATEGORIES.map(c => (<SelectItem key={c} value={c}>{c}</SelectItem>))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -186,7 +134,7 @@ export default function BusinessFinance() {
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Amount ($) *</Label>
+                      <Label>Amount (₱) *</Label>
                       <Input type="number" step="0.01" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
                     </div>
                     <div className="space-y-2">
@@ -213,7 +161,7 @@ export default function BusinessFinance() {
           ) : entries.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <Wallet className="w-12 h-12 mx-auto mb-3 opacity-30" />
-              <p>No cash flow entries yet</p>
+              <p>No entries recorded</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -225,7 +173,6 @@ export default function BusinessFinance() {
                     <TableHead>Category</TableHead>
                     <TableHead>Description</TableHead>
                     <TableHead className="text-right">Amount</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -233,21 +180,15 @@ export default function BusinessFinance() {
                     <TableRow key={entry.id}>
                       <TableCell>{new Date(entry.entry_date).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Badge variant={entry.type === 'inflow' ? 'default' : 'destructive'} className="capitalize text-xs">
-                          {entry.type === 'inflow' ? (
-                            <><ArrowUpCircle className="w-3 h-3 mr-1 inline" /> Inflow</>
-                          ) : (
-                            <><ArrowDownCircle className="w-3 h-3 mr-1 inline" /> Outflow</>
-                          )}
+                        <Badge variant={entry.type === 'inflow' ? 'default' : 'secondary'} className="capitalize gap-1">
+                          {entry.type === 'inflow' ? <ArrowUpCircle className="w-3 h-3" /> : <ArrowDownCircle className="w-3 h-3" />}
+                          {entry.type}
                         </Badge>
                       </TableCell>
                       <TableCell>{entry.category}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{entry.description || '—'}</TableCell>
                       <TableCell className={`text-right font-medium ${entry.type === 'inflow' ? 'text-green-600' : 'text-red-600'}`}>
-                        {entry.type === 'inflow' ? '+' : '-'}${entry.amount.toFixed(2)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleDelete(entry.id)}>Delete</Button>
+                        {entry.type === 'inflow' ? '+' : '-'}{formatCurrency(entry.amount)}
                       </TableCell>
                     </TableRow>
                   ))}

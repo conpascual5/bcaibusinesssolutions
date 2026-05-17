@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Target, TrendingUp, Users, DollarSign } from 'lucide-react';
 
@@ -135,7 +136,7 @@ export default function BusinessTargets() {
                   </Select>
                 </div>
                 <div className="space-y-2">
-                  <Label>Target Value *</Label>
+                  <Label>Target Value (₱)</Label>
                   <Input type="number" step="0.01" value={form.target_value} onChange={e => setForm(f => ({ ...f, target_value: e.target.value }))} />
                 </div>
               </div>
@@ -192,7 +193,7 @@ export default function BusinessTargets() {
                   {t.description && <p className="text-sm text-muted-foreground">{t.description}</p>}
                   <div className="space-y-1">
                     <div className="flex justify-between text-sm">
-                      <span>${t.current_value.toFixed(2)} / ${t.target_value.toFixed(2)}</span>
+                      <span>{formatCurrency(t.current_value)} / {formatCurrency(t.target_value)}</span>
                       <span className="font-medium">{Math.round(progress)}%</span>
                     </div>
                     <Progress value={progress} className="h-2" />
