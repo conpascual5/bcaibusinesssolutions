@@ -5,6 +5,7 @@ import { useAuth } from "@/providers/auth";
 import AdminSupportInbox from "@/components/AdminSupportInbox";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminDownloads from "@/components/AdminDownloads";
+import AdminBMSAccess from "@/components/AdminBMSAccess";
 import { trackEvent } from "@/lib/metaPixel";
 import {
   Users,
@@ -34,6 +35,7 @@ import {
   ExternalLink,
   Download,
   Activity,
+  Building2,
 } from "lucide-react";
 
 type ProfileRow = {
@@ -550,7 +552,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads">("dashboard");
+  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms">("dashboard");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -745,6 +747,15 @@ export default function Admin() {
           >
             <Download className="w-4 h-4 stroke-[1.5]" />
             Downloads
+          </button>
+          <button
+            onClick={() => setActiveSection("bms")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "bms" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Building2 className="w-4 h-4 stroke-[1.5]" />
+            BMS Access
           </button>
           <button
             onClick={() => setActiveSection("settings")}
@@ -947,6 +958,8 @@ export default function Admin() {
         {activeSection === "support" && <AdminSupportInbox />}
 
         {activeSection === "downloads" && <AdminDownloads />}
+
+        {activeSection === "bms" && <AdminBMSAccess />}
 
         {activeSection === "settings" && <ApiKeySettings />}
       </div>
