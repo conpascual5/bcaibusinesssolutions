@@ -86,6 +86,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, SESSION_TIMEOUT_MS);
 
+    // Subscribe to auth changes FIRST so we don't miss events
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mounted) return;
+
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        setSession(newSession);
+        await fetchProfile(newSession);
+        finishLoading();
+      } else if (event === "SIGNED_OUT") {
+        setSession(null);
+        setUser(null);
+        finishLoading();
+        window.location.href = "/auth";
+      } else if (event === "INITIAL_SESSION") {
+        if (!resolved) {
+          setSession(newSession);
+          await fetchProfile(newSession);
+          finishLoading();
+        }
+      }
+    });
+
+    // Then check for existing session
     (async () => {
       try {
         const { data } = await supabase.auth.getSession();
@@ -107,28 +130,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         finishLoading();
       }
     })();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (!mounted) return;
-
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-        setSession(newSession);
-        await fetchProfile(newSession);
-        finishLoading();
-      } else if (event === "SIGNED_OUT") {
-        setSession(null);
-        setUser(null);
-        finishLoading();
-        window.location.href = "/auth";
-      } else if (event === "INITIAL_SESSION") {
-        // Only handle INITIAL_SESSION if we haven't already resolved
-        if (!resolved) {
-          setSession(newSession);
-          await fetchProfile(newSession);
-          finishLoading();
-        }
-      }
-    });
 
     return () => {
       mounted = false;

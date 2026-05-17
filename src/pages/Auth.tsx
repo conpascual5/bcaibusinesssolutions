@@ -65,16 +65,20 @@ export default function AuthPage() {
         toast.success("Check your email for the confirmation link!");
         setMode("sign_in");
       } else {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { error: signInError, data } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
 
-        // Don't navigate immediately — let onAuthStateChange in the provider
-        // pick up the new session and update `user`, then the useEffect above
-        // will redirect. This avoids race conditions.
-        // The button will show "Redirecting…" briefly.
+        // Wait for the session to be fully established before redirecting.
+        // This avoids the "stuck on login" issue where the provider hasn't
+        // picked up the new session yet.
+        if (data?.session) {
+          // Give the provider a moment to process the auth state change
+          await new Promise(resolve => setTimeout(resolve, 500));
+          window.location.href = "/app";
+        }
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
