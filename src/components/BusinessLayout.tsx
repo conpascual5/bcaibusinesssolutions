@@ -41,6 +41,7 @@ export default function BusinessLayout({ children, title, description }: Busines
   useEffect(() => {
     if (!user) return;
     if (user.isAdmin) {
+      console.log("[BusinessLayout] user is admin, granting access");
       setHasAccess(true);
       return;
     }
@@ -50,6 +51,12 @@ export default function BusinessLayout({ children, title, description }: Busines
         supabase.from('user_business_access').select('id').eq('user_id', user.id).maybeSingle(),
         supabase.from('business_team_members').select('id').eq('member_id', user.id).maybeSingle(),
       ]);
+      console.log("[BusinessLayout] access check", {
+        userId: user.id,
+        directAccess: !!accessRes.data,
+        teamAccess: !!teamRes.data,
+        teamData: teamRes.data,
+      });
       setHasAccess(!!accessRes.data || !!teamRes.data);
     })();
   }, [user]);
