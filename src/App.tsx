@@ -39,6 +39,8 @@ import BusinessInvoices from './pages/BusinessInvoices'
 import BusinessReceipts from './pages/BusinessReceipts'
 import BusinessTargets from './pages/BusinessTargets'
 import BusinessRecords from './pages/BusinessRecords'
+import AppShop from './pages/AppShop'
+import Shop from './pages/Shop'
 
 function LoadingScreen() {
   return (
@@ -87,6 +89,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/tutorial" element={<Tutorial />} />
+        <Route path="/shop" element={<Shop />} />
         <Route path="/about" element={<About />} />
         <Route path="/auth" element={<Auth />} />
         <Route path="/app" element={<ProtectedRoute><AppLayoutRoute><Dashboard /></AppLayoutRoute></ProtectedRoute>} />
@@ -114,6 +117,7 @@ export default function App() {
         <Route path="/app/image-ad-analyzer" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-plan" element={<ProtectedRoute><AppLayoutRoute><MyPlan /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-assets" element={<ProtectedRoute><AppLayoutRoute><MyAssets /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/shop" element={<ProtectedRoute><AppLayoutRoute><AppShop /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />
         <Route path="/terms" element={<Terms />} />

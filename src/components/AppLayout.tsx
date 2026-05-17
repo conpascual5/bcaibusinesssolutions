@@ -45,7 +45,6 @@ import {
   Calculator,
   Wallet,
   Users,
-  ShoppingCart,
   ClipboardList,
   Database,
   ChevronDown,
@@ -68,6 +67,7 @@ const navItems = [
   { icon: Package, label: 'My Assets', path: '/app/my-assets' },
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
+  { icon: ShoppingCart, label: 'Tracker Shop', path: '/app/shop' },
   { icon: Play, label: 'Tutorial', path: '/tutorial' },
 ];
 
