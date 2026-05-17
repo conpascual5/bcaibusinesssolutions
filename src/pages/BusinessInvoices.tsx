@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -54,6 +55,7 @@ interface Invoice {
 
 export default function BusinessInvoices() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
@@ -73,14 +75,14 @@ export default function BusinessInvoices() {
   });
 
   useEffect(() => {
-    if (user) { fetchCustomers(); fetchInvoices(); loadBusinessProfile(); }
-  }, [user]);
+    if (businessOwnerId) { fetchCustomers(); fetchInvoices(); loadBusinessProfile(); }
+  }, [businessOwnerId]);
 
   async function loadBusinessProfile() {
     const { data } = await supabase
       .from('invoices')
       .select('business_name, business_address, business_logo_url')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .not('business_name', 'is', null)
       .order('created_at', { ascending: false })
       .limit(1)
@@ -96,12 +98,12 @@ export default function BusinessInvoices() {
   }
 
   async function fetchCustomers() {
-    const { data } = await supabase.from('customers').select('id, name, email, phone, address').eq('user_id', user!.id);
+    const { data } = await supabase.from('customers').select('id, name, email, phone, address').eq('user_id', businessOwnerId!);
     if (data) setCustomers(data);
   }
 
   async function fetchInvoices() {
-    const { data } = await supabase.from('invoices').select('*').eq('user_id', user!.id).order('created_at', { ascending: false });
+    const { data } = await supabase.from('invoices').select('*').eq('user_id', businessOwnerId!).order('created_at', { ascending: false });
     if (data) setInvoices(data);
     setLoading(false);
   }
@@ -205,7 +207,7 @@ export default function BusinessInvoices() {
       return;
     }
     const { error } = await supabase.from('invoices').insert({
-      user_id: user!.id, invoice_number: generateInvoiceNumber(),
+      user_id: businessOwnerId!, invoice_number: generateInvoiceNumber(),
       customer_id: form.customer_id || null, customer_name: form.customer_name || null,
       customer_email: form.customer_email || null, customer_phone: form.customer_phone || null,
       customer_address: form.customer_address || null, customer_tin: form.customer_tin || null,

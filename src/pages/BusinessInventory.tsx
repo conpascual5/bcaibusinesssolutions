@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,19 +36,20 @@ interface StockMovement {
 
 export default function BusinessInventory() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [products, setProducts] = useState<Product[]>([]);
   const [movements, setMovements] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    if (user) { fetchData(); }
-  }, [user]);
+    if (businessOwnerId) { fetchData(); }
+  }, [businessOwnerId]);
 
   async function fetchData() {
     const [prodRes, movRes] = await Promise.all([
-      supabase.from('products').select('id, name, sku, unit, unit_price, cost_price, category').eq('user_id', user!.id).order('name', { ascending: true }),
-      supabase.from('inventory').select('*, products:product_id(name, sku, unit)').eq('user_id', user!.id).order('created_at', { ascending: false }),
+      supabase.from('products').select('id, name, sku, unit, unit_price, cost_price, category').eq('user_id', businessOwnerId!).order('name', { ascending: true }),
+      supabase.from('inventory').select('*, products:product_id(name, sku, unit)').eq('user_id', businessOwnerId!).order('created_at', { ascending: false }),
     ]);
     if (prodRes.data) setProducts(prodRes.data);
     if (movRes.data) setMovements(movRes.data);

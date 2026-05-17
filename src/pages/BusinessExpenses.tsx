@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ const EXPENSE_TYPES = ['operational', 'payroll', 'miscellaneous'];
 
 export default function BusinessExpenses() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -38,14 +40,14 @@ export default function BusinessExpenses() {
   const [form, setForm] = useState({ category: 'Supplies', description: '', amount: '', expense_type: 'operational', expense_date: new Date().toISOString().split('T')[0] });
 
   useEffect(() => {
-    if (user) fetchExpenses();
-  }, [user, dateRange]);
+    if (businessOwnerId) fetchExpenses();
+  }, [businessOwnerId, dateRange]);
 
   async function fetchExpenses() {
     const { data } = await supabase
       .from('expenses')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .gte('expense_date', dateRange.from)
       .lte('expense_date', dateRange.to)
       .order('expense_date', { ascending: false });
@@ -56,7 +58,7 @@ export default function BusinessExpenses() {
   async function handleSave() {
     if (!form.amount) { toast.error('Amount is required'); return; }
     const { error } = await supabase.from('expenses').insert({
-      user_id: user!.id, category: form.category, description: form.description || null,
+      user_id: businessOwnerId!, category: form.category, description: form.description || null,
       amount: parseFloat(form.amount), expense_type: form.expense_type, expense_date: form.expense_date,
     });
     if (error) { toast.error(error.message); return; }

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ interface Customer {
 
 export default function BusinessCustomers() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -34,14 +36,14 @@ export default function BusinessCustomers() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', address: '', notes: '' });
 
   useEffect(() => {
-    if (user) fetchCustomers();
-  }, [user]);
+    if (businessOwnerId) fetchCustomers();
+  }, [businessOwnerId]);
 
   async function fetchCustomers() {
     const { data } = await supabase
       .from('customers')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .order('created_at', { ascending: false });
     if (data) setCustomers(data);
     setLoading(false);
@@ -57,7 +59,7 @@ export default function BusinessCustomers() {
       toast.error('Customer name is required');
       return;
     }
-    const payload = { user_id: user!.id, ...form, email: form.email || null, phone: form.phone || null, address: form.address || null, notes: form.notes || null };
+    const payload = { user_id: businessOwnerId!, ...form, email: form.email || null, phone: form.phone || null, address: form.address || null, notes: form.notes || null };
 
     if (editing) {
       const { error } = await supabase.from('customers').update(payload).eq('id', editing.id);

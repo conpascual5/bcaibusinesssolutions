@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ interface Sale {
 
 export default function BusinessSales() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [products, setProducts] = useState<Product[]>([]);
   const [sales, setSales] = useState<Sale[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,11 +48,11 @@ export default function BusinessSales() {
   const [form, setForm] = useState({ product_id: '', quantity: '1', unit_price: '', payment_method: 'cash', sale_date: new Date().toISOString().split('T')[0] });
 
   useEffect(() => {
-    if (user) { fetchProducts(); fetchSales(); }
-  }, [user, dateRange]);
+    if (businessOwnerId) { fetchProducts(); fetchSales(); }
+  }, [businessOwnerId, dateRange]);
 
   async function fetchProducts() {
-    const { data } = await supabase.from('products').select('id, name, unit_price, cost_price').eq('user_id', user!.id);
+    const { data } = await supabase.from('products').select('id, name, unit_price, cost_price').eq('user_id', businessOwnerId!);
     if (data) setProducts(data);
   }
 
@@ -58,7 +60,7 @@ export default function BusinessSales() {
     const { data } = await supabase
       .from('sales')
       .select('*, products:product_id(name)')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .gte('sale_date', dateRange.from)
       .lte('sale_date', dateRange.to)
       .order('sale_date', { ascending: false });
@@ -85,7 +87,7 @@ export default function BusinessSales() {
     const profit = total - cost;
 
     const { error } = await supabase.from('sales').insert({
-      user_id: user!.id, product_id: form.product_id, quantity: qty,
+      user_id: businessOwnerId!, product_id: form.product_id, quantity: qty,
       unit_price: price, total_amount: total, profit,
       payment_method: form.payment_method, sale_date: form.sale_date,
     });

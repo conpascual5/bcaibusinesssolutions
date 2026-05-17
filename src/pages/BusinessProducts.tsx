@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,6 +31,7 @@ interface Product {
 
 export default function BusinessProducts() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -46,14 +48,14 @@ export default function BusinessProducts() {
   });
 
   useEffect(() => {
-    if (user) fetchProducts();
-  }, [user]);
+    if (businessOwnerId) fetchProducts();
+  }, [businessOwnerId]);
 
   async function fetchProducts() {
     const { data } = await supabase
       .from('products')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', businessOwnerId!)
       .order('created_at', { ascending: false });
     if (data) setProducts(data);
     setLoading(false);
@@ -71,7 +73,7 @@ export default function BusinessProducts() {
     }
 
     const payload = {
-      user_id: user!.id,
+      user_id: businessOwnerId!,
       name: form.name,
       description: form.description || null,
       category: form.category,

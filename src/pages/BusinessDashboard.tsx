@@ -1,4 +1,5 @@
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -17,13 +18,14 @@ import {
 
 export default function BusinessDashboard() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const navigate = useNavigate();
 
   const today = new Date();
   const monthStart = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().split('T')[0];
 
   const { data: stats, loading } = useCachedQuery(
-    user ? `biz-dashboard-${user.id}-${monthStart}` : null,
+    businessOwnerId ? `biz-dashboard-${businessOwnerId}-${monthStart}` : null,
     async () => {
       const [
         { count: prodCount },
@@ -35,14 +37,14 @@ export default function BusinessDashboard() {
         { data: cashData },
         { data: invMovements },
       ] = await Promise.all([
-        supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-        supabase.from('sales').select('*, products:product_id(name)').eq('user_id', user!.id).gte('sale_date', monthStart).order('sale_date', { ascending: false }).limit(5),
-        supabase.from('expenses').select('amount').eq('user_id', user!.id).gte('expense_date', monthStart),
-        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-        supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('user_id', user!.id),
-        supabase.from('targets').select('*').eq('user_id', user!.id).eq('status', 'active'),
-        supabase.from('cash_flow').select('type, amount').eq('user_id', user!.id).gte('entry_date', monthStart),
-        supabase.from('inventory').select('product_id, quantity, type').eq('user_id', user!.id),
+        supabase.from('products').select('*', { count: 'exact', head: true }).eq('user_id', businessOwnerId!),
+        supabase.from('sales').select('*, products:product_id(name)').eq('user_id', businessOwnerId!).gte('sale_date', monthStart).order('sale_date', { ascending: false }).limit(5),
+        supabase.from('expenses').select('amount').eq('user_id', businessOwnerId!).gte('expense_date', monthStart),
+        supabase.from('customers').select('*', { count: 'exact', head: true }).eq('user_id', businessOwnerId!),
+        supabase.from('invoices').select('*', { count: 'exact', head: true }).eq('user_id', businessOwnerId!),
+        supabase.from('targets').select('*').eq('user_id', businessOwnerId!).eq('status', 'active'),
+        supabase.from('cash_flow').select('type, amount').eq('user_id', businessOwnerId!).gte('entry_date', monthStart),
+        supabase.from('inventory').select('product_id, quantity, type').eq('user_id', businessOwnerId!),
       ]);
 
       const totalRevenue = (salesData || []).reduce((s: number, r: any) => s + r.total_amount, 0);
