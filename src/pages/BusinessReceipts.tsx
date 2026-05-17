@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { formatCurrency } from '@/lib/currency';
 import { Search, FileText, Eye, Printer } from 'lucide-react';
+import { TableSkeleton } from '@/components/BusinessSkeleton';
 
 interface Invoice {
   id: string;
@@ -77,7 +78,7 @@ export default function BusinessReceipts() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
+            <TableSkeleton rows={5} />
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="w-12 h-12 mx-auto mb-3 opacity-30" />

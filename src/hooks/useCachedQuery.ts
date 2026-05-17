@@ -40,9 +40,10 @@ export function useCachedQuery<T>(
     if (!cacheKey) return;
 
     let cancelled = false;
+    const key: string = cacheKey;
 
     async function load() {
-      const cached = cache.get(cacheKey);
+      const cached = cache.get(key);
       if (cached && Date.now() - cached.timestamp < ttl) {
         if (mountedRef.current && !cancelled) {
           setData(cached.data as T);
@@ -54,7 +55,7 @@ export function useCachedQuery<T>(
       setLoading(true);
       try {
         const result = await fetcher();
-        cache.set(cacheKey, { data: result, timestamp: Date.now() });
+        cache.set(key, { data: result, timestamp: Date.now() });
         if (mountedRef.current && !cancelled) {
           setData(result);
           setLoading(false);
@@ -72,5 +73,5 @@ export function useCachedQuery<T>(
     return () => { cancelled = true; };
   }, [cacheKey, ttl]);
 
-  return { data, loading, error, refetch: () => { cache.delete(cacheKey!); setLoading(true); fetcher().then(setData).finally(() => setLoading(false)); } };
+  return { data, loading, error, refetch: () => { if (cacheKey) { cache.delete(cacheKey); } setLoading(true); fetcher().then(setData).finally(() => setLoading(false)); } };
 }

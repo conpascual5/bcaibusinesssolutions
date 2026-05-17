@@ -24,6 +24,7 @@ import MyAssets from './pages/MyAssets'
 import SalesReport from './pages/SalesReport'
 import AppLayout from './components/AppLayout'
 import SupportChatWidget from './components/SupportChatWidget'
+import PageTransition from './components/PageTransition'
 
 // Business Management System pages
 import BusinessDashboard from './pages/BusinessDashboard'
@@ -67,7 +68,9 @@ function AdminRoute({ children }: { children: React.ReactNode }) {
 function AppLayoutRoute({ children }: { children: React.ReactNode }) {
   return (
     <AppLayout>
-      {children}
+      <PageTransition>
+        {children}
+      </PageTransition>
     </AppLayout>
   );
 }

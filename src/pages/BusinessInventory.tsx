@@ -13,6 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Package, ArrowDownUp, TrendingDown, TrendingUp } from 'lucide-react';
+import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
 
 interface Product {
   id: string;
@@ -223,7 +224,7 @@ export default function BusinessInventory() {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-center py-8 text-muted-foreground">Loading...</p>
+            <TableSkeleton rows={5} />
           ) : movements.length === 0 ? (
             <p className="text-center py-8 text-muted-foreground">No movements recorded</p>
           ) : (
