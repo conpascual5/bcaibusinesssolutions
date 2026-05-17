@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ArrowLeft, Play, Wand2, Target, BarChart3, FileSearch, FileText, Sparkles, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Play, Wand2, Target, BarChart3, FileSearch, FileText, Sparkles, ChevronRight, Smartphone } from 'lucide-react';
 import AnimatedSection from '@/components/AnimatedSection';
 
 interface TutorialVideo {
@@ -63,6 +63,16 @@ const tutorials: TutorialVideo[] = [
     gradient: "from-amber-500 to-orange-400",
     reelId: "997436722769451",
     duration: "2:10",
+  },
+  {
+    id: "gcash",
+    title: "GCash Cash In/Out",
+    description: "Track digital wallet and physical cash balances, log cash in/out transactions, manage float replenishments, and run end-of-day reconciliations with variance detection.",
+    icon: <Smartphone className="w-6 h-6" />,
+    color: "bg-blue-500",
+    gradient: "from-blue-500 to-teal-400",
+    reelId: "1334334298589942",
+    duration: "3:00",
   },
 ];
 

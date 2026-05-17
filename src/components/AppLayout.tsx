@@ -53,6 +53,7 @@ import {
   Clock,
   Umbrella,
   Smartphone,
+  BookOpen,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -74,6 +75,7 @@ const navItems: { icon: any; label: string; path: string; premium?: boolean }[] 
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
   { icon: ShoppingCart, label: 'Tracker Shop', path: '/app/shop' },
   { icon: Smartphone, label: 'GCash', path: '/app/gcash', premium: true },
+  { icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' },
   { icon: Play, label: 'Tutorial', path: '/tutorial' },
 ];
 

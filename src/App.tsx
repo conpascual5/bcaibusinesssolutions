@@ -4,6 +4,7 @@ import { useAuth } from '@/providers/auth'
 import { trackPageView } from './lib/metaPixel'
 import Landing from './pages/Landing'
 import Tutorial from './pages/Tutorial'
+import KnowledgeBase from './pages/KnowledgeBase'
 import About from './pages/About'
 import Auth from './pages/Auth'
 import Terms from './pages/Terms'
@@ -97,6 +98,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/tutorial" element={<Tutorial />} />
+        <Route path="/knowledge-base" element={<KnowledgeBase />} />
         <Route path="/shop" element={<Shop />} />
         <Route path="/about" element={<About />} />
         <Route path="/auth" element={<Auth />} />
