@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3 } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;
@@ -32,6 +32,7 @@ const trackerItems = [
   { icon: Users, label: 'Employees', path: '/app/business/hr/employees' },
   { icon: Clock, label: 'Attendance', path: '/app/business/hr/attendance' },
   { icon: Umbrella, label: 'Leave Mgmt', path: '/app/business/hr/leave' },
+  { icon: BookOpen, label: 'Help & Guide', path: '/app/business/help' },
 ];
 
 export default function BusinessLayout({ children, title, description }: BusinessLayoutProps) {
