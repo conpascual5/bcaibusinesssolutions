@@ -127,14 +127,14 @@ export default function BusinessLayout({ children, title, description }: Busines
               <span className="hidden sm:inline">All Trackers</span>
             </Button>
           </SheetTrigger>
-          <SheetContent side="right" className="w-[280px] sm:w-[320px]">
-            <SheetHeader className="mb-6">
+          <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0">
+            <SheetHeader className="px-6 pt-6 pb-0 mb-4">
               <SheetTitle className="flex items-center gap-2 text-lg">
                 <Building2 className="w-5 h-5 text-indigo-500" />
                 Business Trackers
               </SheetTitle>
             </SheetHeader>
-            <nav className="space-y-1">
+            <nav className="space-y-1 px-6 pb-6 overflow-y-auto max-h-[calc(100vh-8rem)]">
               {trackerItems.map((item) => {
                 const isActive = item.path === '/app/business'
                   ? location.pathname === '/app/business' || location.pathname === '/app/business/dashboard'
