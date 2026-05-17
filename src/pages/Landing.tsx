@@ -71,7 +71,7 @@ export default function Landing() {
     { icon: <Eye className="w-5 h-5" />, color: "from-orange-500 to-amber-400", title: "Image Ad Analyzer", desc: "Upload your ad image and get AI-powered analysis with Taglish captions and Facebook Ads targeting strategy.", badge: "3 trial" },
     { icon: <FileSearch className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Ad Analyzer", desc: "Paste competitor ad copy and get psychological trigger analysis, counter-positioning strategies, and improvement tips.", badge: "3 trial" },
     { icon: <BarChart3 className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually. Charts and summaries included.", badge: "Free" },
-    { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate BIR-compliant Philippine invoices with VAT/Non-VAT support. Download as PDF instantly.", badge: "Free" },
+    { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate customizable invoices with business branding, logo, and e-signature support. Download as PDF.", badge: "Free" },
     { icon: <Building2 className="w-5 h-5" />, color: "from-violet-500 to-indigo-500", title: "Business Management", desc: "Complete business operations suite — products, inventory, sales tracker, expenses, pricing calculator, finance, customers, invoices, receipts, targets, and records.", badge: "Pro+" },
   ];
 
@@ -199,7 +199,7 @@ export default function Landing() {
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">7 Powerful Tools</h2>
               <p className="text-gray-500 mt-3 max-w-xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
-                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management</strong> is available on <strong>Pro, Pro+, and VIP</strong> plans.
+                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans — access is granted per user upon request.
               </p>
             </div>
           </AnimatedSection>
@@ -241,8 +241,8 @@ export default function Landing() {
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business Management System</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-                A complete business operations suite — available exclusively on <strong>Pro</strong>, <strong>Pro+</strong>, and <strong>VIP</strong> plans.
-                Manage every aspect of your business from one dashboard.
+                A complete business operations suite — <strong>no longer available</strong> on Pro, Pro+, and VIP plans.
+                Access is now granted per user upon request. Manage every aspect of your business from one dashboard.
               </p>
             </div>
           </AnimatedSection>
@@ -257,7 +257,7 @@ export default function Landing() {
               { icon: <Calculator className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Pricing Calculator", desc: "Calculate optimal selling prices based on cost, overhead, and target profit margin." },
               { icon: <Wallet className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Finance", desc: "Cash flow management with inflow/outflow tracking, balance monitoring, and financial summaries." },
               { icon: <Users className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Customers", desc: "Build and manage your customer database with contact details and notes." },
-              { icon: <FileText className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Invoices", desc: "Create customizable invoices with e-signature support, business branding, and status tracking." },
+              { icon: <FileText className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Invoices", desc: "Create fully customizable invoices with business branding, logo upload, and e-signature pad. Draw your signature with mouse or touch." },
               { icon: <FileSearchIcon className="w-5 h-5" />, color: "from-cyan-500 to-blue-400", title: "Receipts", desc: "View and search all receipts with detailed line items and payment status." },
               { icon: <Target className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Targets", desc: "Set business goals with progress tracking, target values, and status monitoring." },
               { icon: <Database className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Records", desc: "Yearly record keeping with search, filter by type, and comprehensive data management." },
@@ -411,8 +411,9 @@ export default function Landing() {
               <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
                 <Crown className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-gray-700">
-                  <strong className="text-amber-700">Pro, Pro+, and VIP</strong> plans include full access to all 12 Business Management trackers.
-                  <Link to="/auth" className="ml-2 text-indigo-600 font-semibold hover:text-indigo-700 underline">Upgrade now →</Link>
+                  <strong className="text-amber-700">Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans.
+                  Access is granted per user upon request.{' '}
+                  <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
                 </p>
               </div>
             </div>
@@ -461,7 +462,6 @@ export default function Landing() {
                   "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
-                  "✅ Business Management System — Products, Inventory, Sales, Expenses, Pricing, Finance, Customers, Invoices, Receipts, Targets & Records",
                   "Priority live chat support",
                   "Customize 30 product images",
                   "📦 Delivery: Submit your images/theme after payment — receive your content in 2–3 business days",
@@ -480,7 +480,6 @@ export default function Landing() {
                   "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
-                  "✅ Business Management System — Products, Inventory, Sales, Expenses, Pricing, Finance, Customers, Invoices, Receipts, Targets & Records",
                   "Priority live chat support",
                   "1 30-60 UGC or Cinematic Video Ad",
                   "📦 Delivery: Submit your script after payment — receive your video in 2–3 business days",
@@ -498,7 +497,6 @@ export default function Landing() {
                   "100 generations per month for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
-                  "✅ Business Management System — Products, Inventory, Sales, Expenses, Pricing, Finance, Customers, Invoices, Receipts, Targets & Records",
                   "Dedicated live chat support",
                   "Subject to fair usage policy",
                 ],
@@ -765,7 +763,7 @@ export default function Landing() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Business?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator. Upgrade to Pro for the full Business Management System. No credit card needed.</p>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System access is granted per user upon request. No credit card needed.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                   Get Started Free <ChevronRight className="w-5 h-5" />
