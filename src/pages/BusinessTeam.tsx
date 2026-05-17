@@ -62,11 +62,12 @@ export default function BusinessTeam() {
     setAdding(true);
 
     try {
-      // Find user by email
+      // Find user by email (case-insensitive)
+      const emailTrimmed = email.trim().toLowerCase();
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("id, email, full_name")
-        .eq("email", email.trim().toLowerCase())
+        .ilike("email", emailTrimmed)
         .maybeSingle();
 
       if (profileError) {
@@ -76,7 +77,7 @@ export default function BusinessTeam() {
         return;
       }
       if (!profile) {
-        console.error("[BusinessTeam] no profile found for email:", email.trim().toLowerCase());
+        console.error("[BusinessTeam] no profile found for email:", emailTrimmed);
         setError("No user found with that email address.");
         setAdding(false);
         return;
