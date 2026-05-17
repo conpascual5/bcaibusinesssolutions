@@ -1,11 +1,12 @@
 import { type ReactNode, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/providers/auth';
+import { useBusinessTeam } from '@/providers/business-team';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;
@@ -31,6 +32,7 @@ const trackerItems = [
 
 export default function BusinessLayout({ children, title, description }: BusinessLayoutProps) {
   const { user } = useAuth();
+  const { isTeamMember, ownerProfile } = useBusinessTeam();
   const navigate = useNavigate();
   const location = useLocation();
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -88,6 +90,16 @@ export default function BusinessLayout({ children, title, description }: Busines
 
   return (
     <div className="space-y-6">
+      {/* Team member banner */}
+      {isTeamMember && ownerProfile && (
+        <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-sm">
+          <Eye className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-amber-800 dark:text-amber-300">
+            You're viewing <strong>{ownerProfile.full_name || ownerProfile.email}</strong>'s business data as a team member.
+          </p>
+        </div>
+      )}
+
       {/* Header with off-canvas trigger */}
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">

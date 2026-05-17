@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/providers/auth";
+import { useBusinessTeam } from "@/providers/business-team";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2, UserPlus, X, Mail, UserCheck, Shield, Trash2, Users } from "lucide-react";
 import BusinessLayout from "@/components/BusinessLayout";
@@ -17,6 +18,7 @@ type TeamMember = {
 
 export default function BusinessTeam() {
   const { user } = useAuth();
+  const { businessOwnerId } = useBusinessTeam();
   const [members, setMembers] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
@@ -25,11 +27,11 @@ export default function BusinessTeam() {
   const [success, setSuccess] = useState("");
 
   const loadMembers = async () => {
-    if (!user) return;
+    if (!user || !businessOwnerId) return;
     const { data } = await supabase
       .from("business_team_members")
       .select("id, member_id, role, created_at")
-      .eq("owner_id", user.id)
+      .eq("owner_id", businessOwnerId)
       .order("created_at", { ascending: false });
 
     if (data) {
@@ -50,11 +52,11 @@ export default function BusinessTeam() {
   };
 
   useEffect(() => {
-    loadMembers();
-  }, [user]);
+    if (user && businessOwnerId) loadMembers();
+  }, [user, businessOwnerId]);
 
   const addMember = async () => {
-    if (!user || !email.trim()) return;
+    if (!user || !businessOwnerId || !email.trim()) return;
     setError("");
     setSuccess("");
     setAdding(true);
@@ -73,7 +75,7 @@ export default function BusinessTeam() {
         return;
       }
 
-      if (profile.id === user.id) {
+      if (profile.id === businessOwnerId) {
         setError("You cannot add yourself as a team member.");
         setAdding(false);
         return;
@@ -83,7 +85,7 @@ export default function BusinessTeam() {
       const { data: existing } = await supabase
         .from("business_team_members")
         .select("id")
-        .eq("owner_id", user.id)
+        .eq("owner_id", businessOwnerId)
         .eq("member_id", profile.id)
         .maybeSingle();
 
@@ -96,7 +98,7 @@ export default function BusinessTeam() {
       // Add member
       const { error: insertError } = await supabase
         .from("business_team_members")
-        .insert({ owner_id: user.id, member_id: profile.id, role: "viewer" });
+        .insert({ owner_id: businessOwnerId, member_id: profile.id, role: "viewer" });
 
       if (insertError) {
         setError("Failed to add member. Please try again.");
@@ -114,11 +116,11 @@ export default function BusinessTeam() {
   };
 
   const removeMember = async (memberId: string) => {
-    if (!user) return;
+    if (!user || !businessOwnerId) return;
     const { error: deleteError } = await supabase
       .from("business_team_members")
       .delete()
-      .eq("owner_id", user.id)
+      .eq("owner_id", businessOwnerId)
       .eq("member_id", memberId);
 
     if (!deleteError) {
