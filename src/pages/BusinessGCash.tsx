@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Navigate } from 'react-router';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/providers/auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +57,12 @@ const TRANSACTION_TYPES = [
 
 export default function BusinessGCash() {
   const { user } = useAuth();
+
+  // Only VIP, Pro, and Pro+ users can access GCash
+  if (user && user.plan === 'free') {
+    return <Navigate to="/app" replace />;
+  }
+
   const [transactions, setTransactions] = useState<GcashTransaction[]>([]);
   const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
   const [loading, setLoading] = useState(true);

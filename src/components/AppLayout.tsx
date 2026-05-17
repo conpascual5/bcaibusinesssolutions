@@ -52,6 +52,7 @@ import {
   ChevronDown,
   Clock,
   Umbrella,
+  Smartphone,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -168,7 +169,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navItems
-                    .filter(item => !item.premium || (usage?.plan && usage.plan !== 'free'))
+                    .filter(item => !item.premium || (user?.plan && user.plan !== 'free'))
                     .map((item) => {
                     const isActive = location.pathname === item.path;
                     return (
