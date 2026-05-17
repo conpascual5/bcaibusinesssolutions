@@ -17,6 +17,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Sparkles,
   User,
@@ -47,6 +48,7 @@ import {
   ShoppingCart,
   ClipboardList,
   Database,
+  ChevronDown,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -160,35 +162,41 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </SidebarGroupContent>
             </SidebarGroup>
 
-            {/* Business Management Section */}
+            {/* Business Management Section - Collapsible */}
             <SidebarSeparator className="mx-4 w-auto opacity-30" />
-            <div className="px-4 py-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 group-data-[collapsible=icon]:hidden">
-                Business Management
-              </p>
-            </div>
-            <SidebarGroup>
-              <SidebarGroupContent>
-                <SidebarMenu>
-                  {businessNavItems.map((item) => {
-                    const isActive = location.pathname.startsWith(item.path);
-                    return (
-                      <SidebarMenuItem key={item.path}>
-                        <SidebarMenuButton
-                          isActive={isActive}
-                          onClick={() => navigate(item.path)}
-                          tooltip={item.label}
-                          className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
-                        >
-                          <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
-                          <span>{item.label}</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
-                    );
-                  })}
-                </SidebarMenu>
-              </SidebarGroupContent>
-            </SidebarGroup>
+            <Collapsible
+              defaultOpen={location.pathname.startsWith('/app/business')}
+              className="group-data-[collapsible=icon]:hidden"
+            >
+              <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40 hover:text-sidebar-foreground/70 transition-colors">
+                <span>Business Management</span>
+                <ChevronDown className="w-3 h-3 transition-transform group-data-[state=open]:rotate-180" />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroup>
+                  <SidebarGroupContent>
+                    <SidebarMenu>
+                      {businessNavItems.map((item) => {
+                        const isActive = location.pathname.startsWith(item.path);
+                        return (
+                          <SidebarMenuItem key={item.path}>
+                            <SidebarMenuButton
+                              isActive={isActive}
+                              onClick={() => navigate(item.path)}
+                              tooltip={item.label}
+                              className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
+                            >
+                              <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
+                              <span>{item.label}</span>
+                            </SidebarMenuButton>
+                          </SidebarMenuItem>
+                        );
+                      })}
+                    </SidebarMenu>
+                  </SidebarGroupContent>
+                </SidebarGroup>
+              </CollapsibleContent>
+            </Collapsible>
           </SidebarContent>
 
           <SidebarSeparator className="mx-4 w-auto opacity-30" />
