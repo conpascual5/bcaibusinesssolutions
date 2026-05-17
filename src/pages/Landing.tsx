@@ -10,6 +10,8 @@ import {
   ClipboardList, DollarSign, Calculator, Wallet,
   Users, FileSearch as FileSearchIcon, Database,
   Crown,
+  Smartphone,
+  CheckCircle2,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -73,6 +75,7 @@ export default function Landing() {
     { icon: <BarChart3 className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually. Charts and summaries included.", badge: "Free" },
     { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate customizable invoices with business branding, logo, and e-signature support. Download as PDF.", badge: "Free" },
     { icon: <Building2 className="w-5 h-5" />, color: "from-violet-500 to-indigo-500", title: "Business Management", desc: "Complete business operations suite — products, inventory, sales tracker, expenses, pricing calculator, finance, customers, invoices, receipts, targets, and records.", badge: "Pro+" },
+    { icon: <Smartphone className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "GCash Cash In/Out", desc: "Track digital wallet and physical cash balances, log cash in/out transactions, and reconcile daily — built for sari-sari stores and small businesses.", badge: "VIP" },
   ];
 
   return (
@@ -173,8 +176,8 @@ export default function Landing() {
       <section className="py-12 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { value: "18+", label: "Powerful Tools", color: "text-blue-600" },
-            { value: "12", label: "Business Trackers", color: "text-purple-600" },
+            { value: "19+", label: "Powerful Tools", color: "text-blue-600" },
+            { value: "13", label: "Business Trackers", color: "text-purple-600" },
             { value: "4", label: "Pricing Plans", color: "text-amber-600" },
             { value: "Free", label: "Sales & Invoices", color: "text-emerald-600" },
           ].map((s, i) => (
@@ -196,7 +199,7 @@ export default function Landing() {
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
                 <Palette className="w-3 h-3" /> All Tools
               </span>
-              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">7 Powerful Tools</h2>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">8 Powerful Tools</h2>
               <p className="text-gray-500 mt-3 max-w-xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
                 The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans — access is granted per user upon request. <strong>Pro (1 user)</strong>, <strong>Pro Plus (3 users)</strong>, <strong>VIP (5 users)</strong>.
@@ -401,6 +404,67 @@ export default function Landing() {
                         </div>
                       </div>
                     ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* GCash Cash In/Out Highlight */}
+          <AnimatedSection delay={220} direction="up">
+            <div className="mt-6 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-3xl p-8 border border-emerald-200 shadow-sm">
+              <div className="flex flex-col lg:flex-row items-center gap-8">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1 px-3 py-1 bg-emerald-200 text-emerald-800 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
+                    <Smartphone className="w-3 h-3" /> New Feature — VIP, Pro &amp; Pro+
+                  </div>
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">GCash Cash In/Out Tracker</h3>
+                  <p className="text-gray-600 leading-relaxed mb-4">
+                    A dedicated module for sari-sari stores and small businesses to track digital wallet
+                    and physical cash balances side by side. Log cash in/out transactions, monitor float
+                    replenishments, and reconcile daily — all in one place.
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {[
+                      { label: "Dual-Balance Tracking", desc: "Digital wallet + physical cash drawer" },
+                      { label: "Cash In / Cash Out", desc: "Log transactions with reference numbers" },
+                      { label: "Float Replenishment", desc: "Track GCash float top-ups" },
+                      { label: "Daily Reconciliation", desc: "Snap & verify balances daily" },
+                    ].map((item, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="w-5 h-5 rounded-full bg-emerald-200 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-emerald-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-gray-800">{item.label}</p>
+                          <p className="text-xs text-gray-500">{item.desc}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flex-1 max-w-sm">
+                  <div className="bg-white rounded-2xl p-5 shadow-lg border border-emerald-100">
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="font-bold text-sm text-gray-800">Balance Overview</h4>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Live</span>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100">
+                        <p className="text-xs text-gray-500 mb-1">GCash Digital Wallet</p>
+                        <p className="text-2xl font-extrabold text-emerald-700">₱12,450.00</p>
+                      </div>
+                      <div className="bg-gradient-to-r from-amber-50 to-orange-50 rounded-xl p-4 border border-amber-100">
+                        <p className="text-xs text-gray-500 mb-1">Physical Cash Drawer</p>
+                        <p className="text-2xl font-extrabold text-amber-700">₱8,230.00</p>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500 pt-2 border-t border-gray-100">
+                        <span className="flex items-center gap-1"><CheckCircle2 className="w-3 h-3 text-emerald-500" /> Last reconciled: Today</span>
+                        <span className="text-emerald-600 font-semibold">Balanced ✓</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
