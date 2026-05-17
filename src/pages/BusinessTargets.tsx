@@ -15,6 +15,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Target, TrendingUp, Users, DollarSign } from 'lucide-react';
 import { KPISkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface TargetItem {
   id: string;
@@ -106,7 +107,21 @@ export default function BusinessTargets() {
         </Card>
       </div>
 
-      <div className="flex justify-end mb-4">
+      <div className="flex justify-end gap-2 mb-4">
+        <ExportButton
+          data={targets}
+          filename="targets"
+          title="Target List"
+          columns={[
+            { key: 'title', header: 'Title' },
+            { key: 'target_type', header: 'Type' },
+            { key: 'target_value', header: 'Target Value', formatter: v => `₱${v.toFixed(2)}` },
+            { key: 'current_value', header: 'Current Value', formatter: v => `₱${v.toFixed(2)}` },
+            { key: 'status', header: 'Status' },
+            { key: 'start_date', header: 'Start Date', formatter: v => v ? new Date(v).toLocaleDateString() : '—' },
+            { key: 'end_date', header: 'End Date', formatter: v => v ? new Date(v).toLocaleDateString() : '—' },
+          ]}
+        />
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="w-4 h-4" /> New Target</Button>

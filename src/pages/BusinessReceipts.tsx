@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { formatCurrency } from '@/lib/currency';
 import { Search, FileText, Eye, Printer } from 'lucide-react';
 import { TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface Invoice {
   id: string;
@@ -71,9 +72,23 @@ export default function BusinessReceipts() {
 
       <Card>
         <CardHeader>
-          <div className="relative">
+          <div className="flex items-center gap-3">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input placeholder="Search receipts..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
+          </div>
+          <ExportButton
+            data={filtered}
+            filename="receipts"
+            title="Receipt Listing"
+            columns={[
+              { key: 'invoice_number', header: 'Receipt #' },
+              { key: 'customer_name', header: 'Customer', formatter: v => v || '—' },
+              { key: 'created_at', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+              { key: 'total', header: 'Total', formatter: v => `₱${v.toFixed(2)}` },
+              { key: 'status', header: 'Status' },
+            ]}
+          />
           </div>
         </CardHeader>
         <CardContent>

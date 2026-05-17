@@ -14,6 +14,7 @@ import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import { Plus, Database, Search } from 'lucide-react';
 import { TableSkeleton } from '@/components/BusinessSkeleton';
+import ExportButton from '@/components/ExportButton';
 
 interface RecordEntry {
   id: string;
@@ -129,6 +130,18 @@ export default function BusinessRecords() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input placeholder="Search..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 w-[180px]" />
             </div>
+            <ExportButton
+              data={filtered}
+              filename="records"
+              title={`Yearly Records (${yearFilter})`}
+              columns={[
+                { key: 'record_type', header: 'Type' },
+                { key: 'description', header: 'Description', formatter: v => v || '—' },
+                { key: 'amount', header: 'Amount', formatter: v => `₱${v.toFixed(2)}` },
+                { key: 'record_date', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
+                { key: 'status', header: 'Status' },
+              ]}
+            />
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="gap-2"><Plus className="w-4 h-4" /> Add Record</Button>
