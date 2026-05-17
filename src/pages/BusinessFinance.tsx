@@ -27,7 +27,7 @@ interface CashFlowEntry {
   created_at: string;
 }
 
-const CATEGORIES = ['Sales', 'Investment', 'Loan', 'Refund', 'Rent', 'Utilities', 'Salaries', 'Supplies', 'Marketing', 'Other'];
+const CATEGORIES = ['Sales', 'Investment', 'Loan', 'Refund', 'Rent', 'Utilities', 'Salaries', 'Supplies', 'Marketing', 'SSS', 'PhilHealth', 'Pag-IBIG', 'BIR', "Mayor's Permit", 'Other'];
 
 export default function BusinessFinance() {
   const { user } = useAuth();

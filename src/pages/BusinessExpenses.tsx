@@ -26,7 +26,7 @@ interface Expense {
   created_at: string;
 }
 
-const EXPENSE_CATEGORIES = ['Rent', 'Utilities', 'Salaries', 'Supplies', 'Marketing', 'Transportation', 'Food', 'Maintenance', 'Insurance', 'Taxes', 'Other'];
+const EXPENSE_CATEGORIES = ['Rent', 'Utilities', 'Salaries', 'Supplies', 'Marketing', 'Transportation', 'Food', 'Maintenance', 'Insurance', 'SSS', 'PhilHealth', 'Pag-IBIG', 'BIR', "Mayor's Permit", 'Taxes', 'Other'];
 const EXPENSE_TYPES = ['operational', 'payroll', 'miscellaneous'];
 
 export default function BusinessExpenses() {

@@ -27,7 +27,7 @@ interface RecordEntry {
   created_at: string;
 }
 
-const RECORD_CATEGORIES = ['Sales', 'Expense', 'Payroll', 'Invoice', 'Inventory', 'Customer', 'Other'];
+const RECORD_CATEGORIES = ['Sales', 'Expense', 'Payroll', 'Invoice', 'Inventory', 'Customer', 'SSS', 'PhilHealth', 'Pag-IBIG', 'BIR', "Mayor's Permit", 'Other'];
 
 export default function BusinessRecords() {
   const { user } = useAuth();

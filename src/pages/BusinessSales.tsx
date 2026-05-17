@@ -171,8 +171,12 @@ export default function BusinessSales() {
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="cash">Cash</SelectItem>
-                          <SelectItem value="card">Card</SelectItem>
                           <SelectItem value="gcash">GCash</SelectItem>
+                          <SelectItem value="maya">Maya</SelectItem>
+                          <SelectItem value="bdo">BDO</SelectItem>
+                          <SelectItem value="bpi">BPI</SelectItem>
+                          <SelectItem value="metrobank">Metrobank</SelectItem>
+                          <SelectItem value="cheque">Cheque</SelectItem>
                           <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
                           <SelectItem value="other">Other</SelectItem>
                         </SelectContent>

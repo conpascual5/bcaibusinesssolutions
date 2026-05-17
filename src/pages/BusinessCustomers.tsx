@@ -161,7 +161,7 @@ export default function BusinessCustomers() {
                   </div>
                   <div className="space-y-2">
                     <Label>Phone</Label>
-                    <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+1 234 567 890" />
+                    <Input value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} placeholder="+63 9XX XXX XXXX" />
                   </div>
                 </div>
                 <div className="space-y-2">

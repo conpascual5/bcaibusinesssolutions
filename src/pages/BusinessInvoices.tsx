@@ -33,6 +33,7 @@ interface Invoice {
   customer_email: string | null;
   customer_phone: string | null;
   customer_address: string | null;
+  customer_tin: string | null;
   items: any[];
   subtotal: number;
   tax: number;
@@ -40,6 +41,7 @@ interface Invoice {
   total: number;
   status: string;
   due_date: string | null;
+  payment_terms: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -54,9 +56,9 @@ export default function BusinessInvoices() {
   const [search, setSearch] = useState('');
 
   const [form, setForm] = useState({
-    customer_id: '', customer_name: '', customer_email: '', customer_phone: '', customer_address: '',
+    customer_id: '', customer_name: '', customer_email: '', customer_phone: '', customer_address: '', customer_tin: '',
     items: [] as { description: string; quantity: number; unit_price: number }[],
-    tax: '0', discount: '0', due_date: '', notes: '',
+    tax: '12', discount: '0', due_date: '', payment_terms: 'Due upon receipt', notes: '',
   });
 
   useEffect(() => {
@@ -120,14 +122,16 @@ export default function BusinessInvoices() {
       user_id: user!.id, invoice_number: generateInvoiceNumber(),
       customer_id: form.customer_id || null, customer_name: form.customer_name || null,
       customer_email: form.customer_email || null, customer_phone: form.customer_phone || null,
-      customer_address: form.customer_address || null, items: form.items,
+      customer_address: form.customer_address || null, customer_tin: form.customer_tin || null,
+      items: form.items,
       subtotal, tax: taxAmount, discount: discountAmount, total,
-      status: 'sent', due_date: form.due_date || null, notes: form.notes || null,
+      status: 'sent', due_date: form.due_date || null, payment_terms: form.payment_terms || null,
+      notes: form.notes || null,
     });
     if (error) { toast.error(error.message); return; }
     toast.success('Invoice created!');
     setDialogOpen(false);
-    setForm({ customer_id: '', customer_name: '', customer_email: '', customer_phone: '', customer_address: '', items: [], tax: '0', discount: '0', due_date: '', notes: '' });
+    setForm({ customer_id: '', customer_name: '', customer_email: '', customer_phone: '', customer_address: '', customer_tin: '', items: [], tax: '12', discount: '0', due_date: '', payment_terms: 'Due upon receipt', notes: '' });
     fetchInvoices();
   }
 
@@ -206,8 +210,22 @@ export default function BusinessInvoices() {
                     <Input placeholder="Email" value={form.customer_email} onChange={e => setForm(f => ({ ...f, customer_email: e.target.value }))} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input placeholder="Phone" value={form.customer_phone} onChange={e => setForm(f => ({ ...f, customer_phone: e.target.value }))} />
+                    <Input placeholder="Phone (+63...)" value={form.customer_phone} onChange={e => setForm(f => ({ ...f, customer_phone: e.target.value }))} />
+                    <Input placeholder="TIN (Tax ID)" value={form.customer_tin} onChange={e => setForm(f => ({ ...f, customer_tin: e.target.value }))} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
                     <Input placeholder="Due date" type="date" value={form.due_date} onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
+                    <Select value={form.payment_terms} onValueChange={v => setForm(f => ({ ...f, payment_terms: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Payment terms" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Due upon receipt">Due upon receipt</SelectItem>
+                        <SelectItem value="Net 7">Net 7</SelectItem>
+                        <SelectItem value="Net 15">Net 15</SelectItem>
+                        <SelectItem value="Net 30">Net 30</SelectItem>
+                        <SelectItem value="Net 60">Net 60</SelectItem>
+                        <SelectItem value="COD">COD</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
                   <div className="space-y-3">
@@ -325,6 +343,8 @@ export default function BusinessInvoices() {
                   <p className="font-semibold">{previewInvoice.customer_name || 'Customer'}</p>
                   {previewInvoice.customer_email && <p className="text-sm text-muted-foreground">{previewInvoice.customer_email}</p>}
                   {previewInvoice.customer_phone && <p className="text-sm text-muted-foreground">{previewInvoice.customer_phone}</p>}
+                  {(previewInvoice as any).customer_tin && <p className="text-sm text-muted-foreground">TIN: {(previewInvoice as any).customer_tin}</p>}
+                  {previewInvoice.payment_terms && <p className="text-sm text-muted-foreground">Terms: {previewInvoice.payment_terms}</p>}
                 </div>
                 <Table>
                   <TableHeader>
@@ -351,6 +371,10 @@ export default function BusinessInvoices() {
                   <div className="flex justify-between"><span>Tax</span><span>{formatCurrency(previewInvoice.tax)}</span></div>
                   <div className="flex justify-between"><span>Discount</span><span>-{formatCurrency(previewInvoice.discount)}</span></div>
                   <div className="flex justify-between font-bold text-base"><span>Total</span><span>{formatCurrency(previewInvoice.total)}</span></div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
+                  <p className="font-semibold text-xs">Payment Options:</p>
+                  <p>GCash | Maya | BDO | BPI | Metrobank | Bank Transfer | Cheque</p>
                 </div>
                 <div className="flex justify-end gap-2 pt-2">
                   <Button variant="outline" size="sm" className="gap-2" onClick={() => window.print()}>
