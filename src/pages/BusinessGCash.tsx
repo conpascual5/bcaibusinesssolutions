@@ -16,6 +16,7 @@ import {
   Search, CheckCircle2, XCircle, AlertTriangle, RefreshCw,
   History, CheckCheck, CreditCard, Clock, Trash2
 } from 'lucide-react';
+import { TableSkeleton } from '@/components/BusinessSkeleton';
 import ExportButton from '@/components/ExportButton';
 import { NewTransactionDialog, ReplenishDialog, ReconciliationDialog } from '@/components/GCashDialogs';
 
