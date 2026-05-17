@@ -108,12 +108,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
       return;
     }
     (async () => {
-      const { data } = await supabase
-        .from('user_business_access')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-      setHasBMSAccess(!!data);
+      const [accessRes, teamRes] = await Promise.all([
+        supabase.from('user_business_access').select('id').eq('user_id', user.id).maybeSingle(),
+        supabase.from('business_team_members').select('id').eq('member_id', user.id).maybeSingle(),
+      ]);
+      setHasBMSAccess(!!accessRes.data || !!teamRes.data);
     })();
   }, [user]);
 
