@@ -199,7 +199,7 @@ export default function Landing() {
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">7 Powerful Tools</h2>
               <p className="text-gray-500 mt-3 max-w-xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
-                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans — access is granted per user upon request.
+                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans — access is granted per user upon request. <strong>Pro (1 user)</strong>, <strong>Pro Plus (3 users)</strong>, <strong>VIP (5 users)</strong>.
               </p>
             </div>
           </AnimatedSection>
@@ -242,7 +242,8 @@ export default function Landing() {
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business Management System</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
                 A complete business operations suite — <strong>no longer available</strong> on Pro, Pro+, and VIP plans.
-                Access is now granted per user upon request. Manage every aspect of your business from one dashboard.
+                Access is now granted per user upon request. Each plan has a user limit: <strong>Pro (1 user)</strong>, <strong>Pro Plus (3 users)</strong>, <strong>VIP (5 users)</strong>.
+                Manage every aspect of your business from one dashboard.
               </p>
             </div>
           </AnimatedSection>
@@ -413,6 +414,8 @@ export default function Landing() {
                 <p className="text-sm text-gray-700">
                   <strong className="text-amber-700">Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans.
                   Access is granted per user upon request.{' '}
+                  <strong>Pro (1 user)</strong> · <strong>Pro Plus (3 users)</strong> · <strong>VIP (5 users)</strong>
+                  {' — '}
                   <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
                 </p>
               </div>
@@ -447,6 +450,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "3 trial generations for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Live chat support",
+                  "BMS Access: 0 users",
                   "Subject to fair usage policy",
                 ],
               },
@@ -464,6 +468,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "Priority live chat support",
                   "Customize 30 product images",
+                  "BMS Access: 1 user",
                   "📦 Delivery: Submit your images/theme after payment — receive your content in 2–3 business days",
                   "Subject to fair usage policy",
                 ],
@@ -482,6 +487,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "Priority live chat support",
                   "1 30-60 UGC or Cinematic Video Ad",
+                  "BMS Access: 3 users",
                   "📦 Delivery: Submit your script after payment — receive your video in 2–3 business days",
                   "Subject to fair usage policy",
                 ],
@@ -498,6 +504,7 @@ export default function Landing() {
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
                   "Dedicated live chat support",
+                  "BMS Access: 5 users",
                   "Subject to fair usage policy",
                 ],
               },
@@ -763,7 +770,7 @@ export default function Landing() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Business?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System access is granted per user upon request. No credit card needed.</p>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System access is granted per user upon request — Pro (1 user), Pro Plus (3 users), VIP (5 users). No credit card needed.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                   Get Started Free <ChevronRight className="w-5 h-5" />
