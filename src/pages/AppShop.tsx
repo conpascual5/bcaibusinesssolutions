@@ -31,6 +31,17 @@ type UserPurchase = {
   downloadable_at: string | null;
 };
 
+const EDGE_FUNCTION_MAP: Record<string, string> = {
+  'business-management-system': 'bms-template',
+  'inventory-tracker': 'inventory-template',
+  'finance-tracker': 'finance-template',
+  'payment-tracker': 'payment-template',
+};
+
+function getEdgeFunctionSlug(slug: string): string {
+  return EDGE_FUNCTION_MAP[slug] || slug;
+}
+
 export default function AppShop() {
   const { user } = useAuth();
   const [templates, setTemplates] = useState<TrackerTemplate[]>([]);
@@ -203,7 +214,7 @@ export default function AppShop() {
 
                 {gsheetsPurchase?.is_downloadable && (
                   <a
-                    href={`https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/generate-${template.slug}?format=gsheets`}
+                    href={`https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/generate-${getEdgeFunctionSlug(template.slug)}?format=gsheets`}
                     className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all"
                     download
                   >
@@ -268,7 +279,7 @@ export default function AppShop() {
 
                 {excelPurchase?.is_downloadable && (
                   <a
-                    href={`https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/generate-${template.slug}?format=excel`}
+                    href={`https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/generate-${getEdgeFunctionSlug(template.slug)}?format=excel`}
                     className="w-full inline-flex items-center justify-center gap-2 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-semibold hover:bg-emerald-700 transition-all"
                     download
                   >
