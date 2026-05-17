@@ -4,8 +4,8 @@ import BusinessLayout from "@/components/BusinessLayout";
 import {
   Building2, ShoppingCart, ClipboardList, DollarSign, Receipt,
   Calculator, Wallet, Users, FileText, FileSearch, Target, Database,
-  UserPlus, BarChart3, Clock, Umbrella, BookOpen, ChevronDown,
-  ChevronRight, Search, Lightbulb, AlertTriangle, CheckCircle2,
+  UserPlus, BarChart3, Clock, Umbrella, BookOpen, Smartphone,
+  ChevronDown, ChevronRight, Search, Lightbulb, AlertTriangle, CheckCircle2,
   ArrowRight, Star, Play, Info
 } from "lucide-react";
 import { useState } from "react";
@@ -252,6 +252,66 @@ const sections = [
       {
         q: "Can I remove a team member?",
         a: "Yes. Go to the Team page and click the Remove button next to the member. This revokes their access immediately."
+      },
+    ]
+  },
+  {
+    id: "gcash",
+    icon: Smartphone,
+    label: "GCash Cash In/Out",
+    color: "bg-green-500",
+    content: [
+      {
+        q: "What is the GCash module for?",
+        a: "The GCash module is designed specifically for sari-sari stores, local booths, and retail businesses that offer GCash Cash In and Cash Out services. It tracks your digital wallet balance vs physical cash in drawer, logs every transaction with reference numbers, manages utang (credit), and provides end-of-day reconciliation to ensure your books are balanced."
+      },
+      {
+        q: "How do I record a Cash In transaction?",
+        a: "Click 'New Transaction'. Select 'Cash In' as the type. Enter the amount the customer gives you in cash, the fee (if any), the customer's name (for utang tracking), and the 13-digit GCash reference number. Set payment status to 'Paid' if they paid cash, or 'Unpaid' if it's utang. When you do a Cash In, the customer gives you physical cash, and you transfer digital money from your GCash wallet to theirs."
+      },
+      {
+        q: "How do I record a Cash Out transaction?",
+        a: "Click 'New Transaction'. Select 'Cash Out' as the type. Enter the amount the customer wants to withdraw, the fee, and their name. Cash Out is the opposite: the customer sends you digital money via GCash, and you give them physical cash from your drawer."
+      },
+      {
+        q: "How does the Dual-Balance Tracker work?",
+        a: "The top row of cards shows your current Digital Wallet Balance and Physical Cash in Drawer — these come from your latest end-of-day reconciliation. Below that are period totals for Cash In, Cash Out, and Unpaid (Utang). This gives you an instant snapshot of your financial position: how much float you have left, how much cash is in the drawer, and how much customers still owe you."
+      },
+      {
+        q: "How do I log a Float Replenishment?",
+        a: "When your GCash wallet runs low on digital balance, you need to add cash to it (e.g., via 7-Eleven, bank transfer, or a GCash outlet). Click 'Replenish Float'. Enter the amount you're adding and the cash-in fee (usually 2%). The system shows the suggested 2% fee automatically. This fee is an expense that reduces your net profit."
+      },
+      {
+        q: "What is the 2% Cash-In Fee?",
+        a: "When you replenish your GCash wallet at a third-party outlet (like 7-Eleven or a GCash partner), they charge a fee — typically 2% of the amount. For example, adding ₱1,000 costs you ₱20. This fee is tracked separately in the 'Fee' field of replenishment transactions so you can see exactly how much it's costing you to maintain your float."
+      },
+      {
+        q: "How does the Utang (Credit) Tracker work?",
+        a: "When recording a transaction, set Payment Status to 'Unpaid (Utang)'. The transaction will appear with a red background in the table. The unpaid total is shown in the top KPI card. To mark it as paid, simply click the 'Unpaid' badge — it toggles to 'Paid' instantly. This tracks who owes you money for load or cash-ins."
+      },
+      {
+        q: "Why is the Reference Number important?",
+        a: "Every GCash transaction has a 13-digit reference number. This is critical for dispute resolution — if a customer claims a transaction didn't go through, you can search by reference number instantly using the search bar. The 'Verified' toggle lets you confirm that the SMS confirmation actually arrived on your phone."
+      },
+      {
+        q: "How do I search for a transaction by reference number?",
+        a: "Use the 'Search ref #...' input field above the transaction table. Type any part of the reference number and the table filters in real-time. This is your audit trail for customer disputes."
+      },
+      {
+        q: "How does End-of-Day Reconciliation work?",
+        a: "At closing time, click 'New Reconciliation'. Enter your actual GCash App balance (open the app and look) and the physical cash in your drawer (count it). The system automatically calculates: expected digital balance (previous balance + today's Cash Out - today's Cash In + replenishments - fees), expected cash balance (previous cash + today's Cash In - today's Cash Out - replenishments), and variances. It then tells you if you're Balanced, Short, or Over."
+      },
+      {
+        q: "What do Balanced, Short, and Over mean?",
+        a: "Balanced = your actual balances match the expected values (within ₱0.01). Short = your actual balances are less than expected — you're missing money. Over = your actual balances are more than expected — you have extra money. Both Short and Over need investigation. The variance amounts tell you exactly how much is off."
+      },
+      {
+        q: "Can I export my GCash transactions?",
+        a: "Yes. Click the Export button above the transaction table to download all filtered transactions as a CSV file. The export includes date, type, amount, fee, net amount, reference number, customer name, payment status, and verification status."
+      },
+      {
+        q: "How do I delete a transaction?",
+        a: "Click the trash icon on the right side of any transaction row. This permanently removes it from the database. Use this only for mistaken entries."
       },
     ]
   },
@@ -504,6 +564,10 @@ export default function BusinessHelp() {
                 <li>• Configure <strong>Leave Types</strong> before creating entitlements or approving leave requests.</li>
                 <li>• The <strong>HR Dashboard</strong> payroll summary uses an estimated rate — adjust it to match your actual hourly rates.</li>
                 <li>• <strong>Conflict alerts</strong> in Attendance prevent you from accidentally marking someone present on a leave day or holiday.</li>
+                <li>• Do <strong>End-of-Day Reconciliation</strong> in GCash daily — it catches discrepancies before they grow.</li>
+                <li>• Always enter the <strong>Reference Number</strong> for every GCash transaction — it's your audit trail for disputes.</li>
+                <li>• Use <strong>Unpaid (Utang)</strong> status for credit transactions — click the badge to mark as paid when they settle.</li>
+                <li>• The <strong>2% replenishment fee</strong> adds up — track it in the Fee field to see your true cost of maintaining float.</li>
               </ul>
             </div>
           </div>
