@@ -54,6 +54,7 @@ import {
   Umbrella,
   Smartphone,
   BookOpen,
+  Gift,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';

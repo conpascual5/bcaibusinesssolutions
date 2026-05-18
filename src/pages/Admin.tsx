@@ -8,6 +8,10 @@ import AdminDownloads from "@/components/AdminDownloads";
 import AdminBMSAccess from "@/components/AdminBMSAccess";
 import AdminGCashAccess from "@/components/AdminGCashAccess";
 import { trackEvent } from "@/lib/metaPixel";
+import { formatCurrency } from "@/lib/currency";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "sonner";
 import {
   Users,
   Settings,
@@ -873,7 +877,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "gcash">("dashboard");
+  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "gcash" | "affiliates">("dashboard");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
