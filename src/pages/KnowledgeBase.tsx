@@ -1,5 +1,5 @@
 import { Link } from 'react-router';
-import { ArrowLeft, Sparkles, ChevronRight, Search, BookOpen, Wand2, BarChart3, Target, Eye, FileSearch, FileText, Smartphone, Building2, Package, Library } from 'lucide-react';
+import { ArrowLeft, Sparkles, ChevronRight, Search, BookOpen, Wand2, BarChart3, Target, Eye, FileSearch, FileText, Smartphone, Building2, Package, Library, Users, Crown } from 'lucide-react';
 import { useState } from 'react';
 import AnimatedSection from '@/components/AnimatedSection';
 
@@ -121,6 +121,7 @@ const entries: KBEntry[] = [
       { heading: "End-of-Day Reconciliation", content: "At the end of each day, click 'New Reconciliation'. Enter your actual digital wallet balance and physical cash drawer amount. The system automatically calculates expected balances based on the day's transactions and flags any variances (short/over)." },
       { heading: "Managing Unpaid (Utang)", content: "Transactions marked as 'unpaid' are highlighted in red. You can toggle payment status by clicking the badge. The unpaid total is shown in the summary cards for easy tracking." },
       { heading: "Float Replenishment", content: "When you add cash to your GCash wallet (e.g., via 7-Eleven or bank transfer), log it as a 'Float Replenish'. This updates the expected digital balance calculation for accurate reconciliation." },
+      { heading: "Pricing", content: "GCash Cash In/Out is available as a standalone add-on for ₱299/month. It's also included in Pro (₱499/month), Pro Plus (₱1,499/month), and VIP plans." },
     ],
   },
   {
@@ -136,7 +137,24 @@ const entries: KBEntry[] = [
       { heading: "What is BMS?", content: "The Business Management System is a comprehensive suite of 16+ trackers covering products, inventory, sales, expenses, pricing, finance, customers, invoices, receipts, targets, records, team management, and HR (employees, attendance, leave management)." },
       { heading: "Getting Started", content: "Access BMS from the sidebar under 'Business Management'. If you don't see it, contact the admin to request access. Once granted, you'll see the Biz Dashboard with an overview of all your business metrics." },
       { heading: "Key Modules", content: "Products: Manage your product catalog. Inventory: Track stock levels. Sales: Log daily sales. Expenses: Record business expenses. Pricing: Calculate optimal prices. Finance: View profit/loss. Customers: Manage client list. HR: Employees, attendance, and leave management." },
+      { heading: "Pricing", content: "BMS is available as a standalone add-on for ₱699/month. It's also included in Pro (₱499/month, 1 user), Pro Plus (₱1,499/month, 3 users), and VIP (exclusive, 5 users) plans. Access is granted per user upon request." },
       { heading: "Team Collaboration", content: "Business owners can add team members who can view and manage business data. Team members see a banner indicating they're viewing the owner's data. Access is controlled through the Team module." },
+    ],
+  },
+  {
+    id: "hr-management",
+    title: "HR Management System",
+    description: "Complete HR operations suite — employees, attendance, leave, shift roster, payroll, and more.",
+    category: "Business Tools",
+    path: "/app/hr",
+    icon: <Users className="w-5 h-5" />,
+    color: "bg-cyan-500",
+    gradient: "from-cyan-500 to-blue-500",
+    sections: [
+      { heading: "What is HR Management System?", content: "A standalone HR operations suite covering employee profiles, attendance tracking, leave management, shift roster scheduling, performance reviews, payroll engine with bonuses, and company/office/department/designation management. Available as a standalone add-on (₱699/month) or included in Pro Plus (₱1,499/month) and VIP plans." },
+      { heading: "Getting Started", content: "Access HR Management from the sidebar under 'HR Management'. Pro Plus and VIP users automatically get access. Free and Pro users can subscribe to the standalone HR add-on for ₱699/month. Once inside, you'll see the HR Dashboard with an overview of all HR metrics." },
+      { heading: "Key Modules", content: "Employees: Manage employee profiles with roles and status. Attendance: Track daily attendance with time-in/time-out. Leave: Manage leave requests with different leave types. Shift Roster: Create and assign shift schedules. Corrections: Handle attendance corrections. Performance: Track employee performance reviews. Payroll: Generate payroll with bonuses and deductions." },
+      { heading: "Pricing", content: "Standalone HR Management is ₱699/month as an add-on to any plan. It's included free with Pro Plus (₱1,499/month) and VIP plans. Contact us via Facebook to activate the standalone add-on." },
     ],
   },
   {

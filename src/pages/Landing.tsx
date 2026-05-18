@@ -13,6 +13,7 @@ import {
   Smartphone,
   CheckCircle2,
   Link2, Share2, TrendingUp,
+  Calendar,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -181,8 +182,8 @@ export default function Landing() {
       <section className="py-12 bg-gray-50 border-b border-gray-100">
         <div className="max-w-5xl mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
-            { value: "19+", label: "Powerful Tools", color: "text-blue-600" },
-            { value: "13", label: "Business Trackers", color: "text-purple-600" },
+            { value: "20+", label: "Powerful Tools", color: "text-blue-600" },
+            { value: "18+", label: "Business Trackers", color: "text-purple-600" },
             { value: "4", label: "Pricing Plans", color: "text-amber-600" },
             { value: "Free", label: "Sales & Invoices", color: "text-emerald-600" },
           ].map((s, i) => (
@@ -205,9 +206,9 @@ export default function Landing() {
                 <Palette className="w-3 h-3" /> All Tools
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">8 Powerful Tools</h2>
-              <p className="text-gray-500 mt-3 max-w-xl mx-auto">
+              <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
-                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans — access is granted per user upon request. <strong>Pro (1 user)</strong>, <strong>Pro Plus (3 users)</strong>, <strong>VIP (5 users)</strong>.
+                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> and <strong>HR Management System</strong> are available as standalone add-ons or included in paid plans. <strong>Pro (1 BMS user)</strong>, <strong>Pro Plus (3 BMS users + HR included)</strong>, <strong>VIP (5 BMS users + HR included)</strong>.
               </p>
             </div>
           </AnimatedSection>
@@ -247,11 +248,10 @@ export default function Landing() {
               <span className="inline-flex items-center gap-1 px-3 py-1 bg-violet-100 text-violet-700 rounded-full text-xs font-bold uppercase tracking-wider">
                 <Building2 className="w-3 h-3" /> New Product
               </span>
-              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business Management System</h2>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business &amp; HR Management Systems</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-                A complete business operations suite — <strong>no longer available</strong> on Pro, Pro+, and VIP plans.
-                Access is now granted per user upon request. Each plan has a user limit: <strong>Pro (1 user)</strong>, <strong>Pro Plus (3 users)</strong>, <strong>VIP (5 users)</strong>.
-                Manage every aspect of your business from one dashboard.
+                Two powerful suites to run your entire business. <strong>Business Management System</strong> covers products, inventory, sales, expenses, and more. <strong>HR Management System</strong> handles employees, attendance, leave, payroll, and more.
+                Access is granted per user upon request. Each plan has a user limit: <strong>Pro (1 BMS user)</strong>, <strong>Pro Plus (3 BMS users + HR included)</strong>, <strong>VIP (5 BMS users + HR included)</strong>.
               </p>
             </div>
           </AnimatedSection>
@@ -270,6 +270,16 @@ export default function Landing() {
               { icon: <FileSearchIcon className="w-5 h-5" />, color: "from-cyan-500 to-blue-400", title: "Receipts", desc: "View and search all receipts with detailed line items and payment status." },
               { icon: <Target className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Targets", desc: "Set business goals with progress tracking, target values, and status monitoring." },
               { icon: <Database className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Records", desc: "Yearly record keeping with search, filter by type, and comprehensive data management." },
+              // HR Management System cards
+              { icon: <Users className="w-5 h-5" />, color: "from-cyan-500 to-blue-500", title: "HR Dashboard", desc: "Overview of employee count, attendance stats, pending leaves, and upcoming payroll." },
+              { icon: <Users className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Employees", desc: "Manage employee profiles with roles, status, contact details, and employment history." },
+              { icon: <ClipboardList className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Attendance", desc: "Track daily attendance with time-in/time-out, late flags, and attendance reports." },
+              { icon: <FileText className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Leave Management", desc: "Manage leave requests with different leave types, balances, and approval workflow." },
+              { icon: <Calendar className="w-5 h-5" />, color: "from-purple-500 to-violet-400", title: "Shift Roster", desc: "Create and assign shift schedules with break management and rotation support." },
+              { icon: <Target className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Performance", desc: "Track employee performance reviews, ratings, and feedback over time." },
+              { icon: <DollarSign className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "Payroll", desc: "Generate payroll with salary, overtime, bonuses, deductions, and payslip generation." },
+              { icon: <Crown className="w-5 h-5" />, color: "from-amber-500 to-yellow-400", title: "Bonuses", desc: "Manage employee bonuses with types, amounts, and payout scheduling." },
+              { icon: <Building2 className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Company Setup", desc: "Configure company info, offices, departments, designations, and organizational chart." },
             ].map((tool, i) => (
               <AnimatedSection key={i} delay={i * 60} direction="up">
                 <div className="group bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
@@ -481,9 +491,8 @@ export default function Landing() {
               <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
                 <Crown className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-gray-700">
-                  <strong className="text-amber-700">Business Management System</strong> is no longer available on Pro, Pro+, and VIP plans.
-                  Access is granted per user upon request.{' '}
-                  <strong>Pro (1 user)</strong> · <strong>Pro Plus (3 users)</strong> · <strong>VIP (5 users)</strong>
+                  <strong className="text-amber-700">Business Management System</strong> (standalone ₱699/mo) and <strong className="text-cyan-700">HR Management System</strong> (standalone ₱699/mo) are available as add-ons or included in paid plans.{' '}
+                  <strong>Pro (1 BMS user)</strong> · <strong>Pro Plus (3 BMS users + HR included)</strong> · <strong>VIP (5 BMS users + HR included)</strong>
                   {' — '}
                   <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
                 </p>
@@ -903,7 +912,7 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               { num: "01", title: "Sign Up", desc: "Create your free account in seconds. No credit card needed.", color: "bg-blue-500" },
-              { num: "02", title: "Choose Your Tool", desc: "Pick from 7 powerful tools — AI marketing tools, Sales Report, Invoices, and the full Business Management System.", color: "bg-purple-500" },
+              { num: "02", title: "Choose Your Tool", desc: "Pick from 20+ powerful tools — AI marketing tools, Sales Report, Invoices, Business Management System, and HR Management System.", color: "bg-purple-500" },
               { num: "03", title: "Get Results", desc: "Personas, keywords, ad analysis, invoices, sales reports, business insights, and AI-generated copy — instantly.", color: "bg-emerald-500" },
             ].map((step, i) => (
               <AnimatedSection key={i} delay={i * 150} direction="up">
@@ -1140,7 +1149,7 @@ export default function Landing() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Business?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System access is granted per user upon request — Pro (1 user), Pro Plus (3 users), VIP (5 users). No credit card needed.</p>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System and HR Management System access is granted per user upon request — Pro (1 BMS user), Pro Plus (3 BMS users + HR included), VIP (5 BMS users + HR included). No credit card needed.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                   Get Started Free <ChevronRight className="w-5 h-5" />
