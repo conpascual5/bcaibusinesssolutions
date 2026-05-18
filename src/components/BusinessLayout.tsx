@@ -7,7 +7,7 @@ import AICommandBar from './AICommandBar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen, Smartphone, Briefcase, GitBranch, MapPin, Layers, BadgeCheck, TrendingUp, Gift, RefreshCw, Sparkles } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen, Smartphone, Briefcase, GitBranch, MapPin, Layers, BadgeCheck, TrendingUp, Gift, RefreshCw, Sparkles, Calendar } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;
@@ -184,6 +184,8 @@ export default function BusinessLayout({ children, title, description }: Busines
       </div>
 
       {children}
+
+      <AICommandBar context="bms" />
     </div>
   );
 }
