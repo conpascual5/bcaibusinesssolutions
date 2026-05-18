@@ -77,13 +77,12 @@ export default function AuthPage() {
         });
         if (signInError) throw signInError;
 
-        // Wait for the session to be fully established before redirecting.
-        // This avoids the "stuck on login" issue where the provider hasn't
-        // picked up the new session yet.
+        // Use React Router navigate instead of full page reload to avoid
+        // re-initializing the app and triggering ad-blocked scripts again.
         if (data?.session) {
           // Give the provider a moment to process the auth state change
-          await new Promise(resolve => setTimeout(resolve, 500));
-          window.location.href = "/app";
+          await new Promise(resolve => setTimeout(resolve, 800));
+          navigate("/app", { replace: true });
         }
       }
     } catch (err: any) {

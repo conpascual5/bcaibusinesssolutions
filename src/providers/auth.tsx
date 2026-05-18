@@ -22,7 +22,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 15000; // 15 seconds — generous for cold starts
+const SESSION_TIMEOUT_MS = 20000; // 20 seconds
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -86,11 +86,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Subscribe to auth changes
+    // Subscribe to auth changes FIRST (before getSession) to catch INITIAL_SESSION
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+      if (event === "INITIAL_SESSION") {
+        if (!resolved) {
+          setSession(newSession);
+          await fetchProfile(newSession);
+          finishLoading();
+        }
+      } else if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
         setSession(newSession);
         await fetchProfile(newSession);
         finishLoading();
@@ -99,17 +105,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         finishLoading();
         window.location.href = "/auth";
-      } else if (event === "INITIAL_SESSION") {
-        // Only handle INITIAL_SESSION if we haven't resolved yet
-        if (!resolved) {
-          setSession(newSession);
-          await fetchProfile(newSession);
-          finishLoading();
-        }
       }
     });
 
-    // Also check for existing session directly (catches cases where onAuthStateChange doesn't fire)
+    // Also check for existing session directly as a fallback
     supabase.auth.getSession().then(({ data }) => {
       if (!mounted || resolved) return;
 
