@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/providers/auth';
 import { useBusinessTeam } from '@/providers/business-team';
 import { supabase } from '@/integrations/supabase/client';
+import AICommandBar from './AICommandBar';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen, Smartphone, Briefcase, GitBranch, MapPin, Layers, BadgeCheck, TrendingUp, Calculator, Gift, RefreshCw } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen, Smartphone, Briefcase, GitBranch, MapPin, Layers, BadgeCheck, TrendingUp, Gift, RefreshCw, Sparkles } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;

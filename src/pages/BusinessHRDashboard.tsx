@@ -106,7 +106,7 @@ export default function BusinessHRDashboard() {
     </div>
   );
 
-  const navigate = (await import("react-router")).useNavigate();
+  const navigate = useNavigate();
 
   const hrModules = [
     { icon: Users, label: "Employees", path: "/app/business/hr/employees", desc: "Manage employee profiles", color: "bg-blue-500" },

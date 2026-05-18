@@ -32,7 +32,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { message: userMessage, userId } = body;
+    const { message: userMessage, userId, context, systemPrompt: customPrompt } = body;
 
     if (!userMessage?.trim()) {
       return new Response(JSON.stringify({ error: "Message is required" }), {
@@ -63,7 +63,7 @@ serve(async (req) => {
       });
     }
 
-    // Get the user's profile and recent chat history
+    // Get the user's profile
     const targetUserId = userId || userData.user.id;
     const { data: profile } = await supabase
       .from("profiles")
@@ -71,34 +71,15 @@ serve(async (req) => {
       .eq("id", targetUserId)
       .maybeSingle();
 
-    const { data: recentMessages } = await supabase
-      .from("chat_messages")
-      .select("message, is_admin, created_at")
-      .eq("user_id", targetUserId)
-      .order("created_at", { ascending: false })
-      .limit(10);
-
-    const history = (recentMessages || []).reverse().map((m) => ({
-      role: m.is_admin ? "assistant" as const : "user" as const,
-      content: m.message,
-    }));
-
     const userName = profile?.full_name || userData.user.email?.split("@")[0] || "there";
     const userPlan = profile?.plan || "free";
 
-    const systemPrompt = `You are ${aiName}, an AI support assistant for BC AI (Business Companion AI).
+    // Build system prompt - use custom prompt if provided (for AI Command Bar)
+    let systemPrompt = `You are ${aiName}, an AI assistant for BC AI (Business Companion AI).\n\nYour personality: ${aiPersonality}\n\nIMPORTANT RULES:\n1. Always introduce yourself as "${aiName}" when starting a conversation.\n2. Be concise but warm in your responses.\n3. The user's name is "${userName}" and their plan is "${userPlan}".\n4. Keep responses under 3-4 sentences unless the question requires more detail.\n5. NEVER make up information you're not sure about. When in doubt, say you'll have the team follow up.`;
 
-Your personality: ${aiPersonality}
-
-IMPORTANT RULES:
-1. Always introduce yourself as "${aiName}" when starting a conversation.
-2. You help users with questions about BC AI features, plans, billing, and general support.
-3. If a user asks something you cannot answer or if it's an urgent/escalation issue, politely tell them: "I've noted your concern and it will be escalated to our team. Someone will get back to you within 12 hours."
-4. Be concise but warm in your responses.
-5. The user's name is "${userName}" and their plan is "${userPlan}".
-6. If they ask about upgrading or plan features, explain the plans briefly and suggest they wait for the admin for specific pricing/promos.
-7. NEVER make up pricing or promises you're not sure about. When in doubt, say you'll have the team follow up.
-8. Keep responses under 3-4 sentences unless the question requires more detail.`;
+    if (customPrompt) {
+      systemPrompt = `${customPrompt}\n\nYour name is ${aiName}. Your personality: ${aiPersonality}. The user's name is "${userName}".`;
+    }
 
     const deepseekKey = settings.deepseek_api_key || "";
     if (!deepseekKey) {
@@ -117,7 +98,6 @@ IMPORTANT RULES:
         model: "deepseek-chat",
         messages: [
           { role: "system", content: systemPrompt },
-          ...history,
           { role: "user", content: userMessage },
         ],
         temperature: 0.7,
@@ -143,7 +123,15 @@ IMPORTANT RULES:
       });
     }
 
-    // Insert AI response as admin message
+    // For AI Command Bar (context provided), return response directly
+    if (context) {
+      console.log("[ai-support] command bar response", { context, userId: targetUserId });
+      return new Response(JSON.stringify({ replied: true, response: aiContent.trim(), name: aiName }), {
+        headers: { ...corsHeaders, "content-type": "application/json" },
+      });
+    }
+
+    // For support chat, insert as admin message
     const { error: insertErr } = await supabase
       .from("chat_messages")
       .insert({
