@@ -22,6 +22,7 @@ import SalesWizard from './pages/SalesWizard'
 import FBAdsTargeting from './pages/FBAdsTargeting'
 import MyPlan from './pages/MyPlan'
 import MyAssets from './pages/MyAssets'
+import Affiliate from './pages/Affiliate'
 import SalesReport from './pages/SalesReport'
 import AppLayout from './components/AppLayout'
 import SupportChatWidget from './components/SupportChatWidget'
@@ -133,6 +134,7 @@ export default function App() {
         <Route path="/app/image-ad-analyzer" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-plan" element={<ProtectedRoute><AppLayoutRoute><MyPlan /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-assets" element={<ProtectedRoute><AppLayoutRoute><MyAssets /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/affiliate" element={<ProtectedRoute><AppLayoutRoute><Affiliate /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/gcash" element={<ProtectedRoute><AppLayoutRoute><BusinessGCash /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/shop" element={<ProtectedRoute><AppLayoutRoute><AppShop /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />

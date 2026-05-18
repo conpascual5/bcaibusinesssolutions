@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { Link, useNavigate } from "react-router";
-import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2, RefreshCw } from "lucide-react";
+import { Link, useNavigate, useSearchParams } from "react-router";
+import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2, RefreshCw, Gift } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import { toast } from "sonner";
@@ -10,11 +10,14 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const { user, isLoading, forceReset } = useAuth();
   const redirectAttempted = useRef(false);
+  const [searchParams] = useSearchParams();
+  const refFromUrl = searchParams.get("ref") || "";
 
   const [mode, setMode] = useState<"sign_in" | "sign_up">("sign_in");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [referralCode, setReferralCode] = useState(refFromUrl);
   const [showPassword, setShowPassword] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -57,7 +60,10 @@ export default function AuthPage() {
           email,
           password,
           options: {
-            data: { full_name: name },
+            data: {
+              full_name: name,
+              referral_code: referralCode.trim() || null,
+            },
           },
         });
         if (signUpError) throw signUpError;
@@ -136,19 +142,39 @@ export default function AuthPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "sign_up" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Juan Dela Cruz"
-                  required
-                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
-                />
-              </div>
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                    Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Juan Dela Cruz"
+                    required
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5 flex items-center gap-1.5">
+                    <Gift className="w-3.5 h-3.5 text-indigo-500" />
+                    Referral Code <span className="text-gray-400 font-normal">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                    placeholder="e.g. JUAN30"
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-sm"
+                  />
+                  {refFromUrl && (
+                    <p className="text-xs text-indigo-600 mt-1">
+                      You were referred by code <strong>{refFromUrl}</strong>! 🎉
+                    </p>
+                  )}
+                </div>
+              </>
             )}
 
             <div>

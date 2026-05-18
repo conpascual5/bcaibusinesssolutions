@@ -959,6 +959,7 @@ export default function Admin() {
 
   const setPlan = async (userId: string, plan: "free" | "pro" | "pro_plus" | "vip") => {
     const { data: current } = await supabase.from("profiles").select("plan").eq("id", userId).maybeSingle();
+    const previousPlan = (current as any)?.plan ?? "free";
     await supabase
       .from("profiles")
       .update({ plan, activated_at: new Date().toISOString(), is_active: true })
@@ -967,15 +968,56 @@ export default function Admin() {
     await supabase.from("plan_history").insert({
       user_id: userId,
       plan,
-      previous_plan: (current as any)?.plan ?? null,
+      previous_plan: previousPlan,
       set_by: user?.email ?? "Admin",
       notes: "",
       created_at: new Date().toISOString(),
     } as any);
 
+    // Auto-create affiliate commission if this is a paid plan upgrade
+    const paidPlans = ["pro", "pro_plus", "vip"];
+    if (paidPlans.includes(plan) && previousPlan === "free") {
+      const planPrices: Record<string, number> = { pro: 499, pro_plus: 999, vip: 1999 };
+      const price = planPrices[plan] || 0;
+      const commissionAmount = Math.round(price * 0.3 * 100) / 100; // 30%
+
+      // Check if user was referred
+      const { data: referral } = await supabase
+        .from("affiliate_referrals")
+        .select("id, affiliate_id")
+        .eq("referred_user_id", userId)
+        .maybeSingle();
+
+      if (referral) {
+        // Mark referral as active
+        await supabase
+          .from("affiliate_referrals")
+          .update({ status: "active" })
+          .eq("id", referral.id);
+
+        // Create commission
+        await supabase.from("affiliate_commissions").insert({
+          affiliate_id: referral.affiliate_id,
+          referral_id: referral.id,
+          amount: commissionAmount,
+          commission_rate: 30.00,
+          plan,
+          status: "pending",
+          period_start: new Date().toISOString().split("T")[0],
+          period_end: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+        });
+
+        // Update affiliate pending balance
+        await supabase.rpc("add_affiliate_commission_balance", {
+          p_affiliate_id: referral.affiliate_id,
+          p_amount: commissionAmount,
+        });
+      }
+    }
+
     trackEvent("CompleteRegistration", {
       plan,
-      previous_plan: (current as any)?.plan ?? "none",
+      previous_plan: previousPlan,
       user_id: userId,
       currency: "PHP",
       value: plan === "pro" ? 499 : plan === "pro_plus" ? 999 : 0,

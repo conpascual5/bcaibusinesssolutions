@@ -73,6 +73,7 @@ const navItems: { icon: any; label: string; path: string; premium?: boolean }[] 
   { icon: Package, label: 'My Assets', path: '/app/my-assets' },
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
+  { icon: Gift, label: 'Affiliate', path: '/app/affiliate' },
   { icon: ShoppingCart, label: 'Tracker Shop', path: '/app/shop' },
   { icon: Smartphone, label: 'GCash', path: '/app/gcash', premium: true },
   { icon: BookOpen, label: 'Knowledge Base', path: '/knowledge-base' },
