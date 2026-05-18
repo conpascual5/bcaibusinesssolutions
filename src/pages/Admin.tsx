@@ -686,6 +686,141 @@ function ApiKeySettings() {
           </>
         )}
       </div>
+
+      {/* AI Support Settings */}
+      <div className="bg-card rounded-2xl border border-border p-6">
+        <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5 mb-1">
+          <MessageSquare className="w-5 h-5 text-purple-500 stroke-[1.5]" />
+          AI Support Chat
+        </h2>
+        <p className="text-sm text-muted-foreground mb-6">Configure the AI assistant that replies to users when you're offline.</p>
+
+        <AISupportSettings />
+      </div>
+    </div>
+  );
+}
+
+function AISupportSettings() {
+  const [enabled, setEnabled] = useState(false);
+  const [aiName, setAiName] = useState("Maya");
+  const [personality, setPersonality] = useState("friendly and helpful");
+  const [loading, setLoading] = useState(true);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setLoading(true);
+      const [enabledRes, nameRes, personalityRes] = await Promise.all([
+        supabase.from("settings").select("value").eq("key", "ai_support_enabled").maybeSingle(),
+        supabase.from("settings").select("value").eq("key", "ai_support_name").maybeSingle(),
+        supabase.from("settings").select("value").eq("key", "ai_support_personality").maybeSingle(),
+      ]);
+      if (cancelled) return;
+      setEnabled((enabledRes.data as any)?.value === "true");
+      setAiName((nameRes.data as any)?.value || "Maya");
+      setPersonality((personalityRes.data as any)?.value || "friendly and helpful");
+      setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  const handleSave = async () => {
+    const upsertKey = async (key: string, value: string) => {
+      await supabase.from("settings").upsert({ key, value, updated_at: new Date().toISOString() } as any, { onConflict: "key" });
+    };
+    await Promise.all([
+      upsertKey("ai_support_enabled", enabled ? "true" : "false"),
+      upsertKey("ai_support_name", aiName.trim()),
+      upsertKey("ai_support_personality", personality.trim()),
+    ]);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  if (loading) {
+    return <div className="text-sm text-muted-foreground">Loading settings...</div>;
+  }
+
+  return (
+    <div className="space-y-5">
+      {/* Enable Toggle */}
+      <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-accent/30">
+        <div>
+          <p className="text-sm font-semibold text-foreground">Enable AI Auto-Reply</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            When enabled, the AI will automatically respond to user messages when you're not available.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEnabled(!enabled)}
+          className={`relative w-12 h-6 rounded-full transition-colors ${
+            enabled ? "bg-purple-600" : "bg-muted-foreground/30"
+          }`}
+        >
+          <span
+            className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${
+              enabled ? "translate-x-6" : "translate-x-0"
+            }`}
+          />
+        </button>
+      </div>
+
+      {/* AI Name */}
+      <div className="p-4 rounded-xl border border-border bg-accent/30">
+        <label className="text-sm font-semibold text-foreground block mb-1">AI Name</label>
+        <p className="text-xs text-muted-foreground mb-2">This is how the AI will introduce itself to users.</p>
+        <input
+          type="text"
+          value={aiName}
+          onChange={(e) => setAiName(e.target.value)}
+          placeholder="e.g. Maya, Alex, SupportBot"
+          className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+      </div>
+
+      {/* Personality */}
+      <div className="p-4 rounded-xl border border-border bg-accent/30">
+        <label className="text-sm font-semibold text-foreground block mb-1">Personality</label>
+        <p className="text-xs text-muted-foreground mb-2">Describe how the AI should behave (e.g. friendly, professional, casual).</p>
+        <input
+          type="text"
+          value={personality}
+          onChange={(e) => setPersonality(e.target.value)}
+          placeholder="e.g. friendly and helpful, professional and concise"
+          className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-purple-500"
+        />
+      </div>
+
+      {/* Escalation Note */}
+      <div className="p-4 rounded-xl border border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-800">
+        <div className="flex items-start gap-2.5">
+          <Sparkles className="w-4 h-4 text-purple-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-purple-800 dark:text-purple-300">How it works</p>
+            <ul className="text-xs text-purple-700 dark:text-purple-400 mt-1 space-y-1 list-disc list-inside">
+              <li>When a user sends a message, the AI responds automatically</li>
+              <li>The AI uses the name and personality you set above</li>
+              <li>If the AI can't answer or it's an escalation, it tells the user someone will follow up within 12 hours</li>
+              <li>You can still see and reply to all conversations in the Support Inbox</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <button
+          type="button"
+          onClick={handleSave}
+          className="px-5 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition-colors flex items-center gap-1.5"
+        >
+          {saved ? <Check className="w-4 h-4" /> : null}
+          {saved ? "Saved!" : "Save Settings"}
+        </button>
+      </div>
     </div>
   );
 }

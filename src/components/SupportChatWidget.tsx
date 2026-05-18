@@ -213,10 +213,19 @@ export default function SupportChatWidget() {
                   <div
                     className={
                       m.is_admin
-                        ? "max-w-[85%] rounded-3xl rounded-bl-lg bg-slate-100 text-slate-900 px-4 py-3 text-sm leading-relaxed"
+                        ? "max-w-[85%] rounded-3xl rounded-bl-lg px-4 py-3 text-sm leading-relaxed " +
+                          (m.user_name === "Maya" || m.user_name === "BC AI Support" || m.user_email === "ai@bcai.support"
+                            ? "bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 text-purple-900"
+                            : "bg-slate-100 text-slate-900")
                         : "max-w-[85%] rounded-3xl rounded-br-lg bg-indigo-600 text-white px-4 py-3 text-sm leading-relaxed shadow-sm"
                     }
                   >
+                    {m.is_admin && (m.user_name === "Maya" || m.user_name === "BC AI Support" || m.user_email === "ai@bcai.support") && (
+                      <p className="text-[10px] font-bold text-purple-600 mb-1 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        {m.user_name}
+                      </p>
+                    )}
                     {m.message}
                     <p className={`text-[10px] mt-1 ${m.is_admin ? "text-gray-400" : "text-indigo-200"}`}>
                       {new Date(m.created_at).toLocaleTimeString("en-PH", {

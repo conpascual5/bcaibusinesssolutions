@@ -429,6 +429,21 @@ app.post("/api/chat/send", async (c) => {
       .single();
 
     if (error) return c.json({ error: error.message }, 500);
+
+    // Fire-and-forget: trigger AI support response in the background
+    // This runs after the user's message is saved so the response is non-blocking
+    const EDGE_BASE = "https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1";
+    fetch(`${EDGE_BASE}/ai-support`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ message: msg.trim(), userId: user.id }),
+    }).catch((err) => {
+      console.error("[chat/send] ai-support trigger failed:", err?.message);
+    });
+
     return c.json({ success: true, message: data });
   } catch (err: any) {
     return c.json({ error: err.message || "Failed to send message" }, 500);
