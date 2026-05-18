@@ -75,7 +75,7 @@ export default function Landing() {
     { icon: <BarChart3 className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Sales Report", desc: "Track sales daily, weekly, monthly, and yearly. Import from Excel or add entries manually. Charts and summaries included.", badge: "Free" },
     { icon: <FileText className="w-5 h-5" />, color: "from-indigo-500 to-purple-400", title: "Invoice Generator", desc: "Generate customizable invoices with business branding, logo, and e-signature support. Download as PDF.", badge: "Free" },
     { icon: <Building2 className="w-5 h-5" />, color: "from-violet-500 to-indigo-500", title: "Business Management", desc: "Complete business operations suite — products, inventory, sales tracker, expenses, pricing calculator, finance, customers, invoices, receipts, targets, and records.", badge: "Pro+" },
-    { icon: <Smartphone className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "GCash Cash In/Out", desc: "Track digital wallet and physical cash balances, log cash in/out transactions, and reconcile daily — built for sari-sari stores and small businesses.", badge: "VIP" },
+    { icon: <Smartphone className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "GCash Cash In/Out", desc: "Track digital wallet and physical cash balances, log cash in/out transactions, and reconcile daily — built for sari-sari stores and small businesses.", badge: "VIP", comingSoon: true },
   ];
 
   return (
@@ -229,6 +229,12 @@ export default function Landing() {
                     )}
                   </div>
                   <p className="text-sm text-gray-500 leading-relaxed">{tool.desc}</p>
+                  {tool.comingSoon && (
+                    <div className="mt-3 inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 border border-amber-200 rounded-lg">
+                      <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                      <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">Coming Soon</span>
+                    </div>
+                  )}
                 </div>
               </AnimatedSection>
             ))}
