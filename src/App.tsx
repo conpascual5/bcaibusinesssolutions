@@ -60,6 +60,9 @@ import BusinessBonuses from './pages/BusinessBonuses'
 import BusinessGCash from './pages/BusinessGCash'
 import BusinessHelp from './pages/BusinessHelp'
 import { BusinessTeamProvider } from '@/providers/business-team'
+import { HRAccessProvider } from '@/providers/hr-access'
+import HRAccessGuard from '@/components/HRAccessGuard'
+import StandaloneHRDashboard from './pages/StandaloneHRDashboard'
 import AppShop from './pages/AppShop'
 import Shop from './pages/Shop'
 
@@ -147,6 +150,23 @@ export default function App() {
         <Route path="/app/business/hr/payroll" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessPayroll /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr/bonuses" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessBonuses /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/help" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessHelp /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+
+        {/* Standalone HR Service (assignable to any user) */}
+        <Route path="/app/hr" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/dashboard" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/employees" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/org-chart" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/company" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/offices" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/departments" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/designations" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/attendance" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/corrections" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/leave" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/shifts" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/performances" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/payroll" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/bonuses" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
