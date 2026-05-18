@@ -431,18 +431,75 @@ app.post("/api/chat/send", async (c) => {
     if (error) return c.json({ error: error.message }, 500);
 
     // Fire-and-forget: trigger AI support response in the background
-    // This runs after the user's message is saved so the response is non-blocking
-    const EDGE_BASE = "https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1";
-    fetch(`${EDGE_BASE}/ai-support`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ message: msg.trim(), userId: user.id }),
-    }).catch((err) => {
-      console.error("[chat/send] ai-support trigger failed:", err?.message);
-    });
+    // Check settings for AI support
+    const { data: settingsRows } = await supabase
+      .from("settings")
+      .select("key, value");
+
+    const settings: Record<string, string> = {};
+    if (settingsRows) {
+      for (const row of settingsRows) {
+        settings[row.key] = row.value;
+      }
+    }
+
+    const aiEnabled = settings.ai_support_enabled === "true";
+    const aiName = settings.ai_support_name || "Maya";
+    const aiPersonality = settings.ai_support_personality || "friendly and helpful";
+    const deepseekKey = settings.deepseek_api_key || getDeepseekKey();
+
+    if (aiEnabled && deepseekKey) {
+      const userName = profile?.full_name || user.email?.split("@")[0] || "there";
+      const systemPrompt = `You are ${aiName}, an AI assistant for BC AI (Business Companion AI).
+
+Your personality: ${aiPersonality}
+
+IMPORTANT RULES:
+1. Always introduce yourself as "${aiName}" when starting a conversation.
+2. Be concise but warm in your responses.
+3. The user's name is "${userName}".
+4. Keep responses under 3-4 sentences unless the question requires more detail.
+5. NEVER make up information you're not sure about. When in doubt, say you'll have the team follow up.`;
+
+      fetch("https://api.deepseek.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${deepseekKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: msg.trim() },
+          ],
+          temperature: 0.7,
+          max_tokens: 512,
+        }),
+      })
+        .then(async (dsRes) => {
+          if (!dsRes.ok) {
+            console.error("[chat/send] deepseek error", { status: dsRes.status });
+            return;
+          }
+          const dsData = await dsRes.json();
+          const aiContent = dsData?.choices?.[0]?.message?.content;
+          if (!aiContent) return;
+
+          await supabase.from("chat_messages").insert({
+            user_id: user.id,
+            user_name: aiName,
+            user_email: "ai@bcai.support",
+            message: aiContent.trim(),
+            is_admin: true,
+            is_read: false,
+          });
+          console.log("[chat/send] AI reply sent", { userId: user.id, aiName });
+        })
+        .catch((err) => {
+          console.error("[chat/send] deepseek fetch failed:", err?.message);
+        });
+    }
 
     return c.json({ success: true, message: data });
   } catch (err: any) {
