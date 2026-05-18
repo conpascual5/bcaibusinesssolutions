@@ -6,6 +6,7 @@ import AdminSupportInbox from "@/components/AdminSupportInbox";
 import AdminDashboard from "@/components/AdminDashboard";
 import AdminDownloads from "@/components/AdminDownloads";
 import AdminBMSAccess from "@/components/AdminBMSAccess";
+import AdminGCashAccess from "@/components/AdminGCashAccess";
 import { trackEvent } from "@/lib/metaPixel";
 import {
   Users,
@@ -36,6 +37,7 @@ import {
   Download,
   Activity,
   Building2,
+  Smartphone,
 } from "lucide-react";
 
 type ProfileRow = {
@@ -552,7 +554,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms">("dashboard");
+  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "gcash">("dashboard");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -756,6 +758,15 @@ export default function Admin() {
           >
             <Building2 className="w-4 h-4 stroke-[1.5]" />
             BMS Access
+          </button>
+          <button
+            onClick={() => setActiveSection("gcash")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "gcash" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Smartphone className="w-4 h-4 stroke-[1.5]" />
+            GCash Access
           </button>
           <button
             onClick={() => setActiveSection("settings")}
