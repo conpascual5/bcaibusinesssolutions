@@ -7,6 +7,7 @@ import AdminDashboard from "@/components/AdminDashboard";
 import AdminDownloads from "@/components/AdminDownloads";
 import AdminBMSAccess from "@/components/AdminBMSAccess";
 import AdminGCashAccess from "@/components/AdminGCashAccess";
+import AdminHRAccess from "@/components/AdminHRAccess";
 import { trackEvent } from "@/lib/metaPixel";
 import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
@@ -1256,7 +1257,7 @@ export default function Admin() {
     // Create subscription + invoice for paid plans
     const paidPlans = ["pro", "pro_plus", "vip"];
     if (paidPlans.includes(plan)) {
-      const planPrices: Record<string, number> = { pro: 499, pro_plus: 999, vip: 1999 };
+      const planPrices: Record<string, number> = { pro: 499, pro_plus: 1499, vip: 1999 };
       const price = planPrices[plan] || 0;
       await supabase.rpc("create_subscription_with_invoice", {
         p_user_id: userId,
@@ -1267,7 +1268,7 @@ export default function Admin() {
 
     // Auto-create affiliate commission if this is a paid plan upgrade
     if (paidPlans.includes(plan) && previousPlan === "free") {
-      const planPrices: Record<string, number> = { pro: 499, pro_plus: 999, vip: 1999 };
+      const planPrices: Record<string, number> = { pro: 499, pro_plus: 1499, vip: 1999 };
       const price = planPrices[plan] || 0;
       const commissionAmount = Math.round(price * 0.3 * 100) / 100; // 30%
 

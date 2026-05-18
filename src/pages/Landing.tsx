@@ -543,7 +543,7 @@ export default function Landing() {
               },
               {
                 name: "Pro Plus",
-                price: "999",
+                price: "1,499",
                 period: "/month",
                 icon: Sparkles,
                 gradient: "from-rose-500 to-pink-600",
@@ -554,6 +554,7 @@ export default function Landing() {
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
                   "GCash Cash In/Out Tracker",
+                  "HR Management System — included",
                   "Priority live chat support",
                   "BMS Access: 3 users",
                   "Subject to fair usage policy",
@@ -642,7 +643,7 @@ export default function Landing() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {/* GCash Standalone */}
                 <div className="relative bg-white rounded-3xl p-6 border-2 border-emerald-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-full text-xs font-bold shadow-md flex items-center gap-1">
@@ -701,7 +702,7 @@ export default function Landing() {
                     <p className="text-sm text-gray-500 mt-1">Complete business operations suite</p>
                     <div className="flex items-baseline justify-center gap-1 mt-4">
                       <span className="text-sm text-gray-400">PHP</span>
-                      <span className="text-5xl font-extrabold text-gray-900">599</span>
+                      <span className="text-5xl font-extrabold text-gray-900">699</span>
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
                   </div>
@@ -711,7 +712,7 @@ export default function Landing() {
                       'Expenses, Pricing Calculator & Finance',
                       'Customers, Invoices & Receipts',
                       'Targets, Records & Team Management',
-                      'HR: Employees, Attendance & Leave',
+                      'Team & Employee Management',
                     ].map((f, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
                         <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -726,6 +727,50 @@ export default function Landing() {
                   <Link
                     to="/auth"
                     className="w-full py-3 bg-gradient-to-r from-violet-500 to-indigo-500 text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md"
+                  >
+                    Subscribe Now <ArrowRight className="w-4 h-4" />
+                  </Link>
+                </div>
+
+                {/* HR Standalone */}
+                <div className="relative bg-white rounded-3xl p-6 border-2 border-cyan-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-full text-xs font-bold shadow-md flex items-center gap-1">
+                    <Users className="w-3 h-3" />
+                    Add-on
+                  </div>
+                  <div className="text-center mb-6">
+                    <div className="w-16 h-16 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      <Users className="w-8 h-8 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-extrabold text-gray-900">HR Management</h3>
+                    <p className="text-sm text-gray-500 mt-1">Complete HR operations suite</p>
+                    <div className="flex items-baseline justify-center gap-1 mt-4">
+                      <span className="text-sm text-gray-400">PHP</span>
+                      <span className="text-5xl font-extrabold text-gray-900">699</span>
+                      <span className="text-sm text-gray-400">/month</span>
+                    </div>
+                  </div>
+                  <ul className="space-y-3 mb-6">
+                    {[
+                      'Employee profiles & management',
+                      'Attendance tracking & corrections',
+                      'Leave management with types',
+                      'Shift roster & scheduling',
+                      'Payroll engine & bonuses',
+                    ].map((f, j) => (
+                      <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
+                        <div className="w-5 h-5 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <svg className="w-3 h-3 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span>{f}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/auth"
+                    className="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-bold text-center flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md"
                   >
                     Subscribe Now <ArrowRight className="w-4 h-4" />
                   </Link>
