@@ -12,16 +12,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency } from '@/lib/currency';
 import { toast } from 'sonner';
 import {
-  Plus, FileText, FileDown, Printer, Trash2, Eye, Search,
-  Receipt, Building2, User, Hash, Calendar, DollarSign,
-  Info, CheckCircle2, XCircle, Clock, Send, Download,
-  Loader2, AlertCircle, ArrowUpDown, MoreHorizontal,
+  Plus, FileText, Trash2, Search,
+  Receipt, Building2, User, Hash, DollarSign,
+  CheckCircle2, XCircle, Clock, Send, Download,
+  Loader2, AlertCircle, PenLine, Image,
 } from 'lucide-react';
-import { KPISkeleton, TableSkeleton } from '@/components/BusinessSkeleton';
+import { TableSkeleton } from '@/components/BusinessSkeleton';
 import ExportButton from '@/components/ExportButton';
 
 type InvoiceType = 'sales' | 'cash' | 'charge';
@@ -36,12 +35,21 @@ interface LineItem {
   vat_type: VatType;
 }
 
+interface Customer {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  address: string | null;
+}
+
 interface InvoiceRecord {
   id: string;
   invoice_number: string;
   invoice_type: InvoiceType;
   is_vat: boolean;
   branch_code: string | null;
+  customer_id: string | null;
   customer_name: string | null;
   customer_tin: string | null;
   customer_address: string | null;
@@ -60,6 +68,9 @@ interface InvoiceRecord {
   payment_terms: string | null;
   business_name: string | null;
   business_address: string | null;
+  business_logo_url: string | null;
+  signature_data: string | null;
+  signature_name: string | null;
   created_at: string;
 }
 
@@ -68,6 +79,7 @@ interface InvoiceForm {
   tin: string;
   branch_code: string;
   business_address: string;
+  business_logo_url: string;
   invoice_type: InvoiceType;
   invoice_number: string;
   date: string;
@@ -79,6 +91,9 @@ interface InvoiceForm {
   items: LineItem[];
   notes: string;
   due_date: string;
+  signature_data: string;
+  signature_name: string;
+  customer_id: string;
 }
 
 const INVOICE_TYPE_LABELS: Record<InvoiceType, string> = {
@@ -107,20 +122,25 @@ export default function BusinessInvoices() {
   const { user } = useAuth();
   const { businessOwnerId } = useBusinessTeam();
   const [invoices, setInvoices] = useState<InvoiceRecord[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [previewInvoice, setPreviewInvoice] = useState<InvoiceRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [downloading, setDownloading] = useState<string | null>(null);
-  const previewRef = useRef<HTMLDivElement>(null);
+
+  // Signature pad state
+  const [signatureDialogOpen, setSignatureDialogOpen] = useState(false);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const signatureCtxRef = useRef<CanvasRenderingContext2D | null>(null);
 
   const [form, setForm] = useState<InvoiceForm>({
     business_name: user?.name || '',
     tin: '',
     branch_code: '001',
     business_address: '',
+    business_logo_url: '',
     invoice_type: 'sales',
     invoice_number: generateInvoiceNumber('sales'),
     date: new Date().toISOString().split('T')[0],
@@ -132,10 +152,16 @@ export default function BusinessInvoices() {
     items: [{ id: generateId(), description: '', quantity: 1, unit_price: 0, vat_type: 'vatable' }],
     notes: '',
     due_date: '',
+    signature_data: '',
+    signature_name: '',
+    customer_id: '',
   });
 
   useEffect(() => {
-    if (businessOwnerId) fetchInvoices();
+    if (businessOwnerId) {
+      fetchInvoices();
+      fetchCustomers();
+    }
   }, [businessOwnerId]);
 
   async function fetchInvoices() {
@@ -146,6 +172,15 @@ export default function BusinessInvoices() {
       .order('created_at', { ascending: false });
     if (data) setInvoices(data as InvoiceRecord[]);
     setLoading(false);
+  }
+
+  async function fetchCustomers() {
+    const { data } = await supabase
+      .from('customers')
+      .select('id, name, email, phone, address')
+      .eq('user_id', businessOwnerId!)
+      .order('name', { ascending: true });
+    if (data) setCustomers(data);
   }
 
   function updateForm<K extends keyof InvoiceForm>(field: K, value: InvoiceForm[K]) {
@@ -175,12 +210,25 @@ export default function BusinessInvoices() {
     }));
   }
 
+  function selectCustomer(id: string) {
+    const c = customers.find(c => c.id === id);
+    if (c) {
+      setForm(prev => ({
+        ...prev,
+        customer_id: id,
+        buyer_name: c.name,
+        buyer_address: c.address || '',
+      }));
+    }
+  }
+
   function resetForm() {
     setForm({
       business_name: user?.name || '',
       tin: '',
       branch_code: '001',
       business_address: '',
+      business_logo_url: '',
       invoice_type: 'sales',
       invoice_number: generateInvoiceNumber('sales'),
       date: new Date().toISOString().split('T')[0],
@@ -192,6 +240,9 @@ export default function BusinessInvoices() {
       items: [{ id: generateId(), description: '', quantity: 1, unit_price: 0, vat_type: 'vatable' }],
       notes: '',
       due_date: '',
+      signature_data: '',
+      signature_name: '',
+      customer_id: '',
     });
   }
 
@@ -208,6 +259,97 @@ export default function BusinessInvoices() {
   const vatAmount = form.is_vat ? vatableAmount * 0.12 : 0;
   const totalDue = totalBeforeVat + vatAmount;
 
+  // --- Signature Pad ---
+  function initSignaturePad() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.strokeStyle = '#1a1a2e';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    signatureCtxRef.current = ctx;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function getCanvasPos(e: React.MouseEvent | React.TouchEvent) {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    if ('touches' in e) {
+      const touch = e.touches[0];
+      return { x: touch.clientX - rect.left, y: touch.clientY - rect.top };
+    }
+    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function startDrawing(e: React.MouseEvent | React.TouchEvent) {
+    e.preventDefault();
+    const pos = getCanvasPos(e);
+    const ctx = signatureCtxRef.current;
+    if (!ctx) return;
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+    setIsDrawing(true);
+  }
+
+  function draw(e: React.MouseEvent | React.TouchEvent) {
+    e.preventDefault();
+    if (!isDrawing) return;
+    const pos = getCanvasPos(e);
+    const ctx = signatureCtxRef.current;
+    if (!ctx) return;
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  }
+
+  function stopDrawing() {
+    setIsDrawing(false);
+  }
+
+  function clearSignature() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function saveSignature() {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dataUrl = canvas.toDataURL('image/png');
+    const pixelData = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
+    const isEmpty = pixelData?.every((v, i) => i % 4 === 3 || v === 255);
+    if (isEmpty) {
+      toast.error('Please draw your signature first');
+      return;
+    }
+    setForm(prev => ({ ...prev, signature_data: dataUrl }));
+    setSignatureDialogOpen(false);
+    toast.success('Signature saved');
+  }
+
+  // --- Logo Upload ---
+  async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be under 2MB');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setForm(prev => ({ ...prev, business_logo_url: dataUrl }));
+      toast.success('Logo uploaded');
+    };
+    reader.readAsDataURL(file);
+  }
+
   async function handleSave() {
     if (!form.buyer_name) { toast.error('Buyer name is required'); return; }
     if (form.items.length === 0 || form.items.every(i => !i.description)) {
@@ -221,6 +363,7 @@ export default function BusinessInvoices() {
       invoice_type: form.invoice_type,
       is_vat: form.is_vat,
       branch_code: form.branch_code,
+      customer_id: form.customer_id || null,
       customer_name: form.buyer_name,
       customer_tin: form.buyer_tin || null,
       customer_address: form.buyer_address || null,
@@ -241,6 +384,9 @@ export default function BusinessInvoices() {
       due_date: form.due_date || null,
       business_name: form.business_name,
       business_address: form.business_address,
+      business_logo_url: form.business_logo_url || null,
+      signature_data: form.signature_data || null,
+      signature_name: form.signature_name || null,
     });
 
     if (error) { toast.error(error.message); return; }
@@ -283,11 +429,11 @@ export default function BusinessInvoices() {
         payment_terms: invoice.payment_terms,
         notes: invoice.notes,
         created_at: invoice.created_at,
-        signature_data: null,
-        signature_name: null,
+        signature_data: invoice.signature_data,
+        signature_name: invoice.signature_name,
         business_name: invoice.business_name,
         business_address: invoice.business_address,
-        business_logo_url: null,
+        business_logo_url: invoice.business_logo_url,
       });
 
       // Create a hidden iframe to render the HTML and print to PDF
@@ -497,6 +643,30 @@ export default function BusinessInvoices() {
                       <Label>Business Address</Label>
                       <Textarea value={form.business_address} onChange={e => updateForm('business_address', e.target.value)} placeholder="Full business address" rows={2} />
                     </div>
+
+                    {/* Business Logo Upload */}
+                    <div className="space-y-2">
+                      <Label>Business Logo</Label>
+                      <div className="flex items-center gap-4">
+                        {form.business_logo_url ? (
+                          <div className="relative">
+                            <img src={form.business_logo_url} alt="Logo" className="h-14 w-14 object-contain rounded-lg border" />
+                            <button
+                              onClick={() => updateForm('business_logo_url', '')}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="flex items-center gap-2 px-4 py-2.5 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors text-sm text-muted-foreground">
+                            <Image className="w-4 h-4" />
+                            Upload Logo
+                            <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                          </label>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Invoice Details */}
@@ -525,12 +695,32 @@ export default function BusinessInvoices() {
                     </div>
                   </div>
 
-                  {/* Buyer Details */}
+                  {/* Buyer / Customer */}
                   <div className="space-y-3">
                     <h4 className="font-semibold text-sm flex items-center gap-2">
                       <User className="w-4 h-4 text-muted-foreground" />
                       Buyer / Customer
                     </h4>
+
+                    {/* Select from existing customers */}
+                    {customers.length > 0 && (
+                      <div className="space-y-2">
+                        <Label>Select from Customers</Label>
+                        <Select value={form.customer_id} onValueChange={selectCustomer}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Choose a customer..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {customers.map(c => (
+                              <SelectItem key={c.id} value={c.id}>
+                                {c.name}{c.email ? ` — ${c.email}` : ''}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label>Buyer Name *</Label>
                       <Input value={form.buyer_name} onChange={e => updateForm('buyer_name', e.target.value)} placeholder="Buyer's full name or company" />
@@ -648,6 +838,55 @@ export default function BusinessInvoices() {
                     <Label>Notes (optional)</Label>
                     <Textarea value={form.notes} onChange={e => updateForm('notes', e.target.value)} placeholder="Additional notes..." rows={2} />
                   </div>
+
+                  {/* Signature */}
+                  <div className="space-y-3">
+                    <h4 className="font-semibold text-sm flex items-center gap-2">
+                      <PenLine className="w-4 h-4 text-muted-foreground" />
+                      Signature
+                    </h4>
+                    {form.signature_data ? (
+                      <div className="flex items-center gap-4">
+                        <div className="relative">
+                          <img src={form.signature_data} alt="Signature" className="h-16 object-contain rounded-lg border p-1" />
+                          <button
+                            onClick={() => setForm(prev => ({ ...prev, signature_data: '', signature_name: '' }))}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {form.signature_name && (
+                          <span className="text-sm text-muted-foreground">— {form.signature_name}</span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-3">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSignatureDialogOpen(true);
+                            setTimeout(initSignaturePad, 100);
+                          }}
+                          className="gap-2"
+                        >
+                          <PenLine className="w-4 h-4" />
+                          Add Signature
+                        </Button>
+                      </div>
+                    )}
+                    {form.signature_data && (
+                      <div className="space-y-2">
+                        <Label>Signatory Name</Label>
+                        <Input
+                          value={form.signature_name}
+                          onChange={e => updateForm('signature_name', e.target.value)}
+                          placeholder="Name of authorized signatory"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="flex justify-end gap-3 pt-2 border-t">
                   <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
@@ -655,6 +894,58 @@ export default function BusinessInvoices() {
                     <Receipt className="w-4 h-4" /> Create Invoice
                   </Button>
                 </div>
+
+                {/* Signature Pad Dialog */}
+                <Dialog open={signatureDialogOpen} onOpenChange={setSignatureDialogOpen}>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle className="flex items-center gap-2">
+                        <PenLine className="w-4 h-4" />
+                        Draw Your Signature
+                      </DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <div
+                        className="border-2 border-gray-300 dark:border-gray-600 rounded-xl overflow-hidden cursor-crosshair touch-none"
+                        style={{ width: '100%', height: 200 }}
+                      >
+                        <canvas
+                          ref={canvasRef}
+                          width={500}
+                          height={200}
+                          style={{ width: '100%', height: '100%' }}
+                          onMouseDown={startDrawing}
+                          onMouseMove={draw}
+                          onMouseUp={stopDrawing}
+                          onMouseLeave={stopDrawing}
+                          onTouchStart={startDrawing}
+                          onTouchMove={draw}
+                          onTouchEnd={stopDrawing}
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          placeholder="Signatory name"
+                          value={form.signature_name}
+                          onChange={e => updateForm('signature_name', e.target.value)}
+                        />
+                      </div>
+                      <div className="flex justify-between">
+                        <Button variant="outline" size="sm" onClick={clearSignature} className="gap-1">
+                          <Trash2 className="w-3.5 h-3.5" /> Clear
+                        </Button>
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" onClick={() => setSignatureDialogOpen(false)}>
+                            Cancel
+                          </Button>
+                          <Button size="sm" onClick={saveSignature}>
+                            Save Signature
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </DialogContent>
             </Dialog>
           </div>
