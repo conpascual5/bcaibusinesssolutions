@@ -58,9 +58,33 @@ const TRANSACTION_TYPES = [
 
 export default function BusinessGCash() {
   const { user } = useAuth();
+  const [accessChecked, setAccessChecked] = useState(false);
+  const [hasGcashAccess, setHasGcashAccess] = useState(false);
 
-  // Only VIP, Pro, and Pro+ users can access GCash
-  if (user && user.plan === 'free') {
+  useEffect(() => {
+    if (!user) return;
+    (async () => {
+      // Check if user has a paid plan OR has standalone GCash access
+      if (user.plan !== 'free') {
+        setHasGcashAccess(true);
+        setAccessChecked(true);
+        return;
+      }
+      const { data } = await supabase.from('user_gcash_access').select('id').eq('user_id', user.id).maybeSingle();
+      setHasGcashAccess(!!data);
+      setAccessChecked(true);
+    })();
+  }, [user]);
+
+  if (!accessChecked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-gray-300 border-t-gray-900 rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!hasGcashAccess) {
     return <Navigate to="/app" replace />;
   }
 

@@ -110,19 +110,23 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return false;
   });
   const [hasBMSAccess, setHasBMSAccess] = useState(false);
+  const [hasGCashAccess, setHasGCashAccess] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     if (user.isAdmin) {
       setHasBMSAccess(true);
+      setHasGCashAccess(true);
       return;
     }
     (async () => {
-      const [accessRes, teamRes] = await Promise.all([
+      const [accessRes, teamRes, gcashRes] = await Promise.all([
         supabase.from('user_business_access').select('id').eq('user_id', user.id).maybeSingle(),
         supabase.from('business_team_members').select('id').eq('member_id', user.id).maybeSingle(),
+        supabase.from('user_gcash_access').select('id').eq('user_id', user.id).maybeSingle(),
       ]);
       setHasBMSAccess(!!accessRes.data || !!teamRes.data);
+      setHasGCashAccess(!!gcashRes.data);
     })();
   }, [user]);
 
@@ -171,7 +175,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {navItems
-                    .filter(item => !item.premium || (user?.plan && user.plan !== 'free'))
+                    .filter(item => {
+                      if (!item.premium) return true;
+                      // For premium items, check plan OR standalone access
+                      if (item.path === '/app/gcash') {
+                        return (user?.plan && user.plan !== 'free') || hasGCashAccess;
+                      }
+                      return user?.plan && user.plan !== 'free';
+                    })
                     .map((item) => {
                     const isActive = location.pathname === item.path;
                     return (

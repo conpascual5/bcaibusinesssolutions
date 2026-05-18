@@ -972,6 +972,8 @@ export default function Admin() {
 
         {activeSection === "bms" && <AdminBMSAccess />}
 
+        {activeSection === "gcash" && <AdminGCashAccess />}
+
         {activeSection === "settings" && <ApiKeySettings />}
       </div>
     </div>
