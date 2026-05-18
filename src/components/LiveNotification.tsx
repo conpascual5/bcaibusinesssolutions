@@ -87,7 +87,16 @@ const LOCATIONS = [
   "Plaridel",
 ];
 
-const ACTION = "just secured a slot";
+const ACTIONS = [
+  "signed up for Pro",
+  "signed up for Pro+",
+  "signed up for VIP",
+  "signed up for GCash Management System",
+  "signed up for Business Management System",
+  "signed up for Product Image Bundle",
+  "signed up for UGC Ads Video",
+  "signed up for Cinematic Ads Video",
+];
 
 function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
@@ -98,9 +107,11 @@ export default function LiveNotification() {
   const [dismissed, setDismissed] = useState(false);
   const [name, setName] = useState("");
   const [location, setLocation] = useState("");
+  const [action, setAction] = useState("");
   const showNext = useCallback(() => {
     setName(pick(NAMES));
     setLocation(pick(LOCATIONS));
+    setAction(pick(ACTIONS));
     setVisible(true);
   }, []);
 
@@ -164,7 +175,7 @@ export default function LiveNotification() {
             <p className="text-sm font-bold text-gray-900 truncate">{name}</p>
             <p className="text-xs text-gray-500">
               <span className="font-medium text-emerald-600">{location}</span>{" "}
-              {ACTION}
+              {action}
             </p>
             <p className="text-[10px] text-gray-400 mt-1">Verified. Just now</p>
           </div>
