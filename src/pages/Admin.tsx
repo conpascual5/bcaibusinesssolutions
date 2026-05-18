@@ -886,6 +886,7 @@ export default function Admin() {
 
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [subscriptions, setSubscriptions] = useState<Record<string, any>>({});
 
   const loadUsers = async (mode: "reset" | "more") => {
     setUsersError(null);
@@ -922,6 +923,23 @@ export default function Admin() {
 
     setUsers((prev) => (mode === "reset" ? sliced : [...prev, ...sliced]));
     setLoadingUsers(false);
+
+    // Fetch active subscriptions for these users
+    const userIds = sliced.map((u) => u.id);
+    if (userIds.length > 0) {
+      const { data: subs } = await supabase
+        .from("subscriptions")
+        .select("*")
+        .in("user_id", userIds)
+        .eq("status", "active");
+      if (subs) {
+        const subMap: Record<string, any> = {};
+        subs.forEach((s) => {
+          subMap[s.user_id] = s;
+        });
+        setSubscriptions((prev) => ({ ...prev, ...subMap }));
+      }
+    }
   };
 
   const [planHistory, setPlanHistory] = useState<PlanHistoryRow[]>([]);
@@ -978,8 +996,19 @@ export default function Admin() {
       created_at: new Date().toISOString(),
     } as any);
 
-    // Auto-create affiliate commission if this is a paid plan upgrade
+    // Create subscription + invoice for paid plans
     const paidPlans = ["pro", "pro_plus", "vip"];
+    if (paidPlans.includes(plan)) {
+      const planPrices: Record<string, number> = { pro: 499, pro_plus: 999, vip: 1999 };
+      const price = planPrices[plan] || 0;
+      await supabase.rpc("create_subscription_with_invoice", {
+        p_user_id: userId,
+        p_plan: plan,
+        p_amount: price,
+      });
+    }
+
+    // Auto-create affiliate commission if this is a paid plan upgrade
     if (paidPlans.includes(plan) && previousPlan === "free") {
       const planPrices: Record<string, number> = { pro: 499, pro_plus: 999, vip: 1999 };
       const price = planPrices[plan] || 0;
@@ -1184,6 +1213,8 @@ export default function Admin() {
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Email Confirmed</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Plan</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Billing</th>
+                    <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Invoice</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                     <th className="px-6 py-3.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
@@ -1236,6 +1267,34 @@ export default function Admin() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
+                        {subscriptions[u.id] ? (
+                          <div className="text-xs">
+                            <span className="text-muted-foreground">Next:</span>
+                            <span className="font-medium ml-1">
+                              {new Date(subscriptions[u.id].next_billing_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' })}
+                            </span>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">
+                              {formatCurrency(subscriptions[u.id].amount)}/mo
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        {subscriptions[u.id] ? (
+                          <button
+                            onClick={() => navigate(`/app/billing?userId=${u.id}`)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 transition-colors"
+                          >
+                            <FileText className="w-3 h-3" />
+                            View
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
                         <span
                           className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${
                             u.is_active
@@ -1273,7 +1332,7 @@ export default function Admin() {
 
                   {loadingUsers && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-6 text-sm text-muted-foreground">
+                      <td colSpan={9} className="px-6 py-6 text-sm text-muted-foreground">
                         Loading users...
                       </td>
                     </tr>
@@ -1281,7 +1340,7 @@ export default function Admin() {
 
                   {!loadingUsers && users.length === 0 && (
                     <tr>
-                      <td colSpan={7} className="px-6 py-10 text-center text-sm text-muted-foreground">
+                      <td colSpan={9} className="px-6 py-10 text-center text-sm text-muted-foreground">
                         No users found.
                       </td>
                     </tr>
