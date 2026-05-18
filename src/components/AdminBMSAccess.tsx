@@ -47,9 +47,17 @@ export default function AdminBMSAccess() {
     try {
       if (hasAccess) {
         await supabase.from("user_business_access").delete().eq("user_id", userId);
+        // Cancel subscription
+        await supabase.from("subscriptions").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("user_id", userId).eq("plan", "bms").eq("status", "active");
         setAccessMap((prev) => ({ ...prev, [userId]: false }));
       } else {
         await supabase.from("user_business_access").insert({ user_id: userId, granted_by: (await supabase.auth.getUser()).data.user?.id });
+        // Create subscription + invoice for BMS access
+        await supabase.rpc("create_subscription_with_invoice", {
+          p_user_id: userId,
+          p_plan: "bms",
+          p_amount: 0,
+        });
         setAccessMap((prev) => ({ ...prev, [userId]: true }));
       }
     } catch (err) {

@@ -55,6 +55,7 @@ import {
   Smartphone,
   BookOpen,
   Gift,
+  CreditCard,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -74,6 +75,7 @@ const navItems: { icon: any; label: string; path: string; premium?: boolean }[] 
   { icon: Package, label: 'My Assets', path: '/app/my-assets' },
   { icon: Library, label: 'Library', path: '/library' },
   { icon: Crown, label: 'My Plan', path: '/app/my-plan' },
+  { icon: CreditCard, label: 'Billing', path: '/app/billing' },
   { icon: Gift, label: 'Affiliate', path: '/app/affiliate' },
   { icon: ShoppingCart, label: 'Tracker Shop', path: '/app/shop' },
   { icon: Smartphone, label: 'GCash', path: '/app/gcash', premium: true },

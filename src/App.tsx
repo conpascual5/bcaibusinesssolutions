@@ -18,6 +18,7 @@ import Setup from './pages/Setup'
 import Upload from './pages/Upload'
 import CompetitorAnalysis from './pages/CompetitorAnalysis'
 import Invoices from './pages/Invoices'
+import Billing from './pages/Billing'
 import SalesWizard from './pages/SalesWizard'
 import FBAdsTargeting from './pages/FBAdsTargeting'
 import MyPlan from './pages/MyPlan'
@@ -130,6 +131,7 @@ export default function App() {
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/invoices" element={<ProtectedRoute><AppLayoutRoute><Invoices /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/billing" element={<ProtectedRoute><AppLayoutRoute><Billing /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/fb-ads-targeting" element={<ProtectedRoute><AppLayoutRoute><FBAdsTargeting /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/image-ad-analyzer" element={<ProtectedRoute><AppLayoutRoute><CaptionGenerator /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/my-plan" element={<ProtectedRoute><AppLayoutRoute><MyPlan /></AppLayoutRoute></ProtectedRoute>} />

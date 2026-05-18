@@ -46,6 +46,7 @@ import {
   DollarSign,
   Wallet,
   Banknote,
+  FileText,
 } from "lucide-react";
 
 type ProfileRow = {
