@@ -34,11 +34,12 @@ interface Props {
   movements: StockMovement[];
   products: Product[];
   onRefresh: () => void;
+  businessOwnerId: string;
 }
 
 const ITEMS_PER_PAGE = 15;
 
-export default function InventoryMovements({ movements, products, onRefresh }: Props) {
+export default function InventoryMovements({ movements, products, onRefresh, businessOwnerId }: Props) {
   const [page, setPage] = useState(1);
   const [filterType, setFilterType] = useState<'all' | 'in' | 'out'>('all');
   const [filterProduct, setFilterProduct] = useState('all');
@@ -63,6 +64,7 @@ export default function InventoryMovements({ movements, products, onRefresh }: P
     if (!form.product_id) { toast.error('Select a product'); return; }
     const qty = parseInt(form.quantity) || 1;
     const { error } = await supabase.from('inventory').insert({
+      user_id: businessOwnerId,
       product_id: form.product_id,
       quantity: qty,
       type: dialogMode,

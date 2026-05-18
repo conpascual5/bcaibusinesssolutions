@@ -142,7 +142,7 @@ export default function BusinessInventory() {
         </TabsContent>
 
         <TabsContent value="movements" className="mt-0">
-          <InventoryMovements movements={movements} products={products} onRefresh={fetchData} />
+          <InventoryMovements movements={movements} products={products} onRefresh={fetchData} businessOwnerId={businessOwnerId!} />
         </TabsContent>
 
         <TabsContent value="daily" className="mt-0">
