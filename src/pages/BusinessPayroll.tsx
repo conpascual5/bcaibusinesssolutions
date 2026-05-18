@@ -128,42 +128,46 @@ export default function BusinessPayroll() {
     loadData();
   };
 
-  const handleAutoCompute = async () => {
+  // Auto-compute from attendance whenever employee + period are selected
+  useEffect(() => {
     if (!form.employee_id || !form.pay_period_start || !form.pay_period_end) return;
     const emp = employees.find(e => e.id === form.employee_id);
     if (!emp) return;
 
-    // Fetch attendance logs for this period
-    const { data: logs } = await supabase
-      .from("hr_attendance_logs")
-      .select("*")
-      .eq("employee_id", form.employee_id)
-      .gte("date", form.pay_period_start)
-      .lte("date", form.pay_period_end);
+    const computeFromAttendance = async () => {
+      const { data: logs } = await supabase
+        .from("hr_attendance_logs")
+        .select("*")
+        .eq("employee_id", form.employee_id)
+        .gte("date", form.pay_period_start)
+        .lte("date", form.pay_period_end);
 
-    const totalHours = logs?.reduce((s, l) => s + (l.hours_worked || 0), 0) || 0;
-    const totalOT = logs?.reduce((s, l) => s + (l.overtime_hours || 0), 0) || 0;
-    const totalLate = logs?.reduce((s, l) => s + (l.tardiness_minutes || 0), 0) || 0;
-    const absentDays = logs?.filter(l => l.status === "absent").length || 0;
+      const totalHours = logs?.reduce((s, l) => s + (l.hours_worked || 0), 0) || 0;
+      const totalOT = logs?.reduce((s, l) => s + (l.overtime_hours || 0), 0) || 0;
+      const totalLate = logs?.reduce((s, l) => s + (l.tardiness_minutes || 0), 0) || 0;
+      const absentDays = logs?.filter(l => l.status === "absent").length || 0;
 
-    const hourlyRate = emp.hourly_rate || (emp.basic_salary / 22 / 8) || 100;
-    const basicPay = totalHours * hourlyRate;
-    const otPay = totalOT * hourlyRate * 1.5;
-    const lateDeduction = (totalLate / 60) * hourlyRate;
-    const absenceDeduction = absentDays * 8 * hourlyRate;
+      const hourlyRate = emp.hourly_rate || (emp.basic_salary / 22 / 8) || 100;
+      const basicPay = totalHours * hourlyRate;
+      const otPay = totalOT * hourlyRate * 1.5;
+      const lateDeduction = (totalLate / 60) * hourlyRate;
+      const absenceDeduction = absentDays * 8 * hourlyRate;
 
-    setForm(prev => ({
-      ...prev,
-      basic_pay: basicPay.toFixed(2),
-      overtime_pay: otPay.toFixed(2),
-      tardiness_deduction: lateDeduction.toFixed(2),
-      absences_deduction: absenceDeduction.toFixed(2),
-      hours_worked: totalHours.toFixed(2),
-      overtime_hours: totalOT.toFixed(2),
-      absences: absentDays.toString(),
-      late_minutes: totalLate.toString(),
-    }));
-  };
+      setForm(prev => ({
+        ...prev,
+        basic_pay: basicPay.toFixed(2),
+        overtime_pay: otPay.toFixed(2),
+        tardiness_deduction: lateDeduction.toFixed(2),
+        absences_deduction: absenceDeduction.toFixed(2),
+        hours_worked: totalHours.toFixed(2),
+        overtime_hours: totalOT.toFixed(2),
+        absences: absentDays.toString(),
+        late_minutes: totalLate.toString(),
+      }));
+    };
+
+    computeFromAttendance();
+  }, [form.employee_id, form.pay_period_start, form.pay_period_end]);
 
   const getEmployeeName = (id: string) => {
     const e = employees.find(emp => emp.id === id);
@@ -196,9 +200,7 @@ export default function BusinessPayroll() {
             <div className="bg-card rounded-2xl border border-border p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold">New Payroll Entry</h3>
-                <button onClick={handleAutoCompute} className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-700 transition-colors flex items-center gap-1.5">
-                  <Calculator className="w-3.5 h-3.5" /> Auto-Compute from Attendance
-                </button>
+                <span className="text-xs text-emerald-600 bg-emerald-50 dark:bg-emerald-900/20 px-2.5 py-1 rounded-full font-medium">Auto-computed from attendance</span>
               </div>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div>
