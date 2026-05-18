@@ -101,12 +101,19 @@ export default function BusinessEmployees() {
       notes: form.notes || null,
     };
 
+    let error;
     if (editing) {
-      await supabase.from("hr_employees").update(payload).eq("id", editing.id);
+      const res = await supabase.from("hr_employees").update(payload).eq("id", editing.id);
+      error = res.error;
     } else {
-      await supabase.from("hr_employees").insert(payload);
+      const res = await supabase.from("hr_employees").insert(payload);
+      error = res.error;
     }
     setSaving(false);
+    if (error) {
+      alert("Error saving employee: " + error.message + " (Code: " + error.code + ")");
+      return;
+    }
     resetForm();
     await loadEmployees();
   };
