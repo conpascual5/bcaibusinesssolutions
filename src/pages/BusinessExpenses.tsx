@@ -22,7 +22,7 @@ interface Expense {
   category: string;
   description: string | null;
   amount: number;
-  expense_type: string;
+  type: string;
   expense_date: string;
   created_at: string;
 }
@@ -37,7 +37,7 @@ export default function BusinessExpenses() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dateRange, setDateRange] = useState({ from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0], to: new Date().toISOString().split('T')[0] });
-  const [form, setForm] = useState({ category: 'Supplies', description: '', amount: '', expense_type: 'operational', expense_date: new Date().toISOString().split('T')[0] });
+  const [form, setForm] = useState({ category: 'Supplies', description: '', amount: '', type: 'operational', expense_date: new Date().toISOString().split('T')[0] });
 
   useEffect(() => {
     if (businessOwnerId) fetchExpenses();
@@ -59,17 +59,17 @@ export default function BusinessExpenses() {
     if (!form.amount) { toast.error('Amount is required'); return; }
     const { error } = await supabase.from('expenses').insert({
       user_id: businessOwnerId!, category: form.category, description: form.description || null,
-      amount: parseFloat(form.amount), expense_type: form.expense_type, expense_date: form.expense_date,
+      amount: parseFloat(form.amount), type: form.type, expense_date: form.expense_date,
     });
     if (error) { toast.error(error.message); return; }
     toast.success('Expense recorded!');
     setDialogOpen(false);
-    setForm({ category: 'Supplies', description: '', amount: '', expense_type: 'operational', expense_date: new Date().toISOString().split('T')[0] });
+    setForm({ category: 'Supplies', description: '', amount: '', type: 'operational', expense_date: new Date().toISOString().split('T')[0] });
     fetchExpenses();
   }
 
-  const totalExpenses = expenses.filter(e => e.expense_type !== 'payroll').reduce((s, e) => s + e.amount, 0);
-  const totalPayroll = expenses.filter(e => e.expense_type === 'payroll').reduce((s, e) => s + e.amount, 0);
+  const totalExpenses = expenses.filter(e => e.type !== 'payroll').reduce((s, e) => s + e.amount, 0);
+  const totalPayroll = expenses.filter(e => e.type === 'payroll').reduce((s, e) => s + e.amount, 0);
   const grandTotal = expenses.reduce((s, e) => s + e.amount, 0);
 
   return (
@@ -105,7 +105,7 @@ export default function BusinessExpenses() {
               title="Expense Entries"
               columns={[
                 { key: 'expense_date', header: 'Date', formatter: v => new Date(v).toLocaleDateString() },
-                { key: 'expense_type', header: 'Type' },
+                { key: 'type', header: 'Type' },
                 { key: 'category', header: 'Category' },
                 { key: 'description', header: 'Description', formatter: v => v || '—' },
                 { key: 'amount', header: 'Amount', formatter: v => `₱${v.toFixed(2)}` },
@@ -121,7 +121,7 @@ export default function BusinessExpenses() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label>Type</Label>
-                      <Select value={form.expense_type} onValueChange={v => setForm(f => ({ ...f, expense_type: v }))}>
+                      <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
                           {EXPENSE_TYPES.map(t => (<SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>))}
@@ -186,8 +186,8 @@ export default function BusinessExpenses() {
                     <TableRow key={exp.id}>
                       <TableCell>{new Date(exp.expense_date).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        <Badge variant={exp.expense_type === 'payroll' ? 'default' : 'secondary'} className="capitalize text-xs">
-                          {exp.expense_type}
+                        <Badge variant={exp.type === 'payroll' ? 'default' : 'secondary'} className="capitalize text-xs">
+                          {exp.type}
                         </Badge>
                       </TableCell>
                       <TableCell>{exp.category}</TableCell>
