@@ -111,9 +111,9 @@ export default function MyPlan() {
               {plan === 'vip'
                 ? 'VIP access — 100 generations per month across all tools'
                 : plan === 'pro'
-                ? 'Pro access — 500 generations per month across all tools + 30 product images'
+                ? 'Pro access — 500 generations per month across all tools'
                 : plan === 'pro_plus'
-                ? 'Pro Plus access — 500 generations per month + 30 product images + 1 UGC/Cinematic ad'
+                ? 'Pro Plus access — 500 generations per month across all tools'
                 : 'Free trial — 3 total generations (one-time)'}
             </p>
           </div>

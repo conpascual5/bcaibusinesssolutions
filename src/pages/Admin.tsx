@@ -720,8 +720,8 @@ function AdminAssetManager() {
               onChange={(e) => setPackageType(e.target.value as "pro" | "pro_plus")}
               className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="pro">Pro — 30 Product Images</option>
-              <option value="pro_plus">Pro Plus — 1 UGC / Cinematic Ad</option>
+              <option value="pro">Pro</option>
+              <option value="pro_plus">Pro Plus</option>
             </select>
           </div>
 

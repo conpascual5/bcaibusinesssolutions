@@ -137,7 +137,7 @@ export default function MyAssets() {
             <div className="flex-1">
               <h3 className="font-bold text-amber-900">Upgrade to access assets</h3>
               <p className="text-sm text-amber-700 mt-1">
-                Pro plan includes 30 product images. Pro Plus includes 30 images + 1 UGC/Cinematic ad.
+                Upgrade to a paid plan to access your purchased assets.
               </p>
               <button
                 onClick={() => navigate("/app/my-plan")}
@@ -163,7 +163,7 @@ export default function MyAssets() {
             <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
               {hasProAccess || hasProPlusAccess
                 ? "Your purchased images and videos will appear here once they've been added by our team."
-                : "Upgrade to Pro or Pro Plus to get access to product images and video ads."}
+                : "Upgrade to a paid plan to get access to your assets."}
             </p>
           </div>
         ) : (

@@ -537,9 +537,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "GCash Cash In/Out Tracker",
                   "Priority live chat support",
-                  "Customize 30 product images",
                   "BMS Access: 1 user",
-                  "📦 Delivery: Submit your images/theme after payment — receive your content in 2–3 business days",
                   "Subject to fair usage policy",
                 ],
               },
@@ -557,9 +555,7 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "GCash Cash In/Out Tracker",
                   "Priority live chat support",
-                  "1 30-60 UGC or Cinematic Video Ad",
                   "BMS Access: 3 users",
-                  "📦 Delivery: Submit your script after payment — receive your video in 2–3 business days",
                   "Subject to fair usage policy",
                 ],
               },
@@ -705,7 +701,7 @@ export default function Landing() {
                     <p className="text-sm text-gray-500 mt-1">Complete business operations suite</p>
                     <div className="flex items-baseline justify-center gap-1 mt-4">
                       <span className="text-sm text-gray-400">PHP</span>
-                      <span className="text-5xl font-extrabold text-gray-900">499</span>
+                      <span className="text-5xl font-extrabold text-gray-900">599</span>
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
                   </div>
@@ -756,14 +752,14 @@ export default function Landing() {
                   },
                   {
                     step: "2",
-                    title: "Submit Your Assets",
-                    desc: "Upload your product images and theme preferences (Pro) or your script (Pro Plus) through the app or message us on Facebook.",
+                    title: "Account Activated",
+                    desc: "Once payment is confirmed, your account is upgraded automatically. You'll get full access to all the features included in your plan.",
                     color: "bg-amber-500",
                   },
                   {
                     step: "3",
-                    title: "Receive Your Content",
-                    desc: "We'll deliver your customized product images or video ad within 2–3 business days. Your files will appear in the My Assets tab of your account.",
+                    title: "Start Using Tools",
+                    desc: "Log in and start using your upgraded tools immediately — AI marketing tools, GCash tracker, BMS, and more.",
                     color: "bg-purple-500",
                   },
                 ].map((item, i) => (
@@ -832,8 +828,7 @@ export default function Landing() {
           <AnimatedSection delay={600} direction="up">
             <div className="mt-10 max-w-2xl mx-auto text-center bg-gradient-to-r from-rose-50 to-amber-50 rounded-3xl p-6 border border-rose-200">
               <p className="text-sm text-gray-700 leading-relaxed">
-                <strong>Need product images or video ads?</strong> You can order them separately
-                by messaging our Facebook page.{' '}
+                <strong>Need product images or video ads?</strong> We now offer these as a separate service.{' '}
                 <a
                   href="https://www.facebook.com/bcsocialmediaservices"
                   target="_blank"
@@ -842,7 +837,7 @@ export default function Landing() {
                 >
                   Message us on Facebook
                 </a>
-                {' '}for custom product photography, UGC ads, and cinematic video ads.
+                {' '}for details on our creative services package.
               </p>
             </div>
           </AnimatedSection>
