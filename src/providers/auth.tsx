@@ -22,7 +22,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 8000; // 8 seconds max to resolve loading
+const SESSION_TIMEOUT_MS = 15000; // 15 seconds — generous for cold starts
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Subscribe to auth changes FIRST so we don't miss events
+    // Subscribe to auth changes
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
@@ -100,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         finishLoading();
         window.location.href = "/auth";
       } else if (event === "INITIAL_SESSION") {
+        // Only handle INITIAL_SESSION if we haven't resolved yet
         if (!resolved) {
           setSession(newSession);
           await fetchProfile(newSession);
@@ -108,28 +109,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Then check for existing session
-    (async () => {
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (!mounted) return;
+    // Also check for existing session directly (catches cases where onAuthStateChange doesn't fire)
+    supabase.auth.getSession().then(({ data }) => {
+      if (!mounted || resolved) return;
 
-        if (data.session) {
-          setSession(data.session);
-          await fetchProfile(data.session);
-        } else {
-          setSession(null);
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("[auth] getSession error:", err);
+      if (data.session) {
+        setSession(data.session);
+        return fetchProfile(data.session).then(finishLoading).catch(() => finishLoading());
+      } else {
         setSession(null);
         setUser(null);
-      } finally {
-        clearTimeout(timeoutId);
         finishLoading();
       }
-    })();
+    }).catch((err) => {
+      console.error("[auth] getSession error:", err);
+      setSession(null);
+      setUser(null);
+      finishLoading();
+    });
 
     return () => {
       mounted = false;
