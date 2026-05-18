@@ -213,7 +213,7 @@ export default function Dashboard() {
             <p className="text-indigo-100 mt-2 text-sm sm:text-base max-w-xl">
               {affiliate
                 ? "Track your referrals, commissions, and earnings. Share your link and earn 30% recurring commission."
-                : "Earn <strong className=\"text-white\">30% recurring commission</strong> on every subscription you refer. Share your link and start earning!"}
+                : <>Earn <strong className="text-white">30% recurring commission</strong> on every subscription you refer. Share your link and start earning!</>}
             </p>
 
             {/* Affiliate Stats */}
