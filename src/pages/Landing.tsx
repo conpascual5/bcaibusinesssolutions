@@ -894,7 +894,7 @@ export default function Landing() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
             {[
               { value: "30%", label: "Recurring Commission", color: "from-amber-500 to-orange-500" },
-              { value: "Lifetime", label: "Attribution Period", color: "from-emerald-500 to-teal-500" },
+              { value: "Ongoing", label: "Attribution Period", color: "from-emerald-500 to-teal-500" },
               { value: "30 Days", label: "Commission Lock Period", color: "from-blue-500 to-cyan-500" },
               { value: "1-2 Days", label: "Payout After Approval", color: "from-purple-500 to-violet-500" },
             ].map((stat, i) => (
@@ -982,7 +982,7 @@ export default function Landing() {
                   <ul className="space-y-3">
                     {[
                       "30% recurring monthly commission — no cap",
-                      "Lifetime attribution for every user you refer",
+                      "Ongoing attribution for every user you refer",
                       "30-day safety lock to protect against fraud",
                       "Payouts sent within 1–2 business days after approval",
                       "Track all referrals & earnings from your dashboard",
@@ -1170,7 +1170,7 @@ export default function Landing() {
                 <p>By registering as an Affiliate, you agree to the following program rules:</p>
                 <div className="mt-2 space-y-2">
                   <p><strong>Commission Structure:</strong> Affiliates earn a flat 30% recurring monthly commission for every valid, paying customer referred through their unique affiliate link.</p>
-                  <p><strong>Lifetime Attribution:</strong> The 30% commission applies to all successful, subsequent monthly subscription payments made by the referred user for as long as their subscription remains active. If the referred customer cancels, downgrades, churns, or receives a refund, affiliate commissions for that user will cease immediately.</p>
+                  <p><strong>Ongoing Attribution:</strong> The 30% commission applies to all successful, subsequent monthly subscription payments made by the referred user for as long as their subscription remains active. If the referred customer cancels, downgrades, churns, or receives a refund, affiliate commissions for that user will cease immediately.</p>
                   <p><strong>30-Day Commission Lock (Safety Window):</strong> To mitigate credit card fraud, processing errors, and user refunds, all generated commissions are held in a "Pending" status for a mandatory 30-day buffer period from the date of the user's initial payment.</p>
                   <p><strong>Payout Eligibility:</strong> Commissions only become eligible for withdrawal or payout once the 30-day lock period has cleared and the status updates to "Eligible". Payout cycles are executed monthly for all amounts clearing the threshold. After approval, payouts are sent within 1–2 business days.</p>
                   <div>
