@@ -1135,7 +1135,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "gcash" | "affiliates">("dashboard");
+  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "hr" | "gcash" | "affiliates">("dashboard");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -1412,6 +1412,15 @@ export default function Admin() {
             BMS Access
           </button>
           <button
+            onClick={() => setActiveSection("hr")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "hr" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Users className="w-4 h-4 stroke-[1.5]" />
+            HR Access
+          </button>
+          <button
             onClick={() => setActiveSection("gcash")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeSection === "gcash" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -1662,6 +1671,8 @@ export default function Admin() {
         {activeSection === "downloads" && <AdminDownloads />}
 
         {activeSection === "bms" && <AdminBMSAccess />}
+
+        {activeSection === "hr" && <AdminHRAccess />}
 
         {activeSection === "gcash" && <AdminGCashAccess />}
 
