@@ -976,47 +976,87 @@ export default function Landing() {
                 <FileText className="w-3 h-3" /> Legal
               </span>
               <h2 className="text-3xl font-extrabold text-gray-900 mt-4">Terms and Conditions</h2>
-              <p className="text-sm text-gray-400 mt-1">Last Updated: May 12, 2026</p>
+              <p className="text-sm text-gray-400 mt-1">Last Updated: May 18, 2026</p>
             </div>
           </AnimatedSection>
           <AnimatedSection delay={100}>
             <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm space-y-6 text-sm text-gray-600 leading-relaxed">
-              <p className="font-medium text-gray-800">Welcome to BC Social Media Services. By accessing our website and using our services, you agree to comply with and be bound by the following terms and conditions.</p>
+              <p className="font-medium text-gray-800">
+                Welcome to BC Social Media Services (the "Website," "Platform," "Service," "we," "us," or "our"), available at{" "}
+                <a href="https://bcsocialmediaservices.online/" className="text-indigo-600 hover:underline font-medium">https://bcsocialmediaservices.online/</a>.
+              </p>
+              <p>
+                Please read these Terms and Conditions ("Terms") carefully before using our website, platform, software, or enrolling in our Affiliate Program. By accessing or using any part of the Service, you ("User," "Client," or "Affiliate") agree to be bound by these Terms. If you do not agree to all of these Terms, you may not access the Website or use our services.
+              </p>
 
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">1. Services Provided</h3>
-                <p>BC Social Media Services provides AI-driven marketing solutions, including but not limited to content generation (BC AI), social media management, and digital business consulting.</p>
+                <h3 className="font-bold text-gray-900 text-base mb-2">1. Acceptance & Eligibility</h3>
+                <p>By using this Website, you represent and warrant that you are at least 18 years of age and possess the legal capacity to enter into a binding agreement. If you are using our Service on behalf of a business or entity, you represent that you have the authority to bind that entity to these Terms.</p>
               </div>
 
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">2. Pricing and Payment</h3>
-                <p><strong>Price Adjustments:</strong> We reserve the right to change our service prices, subscription fees, or generation costs at any time without prior notice. Any price changes will be updated on the website or communicated through our official channels.</p>
-                <p className="mt-2"><strong>Taxes:</strong> All stated prices are exclusive of applicable taxes unless otherwise noted.</p>
+                <h3 className="font-bold text-gray-900 text-base mb-2">2. Services & Subscriptions</h3>
+                <p><strong>Account Creation:</strong> To access certain software tools or features, you must create an account. You are responsible for maintaining the confidentiality of your credentials and for all activities that occur under your account.</p>
+                <p className="mt-2"><strong>Pricing and Payments:</strong> All subscription plans, digital services, and transaction processing are handled securely. You agree to provide accurate, current, and complete billing information.</p>
+                <p className="mt-2"><strong>Subscription Renewal:</strong> Subscriptions automatically renew at the end of each billing cycle (monthly or annually) unless canceled by the user prior to the renewal date via your account dashboard.</p>
+                <p className="mt-2"><strong>Cancellation and Refunds:</strong> Users can cancel their subscriptions at any time. Refunds are governed by our standard refund policy window, which is subject to internal audit to prevent platform and API credit abuse.</p>
               </div>
 
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">3. Fair Access Policy (FAP)</h3>
-                <p>To ensure a stable and high-quality experience for all users, we implement a Fair Access Policy:</p>
+                <h3 className="font-bold text-gray-900 text-base mb-2">3. Prohibited Uses</h3>
+                <p>You agree not to use the Website, software, or services to:</p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
-                  <li><strong>Usage Limits:</strong> We reserve the right to limit, suspend, or terminate access for accounts that exhibit "bot-like" behavior or excessive manual generations that exceed normal human usage patterns.</li>
-                  <li><strong>Resource Sharing:</strong> Users must not engage in activities that place an undue burden on our AI infrastructure (e.g., automated scraping or mass-generation scripts not authorized via API).</li>
-                  <li><strong>Quality Preservation:</strong> If a user's consumption significantly impacts the performance of the system for others, we may temporarily throttle their access speeds.</li>
+                  <li>Violate any local, national, or international laws or regulations.</li>
+                  <li>Upload, post, or transmit fraudulent, deceptive, or malicious code, scripts, or automated bots.</li>
+                  <li>Reverse engineer, decompile, or attempt to extract the source code of any software hosted on the Vercel, Node.js, or Supabase infrastructure powering the Platform.</li>
+                  <li>Circumvent or attempt to abuse the API quotas, database thresholds, or storage limits of the Service.</li>
                 </ul>
               </div>
 
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">4. User Responsibilities</h3>
-                <p>Users are responsible for the content generated through our platform. BC Social Media Services shall not be held liable for any misinformation or copyright issues arising from the use of AI-generated assets.</p>
+                <h3 className="font-bold text-gray-900 text-base mb-2">4. Intellectual Property Rights</h3>
+                <p>All content, branding, user interfaces, code, databases, graphics, layout, and software tools available on <a href="https://bcsocialmediaservices.online/" className="text-indigo-600 hover:underline font-medium">https://bcsocialmediaservices.online/</a> are the exclusive intellectual property of BC Social Media Services or its licensors. You are granted a limited, non-transferable, revocable license to access the platform strictly for personal or business marketing operations in accordance with your subscription plan.</p>
               </div>
 
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">5. Termination</h3>
-                <p>We reserve the right to terminate or suspend access to our services immediately, without prior notice or liability, for any reason, including breach of these Terms.</p>
+                <h3 className="font-bold text-gray-900 text-base mb-2">5. Affiliate Program Terms</h3>
+                <p>By registering as an Affiliate, you agree to the following program rules:</p>
+                <div className="mt-2 space-y-2">
+                  <p><strong>Commission Structure:</strong> Affiliates earn a flat 30% recurring monthly commission for every valid, paying customer referred through their unique affiliate link.</p>
+                  <p><strong>Lifetime Attribution:</strong> The 30% commission applies to all successful, subsequent monthly subscription payments made by the referred user for as long as their subscription remains active. If the referred customer cancels, downgrades, churns, or receives a refund, affiliate commissions for that user will cease immediately.</p>
+                  <p><strong>30-Day Commission Lock (Safety Window):</strong> To mitigate credit card fraud, processing errors, and user refunds, all generated commissions are held in a "Pending" status for a mandatory 30-day buffer period from the date of the user's initial payment.</p>
+                  <p><strong>Payout Eligibility:</strong> Commissions only become eligible for withdrawal or payout once the 30-day lock period has cleared and the status updates to "Eligible". Payout cycles are executed monthly for all amounts clearing the threshold. After approval, payouts are sent within 1–2 business days.</p>
+                  <div>
+                    <p className="font-semibold text-gray-800">Prohibited Marketing Methods:</p>
+                    <ul className="list-disc pl-5 mt-1 space-y-1">
+                      <li>Affiliates may not engage in "Self-Referrals" (signing up for a paid plan using your own affiliate link).</li>
+                      <li>Affiliates may not use spam emails, misleading advertisements, or cookie-stuffing tactics.</li>
+                      <li>Affiliates may not bid on branded PPC keywords (e.g., Google Ads targeting "BC Social Media Services") without prior written consent.</li>
+                    </ul>
+                  </div>
+                  <p><strong>Termination of Affiliate Account:</strong> We reserve the right to investigate, reject, or void commissions, and permanently ban any affiliate who violates these guidelines or attempts to abuse the tracking system.</p>
+                </div>
               </div>
 
               <div>
-                <h3 className="font-bold text-gray-900 text-base mb-2">6. Contact Us</h3>
-                <p>For questions regarding these terms, please reach out through our official support channels at <a href="mailto:admin@bcsocialmediaservices.online" className="text-blue-600 hover:underline font-medium">admin@bcsocialmediaservices.online</a>.</p>
+                <h3 className="font-bold text-gray-900 text-base mb-2">6. Disclaimer of Warranties</h3>
+                <p>The Service is provided on an "AS IS" and "AS AVAILABLE" basis. BC Social Media Services makes no warranties, expressed or implied, regarding the continuous, error-free, or uninterrupted operation of its serverless databases, edge functions, or hosting nodes. We are not liable for transient system downtimes, external API disruptions, or data syncing delays.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">7. Limitation of Liability</h3>
+                <p>To the maximum extent permitted by applicable law, in no event shall BC Social Media Services, its founders, or affiliates be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses resulting from your access to or inability to use the platform. Our total cumulative liability shall not exceed the amount you paid us in the preceding three (3) months.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">8. Modifications to Terms</h3>
+                <p>We reserve the right, at our sole discretion, to modify, update, or replace these Terms and Conditions at any time. When updates occur, the "Last Updated" date at the top of this document will change. Continued use of the platform or enrollment in the affiliate program after modifications constitute your acceptance of the revised Terms.</p>
+              </div>
+
+              <div>
+                <h3 className="font-bold text-gray-900 text-base mb-2">9. Contact Information</h3>
+                <p>If you have any questions, concerns, or requests regarding these Terms and Conditions or the Affiliate Program, please contact us directly via the support channels listed on our official domain:</p>
+                <p className="mt-1">Website: <a href="https://bcsocialmediaservices.online/" className="text-indigo-600 hover:underline font-medium">https://bcsocialmediaservices.online/</a></p>
               </div>
             </div>
           </AnimatedSection>
@@ -1029,23 +1069,24 @@ export default function Landing() {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12 px-4">
         <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Sparkles className="w-4 h-4 text-white" />
               </div>
               <span className="font-bold">BC AI Business Solutions</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-gray-400">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
               <a href="#tools" className="hover:text-white transition-colors">Tools</a>
               <a href="#plans" className="hover:text-white transition-colors">Plans</a>
-              <a href="#terms" className="hover:text-white transition-colors">Terms</a>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link to="/about" className="hover:text-white transition-colors">About</Link>
               <Link to="/knowledge-base" className="hover:text-white transition-colors">Knowledge Base</Link>
               <Link to="/tutorial" className="hover:text-white transition-colors">Tutorial</Link>
               <Link to="/auth" className="hover:text-white transition-colors">Sign Up</Link>
             </div>
-            <p className="text-xs text-gray-600">2026 BC AI Business Solutions. All rights reserved.</p>
+            <p className="text-xs text-gray-600 text-center">2026 BC AI Business Solutions. All rights reserved.</p>
           </div>
         </div>
       </footer>
