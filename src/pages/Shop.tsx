@@ -317,12 +317,18 @@ export default function Shop() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to="/auth"
-                  className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md"
-                >
-                  Purchase Now <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div className="space-y-2">
+                  <Link
+                    to="/auth"
+                    className="w-full py-3.5 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:opacity-90 transition-all shadow-md"
+                  >
+                    Purchase Now <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <div className="flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                    <span className="text-[11px] font-bold text-amber-700">Download will be available soon</span>
+                  </div>
+                </div>
               </div>
             </AnimatedSection>
 
@@ -356,12 +362,18 @@ export default function Shop() {
                     </li>
                   ))}
                 </ul>
-                <Link
-                  to="/auth"
-                  className="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-md"
-                >
-                  Purchase Now <ArrowRight className="w-4 h-4" />
-                </Link>
+                <div className="space-y-2">
+                  <Link
+                    to="/auth"
+                    className="w-full py-3.5 bg-gray-900 text-white rounded-xl font-bold text-base flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-md"
+                  >
+                    Purchase Now <ArrowRight className="w-4 h-4" />
+                  </Link>
+                  <div className="flex items-center justify-center gap-1.5 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                    <span className="text-[11px] font-bold text-amber-700">Download will be available soon</span>
+                  </div>
+                </div>
               </div>
             </AnimatedSection>
           </div>
