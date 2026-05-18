@@ -12,6 +12,7 @@ import {
   Crown,
   Smartphone,
   CheckCircle2,
+  Link2, Share2, TrendingUp,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -94,6 +95,7 @@ export default function Landing() {
               <a href="#tools" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Tools</a>
               <a href="#plans" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Plans</a>
               <a href="#how" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">How It Works</a>
+              <a href="#affiliate" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Affiliate</a>
               <Link to="/about" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">About</Link>
               <Link to="/knowledge-base" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Knowledge Base</Link>
               <Link to="/tutorial" className="text-sm text-gray-600 hover:text-gray-900 transition-colors">Tutorial</Link>
@@ -112,6 +114,7 @@ export default function Landing() {
             <a href="#tools" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Tools</a>
             <a href="#plans" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Plans</a>
             <a href="#how" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>How It Works</a>
+            <a href="#affiliate" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Affiliate</a>
             <Link to="/about" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>About</Link>
             <Link to="/knowledge-base" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Knowledge Base</Link>
             <Link to="/tutorial" className="block text-sm text-gray-600 py-2" onClick={() => setMobileMenuOpen(false)}>Tutorial</Link>
@@ -877,6 +880,155 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Affiliate Program Section */}
+      <section id="affiliate" className="py-24 px-4 bg-gradient-to-b from-amber-50 via-orange-50 to-white overflow-hidden">
+        <div className="max-w-6xl mx-auto">
+          <AnimatedSection>
+            <div className="text-center mb-14">
+              <span className="inline-flex items-center gap-1 px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <DollarSign className="w-3 h-3" /> Earn with Us
+              </span>
+              <h2 className="text-4xl font-extrabold text-gray-900 mt-4">BC AI Affiliate Program</h2>
+              <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
+                Turn your network into recurring income. Share BC AI with fellow entrepreneurs and earn <strong className="text-amber-700">30% recurring monthly commission</strong> on every paying customer you refer — for life.
+              </p>
+            </div>
+          </AnimatedSection>
+
+          {/* Stats Row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
+            {[
+              { value: "30%", label: "Recurring Commission", color: "from-amber-500 to-orange-500" },
+              { value: "Lifetime", label: "Attribution Period", color: "from-emerald-500 to-teal-500" },
+              { value: "30 Days", label: "Commission Lock Period", color: "from-blue-500 to-cyan-500" },
+              { value: "1-2 Days", label: "Payout After Approval", color: "from-purple-500 to-violet-500" },
+            ].map((stat, i) => (
+              <AnimatedSection key={i} delay={i * 100} direction="up">
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm text-center hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
+                  <div className={`inline-flex bg-gradient-to-r ${stat.color} bg-clip-text`}>
+                    <span className="text-3xl font-extrabold text-transparent">{stat.value}</span>
+                  </div>
+                  <p className="text-sm text-gray-500 mt-1 font-medium">{stat.label}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+
+          {/* How It Works */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-14">
+            {[
+              {
+                step: "1",
+                title: "Sign Up & Get Your Link",
+                desc: "Create your free BC AI account, then activate your affiliate dashboard. You'll get a unique referral link to share anywhere.",
+                color: "bg-amber-500",
+                icon: <Link2 className="w-6 h-6" />,
+              },
+              {
+                step: "2",
+                title: "Share with Your Network",
+                desc: "Share your link on social media, in Facebook groups, or with fellow business owners. When they sign up for a paid plan, you earn.",
+                color: "bg-emerald-500",
+                icon: <Share2 className="w-6 h-6" />,
+              },
+              {
+                step: "3",
+                title: "Earn 30% Every Month",
+                desc: "You earn 30% of every monthly payment your referred users make — for as long as they stay subscribed. No cap on earnings.",
+                color: "bg-purple-500",
+                icon: <TrendingUp className="w-6 h-6" />,
+              },
+            ].map((step, i) => (
+              <AnimatedSection key={i} delay={i * 120} direction="up">
+                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 text-center">
+                  <div className={`w-14 h-14 ${step.color} rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg`}>
+                    {step.icon}
+                  </div>
+                  <div className="inline-flex items-center justify-center w-8 h-8 bg-gray-100 rounded-full mb-3">
+                    <span className="text-xs font-bold text-gray-600">{step.step}</span>
+                  </div>
+                  <h3 className="font-bold text-gray-900 mb-2">{step.title}</h3>
+                  <p className="text-sm text-gray-500 leading-relaxed">{step.desc}</p>
+                </div>
+              </AnimatedSection>
+            ))}
+          </div>
+
+          {/* Commission Breakdown Card */}
+          <AnimatedSection delay={200} direction="up">
+            <div className="bg-gradient-to-br from-amber-500 via-orange-500 to-rose-500 rounded-3xl p-8 md:p-10 shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-72 h-72 bg-white/10 rounded-full blur-[80px] translate-x-1/3 -translate-y-1/3" />
+              <div className="absolute bottom-0 left-0 w-72 h-72 bg-amber-300/20 rounded-full blur-[80px] -translate-x-1/3 translate-y-1/3" />
+              
+              <div className="relative grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                  <h3 className="text-2xl font-extrabold text-white mb-4">How Much Can You Earn?</h3>
+                  <div className="space-y-4">
+                    {[
+                      { refs: "1 referral", earn: "₱150", plan: "Pro (₱499/mo)" },
+                      { refs: "5 referrals", earn: "₱1,500", plan: "Pro (₱499/mo each)" },
+                      { refs: "10 referrals", earn: "₱3,000", plan: "Pro (₱499/mo each)" },
+                      { refs: "10 referrals", earn: "₱3,000", plan: "Pro Plus (₱999/mo each)" },
+                    ].map((row, i) => (
+                      <div key={i} className="flex items-center justify-between bg-white/15 backdrop-blur rounded-xl px-4 py-3 border border-white/20">
+                        <div>
+                          <p className="text-white font-semibold text-sm">{row.refs}</p>
+                          <p className="text-white/70 text-xs">{row.plan}</p>
+                        </div>
+                        <span className="text-white font-extrabold text-lg">{row.earn}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="bg-white/10 backdrop-blur rounded-2xl p-6 border border-white/20">
+                  <h4 className="font-bold text-white mb-3 flex items-center gap-2">
+                    <CheckCircle2 className="w-5 h-5 text-amber-200" /> Key Benefits
+                  </h4>
+                  <ul className="space-y-3">
+                    {[
+                      "30% recurring monthly commission — no cap",
+                      "Lifetime attribution for every user you refer",
+                      "30-day safety lock to protect against fraud",
+                      "Payouts sent within 1–2 business days after approval",
+                      "Track all referrals & earnings from your dashboard",
+                      "No minimum payout threshold",
+                    ].map((benefit, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm text-white/90">
+                        <CheckCircle2 className="w-4 h-4 text-amber-200 flex-shrink-0 mt-0.5" />
+                        <span>{benefit}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* CTA */}
+          <AnimatedSection delay={300} direction="up">
+            <div className="mt-10 text-center">
+              <p className="text-sm text-gray-500 mb-4 max-w-lg mx-auto">
+                You need a BC AI account to join the affiliate program. Sign up free, then activate your affiliate dashboard from your account settings.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link
+                  to="/auth"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-bold text-lg hover:opacity-90 transition-all shadow-lg shadow-amber-200"
+                >
+                  Sign Up & Start Earning <DollarSign className="w-5 h-5" />
+                </Link>
+                <Link
+                  to="/auth"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-white border-2 border-amber-200 text-amber-700 rounded-xl font-bold text-lg hover:bg-amber-50 transition-all"
+                >
+                  Already a Member? Log In <ArrowRight className="w-5 h-5" />
+                </Link>
+              </div>
+            </div>
+          </AnimatedSection>
+        </div>
+      </section>
+
       {/* Portfolio / Showcase - Videos & Images */}
       <section className="py-24 px-4 bg-white">
         <div className="max-w-6xl mx-auto">
@@ -1079,6 +1231,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-gray-400">
               <a href="#tools" className="hover:text-white transition-colors">Tools</a>
               <a href="#plans" className="hover:text-white transition-colors">Plans</a>
+              <a href="#affiliate" className="hover:text-white transition-colors">Affiliate</a>
               <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
               <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
               <Link to="/about" className="hover:text-white transition-colors">About</Link>
