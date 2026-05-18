@@ -60,6 +60,32 @@ export default function BusinessGCash() {
   const { user } = useAuth();
   const [accessChecked, setAccessChecked] = useState(false);
   const [hasGcashAccess, setHasGcashAccess] = useState(false);
+  const [transactions, setTransactions] = useState<GcashTransaction[]>([]);
+  const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [txDialogOpen, setTxDialogOpen] = useState(false);
+  const [reconDialogOpen, setReconDialogOpen] = useState(false);
+  const [replenishDialogOpen, setReplenishDialogOpen] = useState(false);
+  const [searchRef, setSearchRef] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [dateRange, setDateRange] = useState({
+    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
+    to: new Date().toISOString().split('T')[0]
+  });
+  const [form, setForm] = useState({
+    transaction_type: 'cash_in' as string,
+    amount: '', fee: '0', reference_number: '',
+    customer_name: '', payment_status: 'paid' as 'paid' | 'unpaid',
+    notes: '', transaction_date: new Date().toISOString().split('T')[0],
+  });
+  const [reconForm, setReconForm] = useState({
+    digital_wallet_balance: '', physical_cash_drawer: '', notes: '',
+  });
+  const [replenishForm, setReplenishForm] = useState({
+    amount: '', fee: '', reference_number: '', notes: '',
+  });
+
+  const ownerId = user?.id;
 
   useEffect(() => {
     if (!user) return;
@@ -87,33 +113,6 @@ export default function BusinessGCash() {
   if (!hasGcashAccess) {
     return <Navigate to="/app" replace />;
   }
-
-  const [transactions, setTransactions] = useState<GcashTransaction[]>([]);
-  const [reconciliations, setReconciliations] = useState<Reconciliation[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [txDialogOpen, setTxDialogOpen] = useState(false);
-  const [reconDialogOpen, setReconDialogOpen] = useState(false);
-  const [replenishDialogOpen, setReplenishDialogOpen] = useState(false);
-  const [searchRef, setSearchRef] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [dateRange, setDateRange] = useState({
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0],
-    to: new Date().toISOString().split('T')[0]
-  });
-  const [form, setForm] = useState({
-    transaction_type: 'cash_in' as string,
-    amount: '', fee: '0', reference_number: '',
-    customer_name: '', payment_status: 'paid' as 'paid' | 'unpaid',
-    notes: '', transaction_date: new Date().toISOString().split('T')[0],
-  });
-  const [reconForm, setReconForm] = useState({
-    digital_wallet_balance: '', physical_cash_drawer: '', notes: '',
-  });
-  const [replenishForm, setReplenishForm] = useState({
-    amount: '', fee: '', reference_number: '', notes: '',
-  });
-
-  const ownerId = user?.id;
 
   const fetchData = useCallback(async () => {
     if (!ownerId) return;
