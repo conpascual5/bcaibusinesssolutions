@@ -38,6 +38,10 @@ import {
   Activity,
   Building2,
   Smartphone,
+  Gift,
+  DollarSign,
+  Wallet,
+  Banknote,
 } from "lucide-react";
 
 type ProfileRow = {
@@ -61,6 +65,321 @@ type PlanHistoryRow = {
   notes: string | null;
   created_at: string;
 };
+
+function AdminAffiliates() {
+  const [affiliates, setAffiliates] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedAffiliate, setSelectedAffiliate] = useState<any>(null);
+  const [payouts, setPayouts] = useState<any[]>([]);
+  const [commissions, setCommissions] = useState<any[]>([]);
+  const [referrals, setReferrals] = useState<any[]>([]);
+  const [detailLoading, setDetailLoading] = useState(false);
+
+  const fetchAffiliates = useCallback(async () => {
+    setLoading(true);
+    const { data } = await supabase
+      .from("affiliates")
+      .select("*, profiles!inner(full_name, email)")
+      .order("created_at", { ascending: false });
+    setAffiliates(data || []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchAffiliates();
+  }, [fetchAffiliates]);
+
+  const loadDetails = async (affiliate: any) => {
+    setSelectedAffiliate(affiliate);
+    setDetailLoading(true);
+
+    const [payoutRes, commRes, refRes] = await Promise.all([
+      supabase.from("affiliate_payouts").select("*").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
+      supabase.from("affiliate_commissions").select("*").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
+      supabase.from("affiliate_referrals").select("*, profiles!inner(full_name, email)").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
+    ]);
+
+    setPayouts(payoutRes.data || []);
+    setCommissions(commRes.data || []);
+    setReferrals(refRes.data || []);
+    setDetailLoading(false);
+  };
+
+  const handleApprovePayout = async (payoutId: string) => {
+    await supabase.from("affiliate_payouts").update({ status: "approved" }).eq("id", payoutId);
+    toast.success("Payout approved");
+    if (selectedAffiliate) loadDetails(selectedAffiliate);
+  };
+
+  const handleCompletePayout = async (payoutId: string, affiliateId: string, amount: number) => {
+    await supabase.from("affiliate_payouts").update({ status: "completed", processed_at: new Date().toISOString() }).eq("id", payoutId);
+    // Update affiliate totals
+    await supabase.rpc("update_affiliate_payout", { p_affiliate_id: affiliateId, p_amount: amount });
+    toast.success("Payout marked as completed");
+    fetchAffiliates();
+    if (selectedAffiliate) loadDetails(selectedAffiliate);
+  };
+
+  const handleRejectPayout = async (payoutId: string) => {
+    await supabase.from("affiliate_payouts").update({ status: "rejected" }).eq("id", payoutId);
+    toast.success("Payout rejected");
+    if (selectedAffiliate) loadDetails(selectedAffiliate);
+  };
+
+  const handleAddCommission = async () => {
+    if (!selectedAffiliate) return;
+    // This will be triggered from the admin setting a plan — we'll handle it via the plan change flow
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Affiliates List */}
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="px-6 py-5 border-b border-border flex items-center justify-between">
+          <h2 className="text-base font-semibold text-foreground flex items-center gap-2.5">
+            <Gift className="w-5 h-5 text-indigo-500 stroke-[1.5]" />
+            Affiliates
+          </h2>
+          <button onClick={fetchAffiliates} className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100">
+            Refresh
+          </button>
+        </div>
+
+        {loading ? (
+          <div className="p-6 text-sm text-muted-foreground">Loading affiliates...</div>
+        ) : affiliates.length === 0 ? (
+          <div className="p-6 text-sm text-muted-foreground text-center py-12">No affiliates yet.</div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-6 py-3 font-medium text-muted-foreground">Affiliate</th>
+                  <th className="text-left px-6 py-3 font-medium text-muted-foreground">Code</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-foreground">Earned</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-foreground">Pending</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-foreground">Paid Out</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-foreground">Status</th>
+                  <th className="text-right px-6 py-3 font-medium text-muted-foreground">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {affiliates.map((a: any) => (
+                  <tr key={a.id} className="hover:bg-accent/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div>
+                        <p className="font-medium">{a.profiles?.full_name || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{a.profiles?.email || ""}</p>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <code className="bg-muted px-2 py-0.5 rounded font-mono text-xs">{a.referral_code}</code>
+                    </td>
+                    <td className="px-6 py-4 text-right font-medium">{formatCurrency(a.total_earned)}</td>
+                    <td className="px-6 py-4 text-right text-amber-600 font-medium">{formatCurrency(a.pending_balance)}</td>
+                    <td className="px-6 py-4 text-right">{formatCurrency(a.total_paid_out)}</td>
+                    <td className="px-6 py-4 text-right">
+                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                        a.is_active ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                      }`}>
+                        {a.is_active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                        {a.is_active ? "Active" : "Inactive"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => loadDetails(a)}
+                        className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-50 text-slate-700 hover:bg-slate-100 border border-slate-200"
+                      >
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      {/* Affiliate Detail Panel */}
+      {selectedAffiliate && (
+        <div className="bg-card rounded-2xl border border-border p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h3 className="text-base font-semibold flex items-center gap-2">
+                <Gift className="w-5 h-5 text-indigo-500" />
+                {selectedAffiliate.profiles?.full_name || "Affiliate"} — <code className="bg-muted px-2 py-0.5 rounded font-mono text-sm">{selectedAffiliate.referral_code}</code>
+              </h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{selectedAffiliate.profiles?.email}</p>
+            </div>
+            <button
+              onClick={() => setSelectedAffiliate(null)}
+              className="p-2 rounded-xl hover:bg-accent"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {detailLoading ? (
+            <div className="text-sm text-muted-foreground py-8 text-center">Loading details...</div>
+          ) : (
+            <Tabs defaultValue="payouts" className="space-y-4">
+              <TabsList>
+                <TabsTrigger value="payouts" className="gap-2">
+                  <Wallet className="w-4 h-4" /> Payout Requests ({payouts.length})
+                </TabsTrigger>
+                <TabsTrigger value="commissions" className="gap-2">
+                  <DollarSign className="w-4 h-4" /> Commissions ({commissions.length})
+                </TabsTrigger>
+                <TabsTrigger value="referrals" className="gap-2">
+                  <Users className="w-4 h-4" /> Referrals ({referrals.length})
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="payouts">
+                {payouts.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No payout requests.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 font-medium text-muted-foreground">Date</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Method</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Amount</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Details</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Status</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {payouts.map((p: any) => (
+                          <tr key={p.id} className="hover:bg-accent/50">
+                            <td className="py-3 text-xs">{new Date(p.created_at).toLocaleDateString()}</td>
+                            <td className="py-3 capitalize">{p.payment_method}</td>
+                            <td className="py-3 text-right font-medium">{formatCurrency(p.amount)}</td>
+                            <td className="py-3 text-xs text-muted-foreground max-w-[200px] truncate">
+                              {p.payment_method === "gcash"
+                                ? `${p.gcash_name} — ${p.gcash_number}`
+                                : `${p.bank_name} — ${p.bank_account_name} (${p.bank_account_number})`}
+                            </td>
+                            <td className="py-3 text-right">
+                              <Badge variant={
+                                p.status === "completed" ? "default" :
+                                p.status === "approved" ? "secondary" :
+                                p.status === "rejected" ? "destructive" : "outline"
+                              } className="text-xs capitalize">
+                                {p.status}
+                              </Badge>
+                            </td>
+                            <td className="py-3 text-right">
+                              <div className="flex items-center justify-end gap-1">
+                                {p.status === "pending" && (
+                                  <>
+                                    <button onClick={() => handleApprovePayout(p.id)}
+                                      className="px-2 py-1 rounded text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200">
+                                      Approve
+                                    </button>
+                                    <button onClick={() => handleRejectPayout(p.id)}
+                                      className="px-2 py-1 rounded text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200">
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+                                {p.status === "approved" && (
+                                  <button onClick={() => handleCompletePayout(p.id, selectedAffiliate.id, p.amount)}
+                                    className="px-2 py-1 rounded text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200">
+                                    Mark Completed
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="commissions">
+                {commissions.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No commissions yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 font-medium text-muted-foreground">Date</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Plan</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Amount</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Rate</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {commissions.map((c: any) => (
+                          <tr key={c.id} className="hover:bg-accent/50">
+                            <td className="py-3 text-xs">{new Date(c.created_at).toLocaleDateString()}</td>
+                            <td className="py-3 capitalize">{c.plan}</td>
+                            <td className="py-3 text-right font-medium">{formatCurrency(c.amount)}</td>
+                            <td className="py-3 text-right text-muted-foreground">{c.commission_rate}%</td>
+                            <td className="py-3 text-right">
+                              <Badge variant={
+                                c.status === "paid" ? "default" :
+                                c.status === "approved" ? "secondary" :
+                                c.status === "cancelled" ? "destructive" : "outline"
+                              } className="text-xs capitalize">{c.status}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="referrals">
+                {referrals.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No referrals yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 font-medium text-muted-foreground">Name</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Email</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Joined</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {referrals.map((r: any) => (
+                          <tr key={r.id} className="hover:bg-accent/50">
+                            <td className="py-3">{r.profiles?.full_name || "—"}</td>
+                            <td className="py-3 text-xs text-muted-foreground">{r.profiles?.email || r.referred_email || "—"}</td>
+                            <td className="py-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
+                            <td className="py-3 text-right">
+                              <Badge variant={
+                                r.status === "active" ? "default" :
+                                r.status === "cancelled" ? "destructive" : "outline"
+                              } className="text-xs capitalize">{r.status}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ApiKeySettings() {
   const [aiKey, setAiKey] = useState("");
@@ -769,6 +1088,15 @@ export default function Admin() {
             GCash Access
           </button>
           <button
+            onClick={() => setActiveSection("affiliates")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "affiliates" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Gift className="w-4 h-4 stroke-[1.5]" />
+            Affiliates
+          </button>
+          <button
             onClick={() => setActiveSection("settings")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeSection === "settings" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -973,6 +1301,8 @@ export default function Admin() {
         {activeSection === "bms" && <AdminBMSAccess />}
 
         {activeSection === "gcash" && <AdminGCashAccess />}
+
+        {activeSection === "affiliates" && <AdminAffiliates />}
 
         {activeSection === "settings" && <ApiKeySettings />}
       </div>
