@@ -47,6 +47,16 @@ import BusinessEmployees from './pages/BusinessEmployees'
 import BusinessAttendance from './pages/BusinessAttendance'
 import BusinessLeave from './pages/BusinessLeave'
 import BusinessHRDashboard from './pages/BusinessHRDashboard'
+import BusinessCompany from './pages/BusinessCompany'
+import BusinessOffices from './pages/BusinessOffices'
+import BusinessDepartments from './pages/BusinessDepartments'
+import BusinessDesignations from './pages/BusinessDesignations'
+import BusinessOrgChart from './pages/BusinessOrgChart'
+import BusinessCorrections from './pages/BusinessCorrections'
+import BusinessShiftRoster from './pages/BusinessShiftRoster'
+import BusinessPerformances from './pages/BusinessPerformances'
+import BusinessPayroll from './pages/BusinessPayroll'
+import BusinessBonuses from './pages/BusinessBonuses'
 import BusinessGCash from './pages/BusinessGCash'
 import BusinessHelp from './pages/BusinessHelp'
 import { BusinessTeamProvider } from '@/providers/business-team'
@@ -124,8 +134,18 @@ export default function App() {
         <Route path="/app/business/team" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessTeam /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessHRDashboard /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr/employees" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessEmployees /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/org-chart" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessOrgChart /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/company" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessCompany /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/offices" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessOffices /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/departments" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessDepartments /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/designations" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessDesignations /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr/attendance" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessAttendance /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/corrections" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessCorrections /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/hr/leave" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessLeave /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/shifts" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessShiftRoster /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/performances" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessPerformances /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/payroll" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessPayroll /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/business/hr/bonuses" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessBonuses /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/business/help" element={<ProtectedRoute><AppLayoutRoute><BusinessTeamProvider><BusinessHelp /></BusinessTeamProvider></AppLayoutRoute></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />

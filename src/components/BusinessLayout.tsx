@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen, Smartphone } from 'lucide-react';
+import { Crown, ArrowLeft, Lock, Grid3X3, Building2, ShoppingCart, ClipboardList, DollarSign, Receipt, Calculator, Wallet, Users, FileText, FileSearch, Target, Database, Loader2, UserPlus, Eye, Clock, Umbrella, BarChart3, BookOpen, Smartphone, Briefcase, GitBranch, MapPin, Layers, BadgeCheck, TrendingUp, Calculator, Gift, RefreshCw } from 'lucide-react';
 
 interface BusinessLayoutProps {
   children: ReactNode;
@@ -28,10 +28,21 @@ const trackerItems = [
   { icon: Target, label: 'Targets', path: '/app/business/targets' },
   { icon: Database, label: 'Records', path: '/app/business/records' },
   { icon: UserPlus, label: 'Team', path: '/app/business/team' },
+  // ─── HR Section ──────────────────────────────────────────────
   { icon: BarChart3, label: 'HR Dashboard', path: '/app/business/hr' },
   { icon: Users, label: 'Employees', path: '/app/business/hr/employees' },
+  { icon: GitBranch, label: 'Org Chart', path: '/app/business/hr/org-chart' },
+  { icon: Building2, label: 'Company', path: '/app/business/hr/company' },
+  { icon: MapPin, label: 'Offices', path: '/app/business/hr/offices' },
+  { icon: Layers, label: 'Departments', path: '/app/business/hr/departments' },
+  { icon: BadgeCheck, label: 'Designations', path: '/app/business/hr/designations' },
   { icon: Clock, label: 'Attendance', path: '/app/business/hr/attendance' },
+  { icon: RefreshCw, label: 'Corrections', path: '/app/business/hr/corrections' },
   { icon: Umbrella, label: 'Leave Mgmt', path: '/app/business/hr/leave' },
+  { icon: Calendar, label: 'Shift Roster', path: '/app/business/hr/shifts' },
+  { icon: TrendingUp, label: 'Performances', path: '/app/business/hr/performances' },
+  { icon: Calculator, label: 'Payroll Engine', path: '/app/business/hr/payroll' },
+  { icon: Gift, label: 'Bonuses', path: '/app/business/hr/bonuses' },
   { icon: BookOpen, label: 'Help & Guide', path: '/app/business/help' },
 ];
 

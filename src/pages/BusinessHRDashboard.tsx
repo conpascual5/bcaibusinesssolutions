@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import { useAuth } from "@/providers/auth";
 import { useBusinessTeam } from "@/providers/business-team";
 import { supabase } from "@/integrations/supabase/client";
@@ -6,7 +7,9 @@ import BusinessLayout from "@/components/BusinessLayout";
 import {
   Loader2, Users, Calendar, Clock, Umbrella, TrendingUp,
   BarChart3, PieChart, Activity, DollarSign, AlertTriangle,
-  CheckCircle2, XCircle, UserCheck, UserX, Briefcase
+  CheckCircle2, XCircle, UserCheck, UserX, Briefcase,
+  GitBranch, Building2, MapPin, Layers, BadgeCheck,
+  RefreshCw, Calculator, Gift, ArrowRight
 } from "lucide-react";
 
 type Employee = { id: string; first_name: string; last_name: string; is_active: boolean; gender: string | null; hire_date: string; department: string | null };
@@ -103,12 +106,47 @@ export default function BusinessHRDashboard() {
     </div>
   );
 
+  const navigate = (await import("react-router")).useNavigate();
+
+  const hrModules = [
+    { icon: Users, label: "Employees", path: "/app/business/hr/employees", desc: "Manage employee profiles", color: "bg-blue-500" },
+    { icon: GitBranch, label: "Org Chart", path: "/app/business/hr/org-chart", desc: "Company hierarchy", color: "bg-purple-500" },
+    { icon: Building2, label: "Company", path: "/app/business/hr/company", desc: "Company profile", color: "bg-indigo-500" },
+    { icon: MapPin, label: "Offices", path: "/app/business/hr/offices", desc: "Branch locations", color: "bg-rose-500" },
+    { icon: Layers, label: "Departments", path: "/app/business/hr/departments", desc: "Department structure", color: "bg-amber-500" },
+    { icon: BadgeCheck, label: "Designations", path: "/app/business/hr/designations", desc: "Job titles & grades", color: "bg-emerald-500" },
+    { icon: Clock, label: "Attendance", path: "/app/business/hr/attendance", desc: "Daily time logs", color: "bg-cyan-500" },
+    { icon: RefreshCw, label: "Corrections", path: "/app/business/hr/corrections", desc: "Time log adjustments", color: "bg-orange-500" },
+    { icon: Umbrella, label: "Leave Mgmt", path: "/app/business/hr/leave", desc: "Leave requests & types", color: "bg-teal-500" },
+    { icon: Calendar, label: "Shift Roster", path: "/app/business/hr/shifts", desc: "Shift definitions", color: "bg-violet-500" },
+    { icon: TrendingUp, label: "Performances", path: "/app/business/hr/performances", desc: "Reviews & ratings", color: "bg-emerald-500" },
+    { icon: Calculator, label: "Payroll Engine", path: "/app/business/hr/payroll", desc: "Auto-compute pay", color: "bg-indigo-500" },
+    { icon: Gift, label: "Bonuses", path: "/app/business/hr/bonuses", desc: "Incentives & commissions", color: "bg-pink-500" },
+  ];
+
   return (
     <BusinessLayout title="HR Dashboard" description="Employee analytics, attendance insights, and payroll summaries">
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <div className="space-y-6">
+          {/* Quick Navigation */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {hrModules.map(mod => (
+              <button
+                key={mod.path}
+                onClick={() => navigate(mod.path)}
+                className="bg-card rounded-2xl border border-border p-4 hover:shadow-md hover:border-indigo-200 transition-all text-left group"
+              >
+                <div className={`p-2 rounded-xl ${mod.color} w-fit mb-2`}>
+                  <mod.icon className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-sm font-semibold">{mod.label}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{mod.desc}</p>
+              </button>
+            ))}
+          </div>
+
           {/* Period Selector */}
           <div className="flex items-center gap-1 bg-muted rounded-xl p-1 w-fit">
             <button onClick={() => setPeriod("week")} className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${period === "week" ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>This Week</button>
