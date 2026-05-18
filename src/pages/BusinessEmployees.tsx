@@ -48,7 +48,7 @@ export default function BusinessEmployees() {
   // Form state
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "", phone: "",
-    position: "", department: "", hire_date: "", gender: "", notes: ""
+    position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: ""
   });
 
   const loadEmployees = async () => {
@@ -67,7 +67,7 @@ export default function BusinessEmployees() {
   }, [businessOwnerId]);
 
   const resetForm = () => {
-    setForm({ first_name: "", last_name: "", email: "", phone: "", position: "", department: "", hire_date: "", gender: "", notes: "" });
+    setForm({ first_name: "", last_name: "", email: "", phone: "", position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: "" });
     setEditing(null);
     setShowForm(false);
   };
@@ -77,7 +77,7 @@ export default function BusinessEmployees() {
       first_name: emp.first_name, last_name: emp.last_name,
       email: emp.email || "", phone: emp.phone || "",
       position: emp.position || "", department: emp.department || "",
-      hire_date: emp.hire_date, gender: emp.gender || "", notes: emp.notes || ""
+      hire_date: emp.hire_date, resignation_date: emp.resignation_date || "", gender: emp.gender || "", notes: emp.notes || ""
     });
     setEditing(emp);
     setShowForm(true);
@@ -95,6 +95,8 @@ export default function BusinessEmployees() {
       position: form.position || null,
       department: form.department || null,
       hire_date: form.hire_date,
+      resignation_date: form.resignation_date || null,
+      is_active: !form.resignation_date,
       gender: form.gender || null,
       notes: form.notes || null,
     };
@@ -110,7 +112,9 @@ export default function BusinessEmployees() {
   };
 
   const toggleActive = async (emp: Employee) => {
-    await supabase.from("hr_employees").update({ is_active: !emp.is_active }).eq("id", emp.id);
+    // Toggle between active (no resignation) and inactive (set resignation date to today)
+    const resignation_date = emp.is_active ? new Date().toISOString().split('T')[0] : null;
+    await supabase.from("hr_employees").update({ is_active: !emp.is_active, resignation_date }).eq("id", emp.id);
     await loadEmployees();
   };
 
@@ -187,6 +191,10 @@ export default function BusinessEmployees() {
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">Hire Date *</label>
                   <input type="date" value={form.hire_date} onChange={e => setForm({ ...form, hire_date: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">Resignation Date</label>
+                  <input type="date" value={form.resignation_date} onChange={e => setForm({ ...form, resignation_date: e.target.value })} className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">Gender</label>
