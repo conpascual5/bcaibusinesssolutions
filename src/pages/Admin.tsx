@@ -78,15 +78,39 @@ function AdminAffiliates() {
   const [payouts, setPayouts] = useState<any[]>([]);
   const [commissions, setCommissions] = useState<any[]>([]);
   const [referrals, setReferrals] = useState<any[]>([]);
+  const [referralProfiles, setReferralProfiles] = useState<Record<string, any>>({});
+  const [downline, setDownline] = useState<any[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
   const fetchAffiliates = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
+    // Fetch affiliates and their profiles separately since there's no FK
+    const { data: affData } = await supabase
       .from("affiliates")
-      .select("*, profiles!inner(full_name, email)")
+      .select("*")
       .order("created_at", { ascending: false });
-    setAffiliates(data || []);
+
+    if (affData && affData.length > 0) {
+      // Fetch profiles for all affiliates
+      const userIds = affData.map((a: any) => a.user_id);
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+
+      const profileMap: Record<string, any> = {};
+      (profileData || []).forEach((p: any) => {
+        profileMap[p.id] = p;
+      });
+
+      const enriched = affData.map((a: any) => ({
+        ...a,
+        profiles: profileMap[a.user_id] || null,
+      }));
+      setAffiliates(enriched);
+    } else {
+      setAffiliates(affData || []);
+    }
     setLoading(false);
   }, []);
 
@@ -101,12 +125,62 @@ function AdminAffiliates() {
     const [payoutRes, commRes, refRes] = await Promise.all([
       supabase.from("affiliate_payouts").select("*").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
       supabase.from("affiliate_commissions").select("*").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
-      supabase.from("affiliate_referrals").select("*, profiles!inner(full_name, email)").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
+      supabase.from("affiliate_referrals").select("*").eq("affiliate_id", affiliate.id).order("created_at", { ascending: false }),
     ]);
 
     setPayouts(payoutRes.data || []);
     setCommissions(commRes.data || []);
-    setReferrals(refRes.data || []);
+    const referralsData = refRes.data || [];
+    setReferrals(referralsData);
+
+    // Fetch profiles for referred users
+    const referredUserIds = referralsData
+      .map((r: any) => r.referred_user_id)
+      .filter(Boolean);
+    const profileMap: Record<string, any> = {};
+    if (referredUserIds.length > 0) {
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", referredUserIds);
+      (profileData || []).forEach((p: any) => {
+        profileMap[p.id] = p;
+      });
+    }
+    setReferralProfiles(profileMap);
+
+    // Find downline: referred users who also became affiliates
+    if (referredUserIds.length > 0) {
+      const { data: downlineData } = await supabase
+        .from("affiliates")
+        .select("*")
+        .in("user_id", referredUserIds);
+
+      if (downlineData && downlineData.length > 0) {
+        const downlineUserIds = downlineData.map((d: any) => d.user_id);
+        const { data: downlineProfiles } = await supabase
+          .from("profiles")
+          .select("id, full_name, email")
+          .in("id", downlineUserIds);
+
+        const downlineProfileMap: Record<string, any> = {};
+        (downlineProfiles || []).forEach((p: any) => {
+          downlineProfileMap[p.id] = p;
+        });
+
+        setDownline(
+          downlineData.map((d: any) => ({
+            ...d,
+            profiles: downlineProfileMap[d.user_id] || null,
+          }))
+        );
+      } else {
+        setDownline([]);
+      }
+    } else {
+      setDownline([]);
+    }
+
     setDetailLoading(false);
   };
 
@@ -240,6 +314,9 @@ function AdminAffiliates() {
                 <TabsTrigger value="referrals" className="gap-2">
                   <Users className="w-4 h-4" /> Referrals ({referrals.length})
                 </TabsTrigger>
+                <TabsTrigger value="downline" className="gap-2">
+                  <Users className="w-4 h-4" /> Sub-Affiliates ({downline.length})
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="payouts">
@@ -360,16 +437,60 @@ function AdminAffiliates() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-border">
-                        {referrals.map((r: any) => (
-                          <tr key={r.id} className="hover:bg-accent/50">
-                            <td className="py-3">{r.profiles?.full_name || "—"}</td>
-                            <td className="py-3 text-xs text-muted-foreground">{r.profiles?.email || r.referred_email || "—"}</td>
-                            <td className="py-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
+                        {referrals.map((r: any) => {
+                          const profile = referralProfiles[r.referred_user_id];
+                          return (
+                            <tr key={r.id} className="hover:bg-accent/50">
+                              <td className="py-3">{profile?.full_name || "—"}</td>
+                              <td className="py-3 text-xs text-muted-foreground">{profile?.email || r.referred_email || "—"}</td>
+                              <td className="py-3 text-xs text-muted-foreground">{new Date(r.created_at).toLocaleDateString()}</td>
+                              <td className="py-3 text-right">
+                                <Badge variant={
+                                  r.status === "active" ? "default" :
+                                  r.status === "cancelled" ? "destructive" : "outline"
+                                } className="text-xs capitalize">{r.status}</Badge>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* Downline / Sub-Affiliates Tab */}
+              <TabsContent value="downline">
+                {downline.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4">No referred users have become affiliates yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-3 font-medium text-muted-foreground">Name</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Email</th>
+                          <th className="text-left py-3 font-medium text-muted-foreground">Referral Code</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Earned</th>
+                          <th className="text-right py-3 font-medium text-muted-foreground">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {downline.map((d: any) => (
+                          <tr key={d.id} className="hover:bg-accent/50">
+                            <td className="py-3">{d.profiles?.full_name || "—"}</td>
+                            <td className="py-3 text-xs text-muted-foreground">{d.profiles?.email || "—"}</td>
+                            <td className="py-3">
+                              <code className="bg-muted px-2 py-0.5 rounded font-mono text-xs">{d.referral_code}</code>
+                            </td>
+                            <td className="py-3 text-right font-medium">{formatCurrency(d.total_earned)}</td>
                             <td className="py-3 text-right">
-                              <Badge variant={
-                                r.status === "active" ? "default" :
-                                r.status === "cancelled" ? "destructive" : "outline"
-                              } className="text-xs capitalize">{r.status}</Badge>
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                d.is_active ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"
+                              }`}>
+                                {d.is_active ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+                                {d.is_active ? "Active" : "Inactive"}
+                              </span>
                             </td>
                           </tr>
                         ))}
