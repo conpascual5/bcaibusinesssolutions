@@ -6,12 +6,13 @@ import BusinessLayout from '@/components/BusinessLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency } from '@/lib/currency';
-import { Activity, Package, ArrowDownUp, Calendar } from 'lucide-react';
+import { Activity, Package, ArrowDownUp, Calendar, BarChart3 } from 'lucide-react';
 import { KPISkeleton } from '@/components/BusinessSkeleton';
 import InventoryDashboard from '@/components/inventory/InventoryDashboard';
 import InventoryProducts from '@/components/inventory/InventoryProducts';
 import InventoryMovements from '@/components/inventory/InventoryMovements';
 import InventoryDailySold from '@/components/inventory/InventoryDailySold';
+import InventoryInsights from '@/components/inventory/InventoryInsights';
 
 interface Product {
   id: string;
@@ -131,6 +132,9 @@ export default function BusinessInventory() {
           <TabsTrigger value="daily" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2">
             <Calendar className="w-4 h-4" /> Daily Sold
           </TabsTrigger>
+          <TabsTrigger value="insights" className="rounded-lg data-[state=active]:bg-indigo-500 data-[state=active]:text-white gap-2">
+            <BarChart3 className="w-4 h-4" /> Insights
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard" className="mt-0">
@@ -147,6 +151,10 @@ export default function BusinessInventory() {
 
         <TabsContent value="daily" className="mt-0">
           <InventoryDailySold movements={movements} products={products} />
+        </TabsContent>
+
+        <TabsContent value="insights" className="mt-0">
+          <InventoryInsights stockLevels={stockLevels} movements={movements} products={products} />
         </TabsContent>
       </Tabs>
     </BusinessLayout>
