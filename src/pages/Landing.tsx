@@ -28,13 +28,6 @@ export default function Landing() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-      },
-      { threshold: 0.3 }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const features = [
     { icon: <Wand2 className="w-5 h-5" />, color: "bg-blue-500", title: "Sales Wizard", desc: "AI-powered sales message generator with 20+ frameworks. Choose Taglish, Filipino, or English." },
@@ -484,7 +477,7 @@ export default function Landing() {
       </section>
 
       {/* Plans Section */}
-      <section ref={plansRef} id="plans" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
+      <section id="plans" className="py-24 px-4 bg-gradient-to-b from-gray-50 to-white">
         <div className="max-w-6xl mx-auto">
           <AnimatedSection>
             <div className="text-center mb-14">
