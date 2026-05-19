@@ -2,11 +2,13 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/providers/auth";
 import { supabase } from "@/integrations/supabase/client";
+import WeeklySchedule from "@/components/WeeklySchedule";
 import {
   Clock, LogOut, Loader2, Calendar,
   Umbrella, Send, Building2, Sun, Moon,
   AlertCircle, History, Timer, Coffee,
-  Wallet, Download, ChevronRight, X
+  Wallet, ChevronRight, X,
+  Sparkles, Heart, Star
 } from "lucide-react";
 
 type Employee = {
@@ -49,17 +51,6 @@ type LeaveRequest = {
   created_at: string;
 };
 
-type TodaySchedule = {
-  start_time: string;
-  end_time: string;
-  grace_period_minutes: number;
-  is_rest_day: boolean;
-  break_start: string | null;
-  break_end: string | null;
-  break_paid: boolean;
-  shift_name: string | null;
-};
-
 type Payslip = {
   id: string;
   employee_id: string;
@@ -94,7 +85,7 @@ export default function EmployeePortal() {
   const [loading, setLoading] = useState(true);
   const [todayLog, setTodayLog] = useState<AttendanceLog | null>(null);
   const [recentLogs, setRecentLogs] = useState<AttendanceLog[]>([]);
-  const [todaySchedule, setTodaySchedule] = useState<TodaySchedule | null>(null);
+  // Weekly schedule is now loaded into weekSchedule array
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [clocking, setClocking] = useState(false);
@@ -146,39 +137,52 @@ export default function EmployeePortal() {
     const today = new Date().toISOString().split("T")[0];
     const dayOfWeek = new Date().getDay(); // 0=Sun, 1=Mon, ...
 
-    // Get today's schedule from hr_employee_schedules
-    const { data: scheduleData } = await supabase
+    // Load full week schedule from hr_employee_schedules
+    const { data: schedData } = await supabase
       .from("hr_employee_schedules")
       .select("*")
-      .eq("employee_id", empData.id)
-      .eq("day_of_week", dayOfWeek)
-      .maybeSingle();
+      .eq("employee_id", empData.id);
 
-    if (scheduleData) {
-      // If there's a shift_id, fetch the shift name
-      let shiftName: string | null = null;
-      if (scheduleData.shift_id) {
-        const { data: shiftData } = await supabase
-          .from("hr_shift_rosters")
-          .select("name")
-          .eq("id", scheduleData.shift_id)
-          .maybeSingle();
-        shiftName = shiftData?.name || null;
+    // Build week schedule array (all 7 days)
+    const weekSched: DaySchedule[] = [];
+    for (let d = 0; d < 7; d++) {
+      const s = (schedData || []).find((s: any) => s.day_of_week === d);
+      if (s) {
+        let shiftName: string | null = null;
+        if (s.shift_id) {
+          const { data: shiftData } = await supabase
+            .from("hr_shift_rosters")
+            .select("name")
+            .eq("id", s.shift_id)
+            .maybeSingle();
+          shiftName = shiftData?.name || null;
+        }
+        weekSched[d] = {
+          day_of_week: d,
+          start_time: s.start_time,
+          end_time: s.end_time,
+          grace_period_minutes: s.grace_period_minutes ?? 15,
+          is_rest_day: s.is_rest_day ?? false,
+          break_start: s.break_start,
+          break_end: s.break_end,
+          break_paid: s.break_paid ?? false,
+          shift_name: shiftName,
+        };
+      } else {
+        weekSched[d] = {
+          day_of_week: d,
+          start_time: null,
+          end_time: null,
+          grace_period_minutes: null,
+          is_rest_day: false,
+          break_start: null,
+          break_end: null,
+          break_paid: false,
+          shift_name: null,
+        };
       }
-
-      setTodaySchedule({
-        start_time: scheduleData.start_time,
-        end_time: scheduleData.end_time,
-        grace_period_minutes: scheduleData.grace_period_minutes ?? 15,
-        is_rest_day: scheduleData.is_rest_day ?? false,
-        break_start: scheduleData.break_start,
-        break_end: scheduleData.break_end,
-        break_paid: scheduleData.break_paid ?? false,
-        shift_name: shiftName,
-      });
-    } else {
-      setTodaySchedule(null);
     }
+    setWeekSchedule(weekSched);
 
     // Get today's attendance
     const { data: logData } = await supabase
@@ -304,9 +308,9 @@ export default function EmployeePortal() {
         let status = "present";
         let tardinessMinutes = 0;
 
-        if (todaySchedule && !todaySchedule.is_rest_day) {
-          status = determineStatus(timeStr, todaySchedule);
-          tardinessMinutes = calcTardiness(timeStr, todaySchedule);
+        if (todaySched && !todaySched.is_rest_day && todaySched.start_time) {
+          status = determineStatus(timeStr, todaySched);
+          tardinessMinutes = calcTardiness(timeStr, todaySched);
         }
 
         const { error } = await supabase
@@ -388,17 +392,22 @@ export default function EmployeePortal() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50/30 to-sky-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
+          <p className="text-sm text-muted-foreground mt-3">Loading your portal...</p>
+        </div>
       </div>
     );
   }
 
   if (!employee) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950 flex items-center justify-center p-4">
-        <div className="bg-card rounded-2xl border border-border shadow-xl p-8 max-w-md w-full text-center">
-          <AlertCircle className="w-12 h-12 text-amber-500 mx-auto mb-4" />
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50/30 to-sky-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950 flex items-center justify-center p-4">
+        <div className="bg-card rounded-3xl border border-border shadow-xl p-8 max-w-md w-full text-center">
+          <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mx-auto mb-4">
+            <AlertCircle className="w-8 h-8 text-amber-500" />
+          </div>
           <h2 className="text-lg font-bold mb-2">No Employee Profile Found</h2>
           <p className="text-sm text-muted-foreground mb-6">
             Your account is not linked to any employee profile. Please contact your employer to set up your access.
@@ -414,25 +423,27 @@ export default function EmployeePortal() {
     );
   }
 
+  const todaySched = weekSchedule[todayDayOfWeek];
+  const isRestDay = todaySched?.is_rest_day ?? false;
   const isClockedIn = todayLog?.time_in && !todayLog?.time_out;
-  const isRestDay = todaySchedule?.is_rest_day ?? false;
+  const hasClockedToday = !!todayLog?.time_in && !!todayLog?.time_out;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50/30 to-sky-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Clock className="w-5 h-5 text-white" />
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <Sparkles className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold">Employee Portal</h1>
+              <h1 className="text-sm font-bold">My Portal</h1>
               <p className="text-[10px] text-muted-foreground">{employee.first_name} {employee.last_name}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-muted rounded-lg text-xs text-muted-foreground">
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-xs text-purple-700 dark:text-purple-400 font-medium">
               <Building2 className="w-3 h-3" />
               {employee.position || "Employee"}
             </div>
@@ -448,73 +459,83 @@ export default function EmployeePortal() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Weekly Schedule */}
+        <WeeklySchedule schedule={weekSchedule} />
+
         {/* Clock In/Out Card */}
-        <div className="bg-card rounded-2xl border border-border shadow-lg p-6">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-border shadow-lg p-6">
           <div className="flex flex-col sm:flex-row items-center gap-6">
             <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
               isClockedIn
-                ? "bg-emerald-100 dark:bg-emerald-900/30 shadow-lg shadow-emerald-500/20"
+                ? "bg-emerald-100 dark:bg-emerald-900/30 shadow-lg shadow-emerald-500/20 ring-4 ring-emerald-200 dark:ring-emerald-800"
                 : isRestDay
-                  ? "bg-blue-100 dark:bg-blue-900/20 shadow-sm"
-                  : "bg-muted shadow-sm"
+                  ? "bg-amber-100 dark:bg-amber-900/20 shadow-sm ring-4 ring-amber-200 dark:ring-amber-800"
+                  : hasClockedToday
+                    ? "bg-indigo-100 dark:bg-indigo-900/20 shadow-sm ring-4 ring-indigo-200 dark:ring-indigo-800"
+                    : "bg-muted shadow-sm"
             }`}>
-              <Clock className={`w-10 h-10 transition-colors ${
-                isClockedIn ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
-              }`} />
+              {isRestDay ? (
+                <Heart className="w-10 h-10 text-amber-500" />
+              ) : isClockedIn ? (
+                <Sun className="w-10 h-10 text-emerald-500" />
+              ) : (
+                <Clock className="w-10 h-10 text-muted-foreground" />
+              )}
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h2 className="text-xl font-bold">
                 {isRestDay
-                  ? "It's your rest day 🎉"
+                  ? "Enjoy your rest day! 🎉"
                   : isClockedIn
-                    ? "You're clocked in"
-                    : "Ready to work?"}
+                    ? "You're clocked in ✨"
+                    : hasClockedToday
+                      ? "All done for today! 🎯"
+                      : "Ready to work? 🌟"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
                 {isRestDay
-                  ? "Enjoy your day off!"
+                  ? "Take a break, you deserve it!"
                   : isClockedIn
                     ? `Clocked in at ${todayLog?.time_in?.slice(0, 5)}`
-                    : todayLog?.time_out
-                      ? `Last clock out: ${todayLog.time_out.slice(0, 5)}`
-                      : "Tap the button to clock in for today"}
+                    : hasClockedToday
+                      ? `Completed at ${todayLog?.time_out?.slice(0, 5)} — ${todayLog?.hours_worked}h worked`
+                      : todayLog?.time_out
+                        ? `Last clock out: ${todayLog.time_out.slice(0, 5)}`
+                        : "Tap the button to clock in"}
               </p>
 
-              {/* Schedule info */}
-              {todaySchedule && !isRestDay && (
-                <div className="flex flex-wrap items-center gap-3 mt-2">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs font-medium">
+              {todaySched && !isRestDay && todaySched.start_time && (
+                <div className="flex flex-wrap items-center gap-2 mt-2 justify-center sm:justify-start">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-lg text-xs font-medium">
                     <Timer className="w-3 h-3" />
-                    {todaySchedule.shift_name
-                      ? `${todaySchedule.shift_name}: `
-                      : ""}
-                    {todaySchedule.start_time.slice(0, 5)} – {todaySchedule.end_time.slice(0, 5)}
+                    {todaySched.shift_name ? `${todaySched.shift_name}: ` : ""}
+                    {todaySched.start_time.slice(0, 5)} – {todaySched.end_time?.slice(0, 5)}
                   </span>
-                  {todaySchedule.break_start && (
+                  {todaySched.break_start && (
                     <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-medium">
                       <Coffee className="w-3 h-3" />
-                      Break {todaySchedule.break_start.slice(0, 5)}–{todaySchedule.break_end?.slice(0, 5)}
+                      Break {todaySched.break_start.slice(0, 5)}–{todaySched.break_end?.slice(0, 5)}
                     </span>
                   )}
                   <span className="text-[10px] text-muted-foreground">
-                    Grace: {todaySchedule.grace_period_minutes} min
+                    Grace: {todaySched.grace_period_minutes} min
                   </span>
                 </div>
               )}
 
               {clockMessage && (
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1.5 font-medium bg-purple-50 dark:bg-purple-900/20 inline-block px-3 py-1 rounded-full">
                   {clockMessage}
                 </p>
               )}
             </div>
             <button
               onClick={handleClockIn}
-              disabled={clocking || isRestDay || (!!todayLog?.time_in && !!todayLog?.time_out)}
+              disabled={clocking || isRestDay || hasClockedToday}
               className={`flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg ${
                 isClockedIn
                   ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
-                  : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white shadow-indigo-500/20"
+                  : "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-purple-500/20"
               } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {clocking ? (
@@ -529,11 +550,11 @@ export default function EmployeePortal() {
         </div>
 
         {/* Tabs */}
-        <div className="flex bg-card rounded-xl p-1 border border-border shadow-sm">
+        <div className="flex bg-white dark:bg-slate-900 rounded-xl p-1 border border-border shadow-sm">
           <button
             onClick={() => setActiveTab("attendance")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "attendance" ? "bg-indigo-500 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
+              activeTab === "attendance" ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Clock className="w-4 h-4" /> Attendance
@@ -541,7 +562,7 @@ export default function EmployeePortal() {
           <button
             onClick={() => setActiveTab("leave")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "leave" ? "bg-indigo-500 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
+              activeTab === "leave" ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Umbrella className="w-4 h-4" /> Leave
@@ -549,7 +570,7 @@ export default function EmployeePortal() {
           <button
             onClick={() => setActiveTab("payslips")}
             className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "payslips" ? "bg-indigo-500 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
+              activeTab === "payslips" ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Wallet className="w-4 h-4" /> Payslips
@@ -560,12 +581,14 @@ export default function EmployeePortal() {
         {activeTab === "attendance" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <History className="w-4 h-4 text-muted-foreground" />
-              <h3 className="font-semibold text-sm">Recent Attendance (Last 7 Days)</h3>
+              <History className="w-4 h-4 text-purple-500" />
+              <h3 className="font-semibold text-sm">Recent Attendance</h3>
+              <span className="text-xs text-muted-foreground">(Last 7 days)</span>
             </div>
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-border shadow-sm overflow-hidden">
               {recentLogs.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
+                  <Sparkles className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
                   No attendance records yet. Start by clocking in!
                 </div>
               ) : (
@@ -577,8 +600,16 @@ export default function EmployeePortal() {
                     return (
                       <div key={log.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/20 transition-colors">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                            <Calendar className="w-5 h-5 text-muted-foreground" />
+                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                            log.status === "present" ? "bg-emerald-100 dark:bg-emerald-900/20" :
+                            log.status === "late" ? "bg-amber-100 dark:bg-amber-900/20" :
+                            "bg-muted"
+                          }`}>
+                            <Calendar className={`w-5 h-5 ${
+                              log.status === "present" ? "text-emerald-600 dark:text-emerald-400" :
+                              log.status === "late" ? "text-amber-600 dark:text-amber-400" :
+                              "text-muted-foreground"
+                            }`} />
                           </div>
                           <div>
                             <p className="text-sm font-medium">{dayName}, {dateStr}</p>
@@ -586,8 +617,8 @@ export default function EmployeePortal() {
                               {log.time_in ? `${log.time_in.slice(0, 5)}` : "—"} → {log.time_out ? `${log.time_out.slice(0, 5)}` : "—"}
                             </p>
                             {log.tardiness_minutes != null && log.tardiness_minutes > 0 && (
-                              <p className="text-[10px] text-amber-600 dark:text-amber-400">
-                                {log.tardiness_minutes} min late
+                              <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                                ⏰ {log.tardiness_minutes} min late
                               </p>
                             )}
                           </div>
@@ -613,14 +644,14 @@ export default function EmployeePortal() {
         {activeTab === "payslips" && (
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4 text-muted-foreground" />
+              <Wallet className="w-4 h-4 text-purple-500" />
               <h3 className="font-semibold text-sm">My Payslips</h3>
               {payslips.length > 0 && (
                 <span className="text-xs text-muted-foreground">({payslips.length})</span>
               )}
             </div>
 
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-border shadow-sm overflow-hidden">
               {payslips.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
                   <Wallet className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
@@ -815,12 +846,12 @@ export default function EmployeePortal() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Umbrella className="w-4 h-4 text-muted-foreground" />
+                <Umbrella className="w-4 h-4 text-purple-500" />
                 <h3 className="font-semibold text-sm">My Leave Requests</h3>
               </div>
               <button
                 onClick={() => { setShowLeaveForm(true); setLeaveError(""); }}
-                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-xs font-semibold hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md"
+                className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl text-xs font-semibold hover:from-purple-600 hover:to-pink-700 transition-all shadow-md"
               >
                 <Send className="w-3.5 h-3.5" /> Request Leave
               </button>
@@ -828,7 +859,7 @@ export default function EmployeePortal() {
 
             {/* Leave Form */}
             {showLeaveForm && (
-              <div className="bg-card rounded-2xl border border-border shadow-sm p-5">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-border shadow-sm p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-sm">New Leave Request</h4>
                   <button onClick={() => setShowLeaveForm(false)} className="p-1 hover:bg-muted rounded-lg">
@@ -895,7 +926,7 @@ export default function EmployeePortal() {
                   <button
                     onClick={handleSubmitLeave}
                     disabled={submittingLeave || !leaveForm.leave_type_id || !leaveForm.start_date || !leaveForm.end_date}
-                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-xl text-sm font-semibold hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 transition-all"
+                    className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-600 text-white rounded-xl text-sm font-semibold hover:from-purple-600 hover:to-pink-700 disabled:opacity-50 transition-all"
                   >
                     {submittingLeave ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -909,7 +940,7 @@ export default function EmployeePortal() {
             )}
 
             {/* Leave Requests List */}
-            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-border shadow-sm overflow-hidden">
               {leaveRequests.length === 0 ? (
                 <div className="p-8 text-center text-sm text-muted-foreground">
                   No leave requests yet. Tap "Request Leave" to submit one.
