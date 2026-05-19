@@ -153,8 +153,25 @@ const entries: KBEntry[] = [
     sections: [
       { heading: "What is HR Management System?", content: "A standalone HR operations suite covering employee profiles, attendance tracking, leave management, shift roster scheduling, performance reviews, payroll engine with bonuses, and company/office/department/designation management. Available as a standalone add-on (₱999/month) or included in Pro Plus (₱1,499/month) and VIP plans." },
       { heading: "Getting Started", content: "Access HR Management from the sidebar under 'HR Management'. Pro Plus and VIP users automatically get access. Free and Pro users can subscribe to the standalone HR add-on for ₱999/month. Once inside, you'll see the HR Dashboard with an overview of all HR metrics." },
-      { heading: "Key Modules", content: "Employees: Manage employee profiles with roles and status. Attendance: Track daily attendance with time-in/time-out. Leave: Manage leave requests with different leave types. Shift Roster: Create and assign shift schedules. Corrections: Handle attendance corrections. Performance: Track employee performance reviews. Payroll: Generate payroll with bonuses and deductions." },
+      { heading: "Key Modules", content: "Employees: Manage employee profiles with roles and status. Attendance: Track daily attendance with time-in/time-out. Leave: Manage leave requests with different leave types. Shift Roster: Create and assign shift schedules. Corrections: Handle attendance corrections. Performance: Track employee performance reviews. Payroll Engine: Generate automated payslips with attendance-based computation, deductions, and net pay breakdown." },
       { heading: "Pricing", content: "Standalone HR Management is ₱999/month as an add-on to any plan. It's included free with Pro Plus (₱1,499/month) and VIP plans. Contact us via Facebook to activate the standalone add-on." },
+    ],
+  },
+  {
+    id: "payroll-engine",
+    title: "Payroll Engine (Payslip Generator)",
+    description: "Generate automated payslips with attendance, schedules, deductions, and net pay computation.",
+    category: "Business Tools",
+    path: "/app/hr/payroll",
+    icon: <FileText className="w-5 h-5" />,
+    color: "bg-emerald-500",
+    gradient: "from-emerald-500 to-teal-400",
+    sections: [
+      { heading: "What is Payroll Engine?", content: "A complete payslip generation system that connects employee profiles, daily attendance, work schedules, payroll periods, and deductions. Automatically computes gross pay, deductions, and net pay for each employee based on their daily rate and attendance records." },
+      { heading: "How to Use", content: "1. Set each employee's daily rate in Employee Management. 2. Create weekly schedules (which days they work, what time). 3. Log daily attendance (present, absent, leave, half-day with time in/out). 4. Create a payroll period (e.g., May 1-15). 5. Click 'Generate All Payslips' — the system auto-computes days worked, tardiness, gross pay, deductions, and net pay. 6. View, approve, and mark payslips as paid." },
+      { heading: "Auto-Computation Logic", content: "Gross Pay = days worked × daily rate. Days worked are counted from attendance records within the payroll period. Tardiness is calculated as minutes late vs scheduled start time. Deductions can be fixed amounts (e.g., SSS ₱1,200) or percentage-based (e.g., 10% tax of gross pay). Net Pay = Gross Pay − total deductions." },
+      { heading: "Deduction Types", content: "Create deduction types like SSS, PhilHealth, Pag-IBIG, withholding tax, loans, uniform, or any custom deduction. Each can be a fixed amount (₱) or a percentage (%) of gross pay. Mark deductions as mandatory to auto-include them in every payslip." },
+      { heading: "Payslip Management", content: "View all generated payslips filtered by payroll period. Each payslip shows employee info, days worked, gross pay, itemized deductions, and net pay. You can approve payslips and mark them as paid. The system tracks the generation date and status of each payslip." },
     ],
   },
   {

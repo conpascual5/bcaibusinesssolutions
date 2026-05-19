@@ -277,7 +277,7 @@ export default function Landing() {
               { icon: <FileText className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Leave Management", desc: "Manage leave requests with different leave types, balances, and approval workflow." },
               { icon: <Calendar className="w-5 h-5" />, color: "from-purple-500 to-violet-400", title: "Shift Roster", desc: "Create and assign shift schedules with break management and rotation support." },
               { icon: <Target className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Performance", desc: "Track employee performance reviews, ratings, and feedback over time." },
-              { icon: <DollarSign className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "Payroll", desc: "Generate payroll with salary, overtime, bonuses, deductions, and payslip generation." },
+              { icon: <DollarSign className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "Payroll Engine", desc: "Generate automated payslips with attendance-based computation, deductions, and net pay breakdown." },
               { icon: <Crown className="w-5 h-5" />, color: "from-amber-500 to-yellow-400", title: "Bonuses", desc: "Manage employee bonuses with types, amounts, and payout scheduling." },
               { icon: <Building2 className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Company Setup", desc: "Configure company info, offices, departments, designations, and organizational chart." },
             ].map((tool, i) => (
@@ -777,7 +777,7 @@ export default function Landing() {
                       'Attendance tracking & corrections',
                       'Leave management with types',
                       'Shift roster & scheduling',
-                      'Payroll engine & bonuses',
+                      'Payroll engine with payslip generator',
                     ].map((f, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
                         <div className="w-5 h-5 rounded-full bg-cyan-100 flex items-center justify-center flex-shrink-0 mt-0.5">
