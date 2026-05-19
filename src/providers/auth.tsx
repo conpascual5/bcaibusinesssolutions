@@ -22,7 +22,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 8000;
+const SESSION_TIMEOUT_MS = 10000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -81,9 +81,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Single source of truth: listen to ALL auth state changes including INITIAL_SESSION
+    // Use getSession() as the primary source of truth
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!mounted || resolved) return;
+
+      if (data.session) {
+        console.log("[auth] Found existing session via getSession()");
+        setSession(data.session);
+        const profile = await fetchProfile(data.session);
+        if (mounted) {
+          setUser(profile);
+          finishLoading();
+        }
+      } else {
+        console.log("[auth] No existing session found via getSession()");
+        setSession(null);
+        setUser(null);
+        finishLoading();
+      }
+    }).catch((err) => {
+      console.error("[auth] getSession error:", err);
+      if (mounted) {
+        setSession(null);
+        setUser(null);
+        finishLoading();
+      }
+    });
+
+    // Subscribe to subsequent auth changes (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
+
+      console.log("[auth] onAuthStateChange event:", event, "hasSession:", !!newSession);
+
+      if (event === "INITIAL_SESSION") {
+        // Already handled by getSession() above — skip to avoid double-processing
+        return;
+      }
 
       if (event === "SIGNED_OUT") {
         setSession(null);
@@ -93,7 +127,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      // Handle INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
       if (newSession) {
         setSession(newSession);
         const profile = await fetchProfile(newSession);
@@ -101,10 +134,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(profile);
           finishLoading();
         }
-      } else {
-        setSession(null);
-        setUser(null);
-        finishLoading();
       }
     });
 
