@@ -74,18 +74,38 @@ export default function EmployeeAuth() {
 
     try {
       if (mode === "login") {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (signInError) throw signInError;
+
+        // Link auth_user_id to the employee record
+        if (signInData?.user) {
+          await supabase
+            .from("hr_employees")
+            .update({ auth_user_id: signInData.user.id })
+            .eq("email", email)
+            .is("auth_user_id", null);
+        }
+
         navigate("/employee/portal");
       } else {
-        const { error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password,
         });
         if (signUpError) throw signUpError;
+
+        // Link auth_user_id to the employee record immediately on signup
+        if (signUpData?.user) {
+          await supabase
+            .from("hr_employees")
+            .update({ auth_user_id: signUpData.user.id })
+            .eq("email", email)
+            .is("auth_user_id", null);
+        }
+
         setError("Account created! You can now log in.");
         setMode("login");
       }
