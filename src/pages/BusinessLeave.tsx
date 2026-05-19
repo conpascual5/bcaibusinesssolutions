@@ -67,7 +67,10 @@ export default function BusinessLeave() {
   };
 
   const saveRequest = async () => {
-    if (!reqForm.employee_id || !reqForm.leave_type_id || !reqForm.start_date || !reqForm.end_date) return;
+    if (!reqForm.employee_id || !reqForm.leave_type_id || !reqForm.start_date || !reqForm.end_date) {
+      console.error("[BusinessLeave] Missing required fields", reqForm);
+      return;
+    }
     setSaving(true);
 
     // Calculate days
@@ -86,7 +89,9 @@ export default function BusinessLeave() {
       return;
     }
 
-    await supabase.from("hr_leave_requests").insert({
+    console.log("[BusinessLeave] Inserting leave request", { employee_id: reqForm.employee_id, leave_type_id: reqForm.leave_type_id, start_date: reqForm.start_date, end_date: reqForm.end_date, days_taken: days, is_half_day: reqForm.is_half_day, reason: reqForm.reason, status: "approved" });
+
+    const { data, error } = await supabase.from("hr_leave_requests").insert({
       employee_id: reqForm.employee_id,
       leave_type_id: reqForm.leave_type_id,
       start_date: reqForm.start_date,
@@ -95,7 +100,16 @@ export default function BusinessLeave() {
       is_half_day: reqForm.is_half_day,
       reason: reqForm.reason || null,
       status: "approved",
-    });
+    }).select();
+
+    if (error) {
+      console.error("[BusinessLeave] Insert error", error);
+      alert(`Failed to save: ${error.message}`);
+      setSaving(false);
+      return;
+    }
+
+    console.log("[BusinessLeave] Insert success", data);
 
     setSaving(false);
     setShowRequestForm(false);
