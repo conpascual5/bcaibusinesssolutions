@@ -667,7 +667,7 @@ export default function Landing() {
                     <p className="text-sm text-gray-500 mt-1">Digital wallet + physical cash tracker</p>
                     <div className="flex items-baseline justify-center gap-1 mt-4">
                       <span className="text-sm text-gray-400">PHP</span>
-                      <span className="text-5xl font-extrabold text-gray-900">999</span>
+                      <span className="text-5xl font-extrabold text-gray-900">299</span>
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">

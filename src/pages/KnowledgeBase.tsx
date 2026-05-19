@@ -121,7 +121,7 @@ const entries: KBEntry[] = [
       { heading: "End-of-Day Reconciliation", content: "At the end of each day, click 'New Reconciliation'. Enter your actual digital wallet balance and physical cash drawer amount. The system automatically calculates expected balances based on the day's transactions and flags any variances (short/over)." },
       { heading: "Managing Unpaid (Utang)", content: "Transactions marked as 'unpaid' are highlighted in red. You can toggle payment status by clicking the badge. The unpaid total is shown in the summary cards for easy tracking." },
       { heading: "Float Replenishment", content: "When you add cash to your GCash wallet (e.g., via 7-Eleven or bank transfer), log it as a 'Float Replenish'. This updates the expected digital balance calculation for accurate reconciliation." },
-      { heading: "Pricing", content: "GCash Cash In/Out is available as a standalone add-on for ₱999/month (was ₱699/month). It's also included in Pro (₱499/month), Pro Plus (₱1,499/month), and VIP plans." },
+      { heading: "Pricing", content: "GCash Cash In/Out is available as a standalone add-on for ₱299/month (was ₱699/month). It's also included in Pro (₱499/month), Pro Plus (₱1,499/month), and VIP plans." },
     ],
   },
   {
