@@ -3,7 +3,7 @@ import { useAuth } from "@/providers/auth";
 import { useBusinessTeam } from "@/providers/business-team";
 import { supabase } from "@/integrations/supabase/client";
 import BusinessLayout from "@/components/BusinessLayout";
-import { Loader2, Plus, Pencil, Trash2, X, Check, Clock, Users } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, X, Check, Clock, Users, RefreshCw } from "lucide-react";
 
 type Shift = {
   id: string;
@@ -42,6 +42,7 @@ export default function BusinessShiftRoster() {
   const [showAssignForm, setShowAssignForm] = useState(false);
   const [editingShift, setEditingShift] = useState<Shift | null>(null);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [shiftForm, setShiftForm] = useState({ name: "", start_time: "08:00", end_time: "17:00", grace_period_minutes: 15, break_start: "12:00", break_end: "13:00", break_paid: false, description: "" });
   const [assignForm, setAssignForm] = useState({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "" });
 
@@ -95,17 +96,81 @@ export default function BusinessShiftRoster() {
     loadData();
   };
 
+  // Sync a single employee shift assignment into hr_employee_schedules
+  const syncToSchedules = async (es: EmployeeShift) => {
+    const shift = shifts.find(s => s.id === es.shift_id);
+    if (!shift) return;
+
+    // Determine which days of week this applies to
+    const daysToSync = es.day_of_week !== null ? [es.day_of_week] : [0, 1, 2, 3, 4, 5, 6];
+
+    for (const dayOfWeek of daysToSync) {
+      // Upsert the schedule for this employee + day_of_week
+      await supabase.from("hr_employee_schedules").upsert({
+        employee_id: es.employee_id,
+        day_of_week: dayOfWeek,
+        start_time: shift.start_time,
+        end_time: shift.end_time,
+        is_rest_day: false,
+        grace_period_minutes: shift.grace_period_minutes,
+        break_start: shift.break_start,
+        break_end: shift.break_end,
+        break_paid: shift.break_paid,
+        shift_id: shift.id,
+      }, {
+        onConflict: "employee_id,day_of_week",
+        ignoreDuplicates: false,
+      });
+    }
+  };
+
+  // Remove schedules that were synced from a specific employee shift
+  const unsyncFromSchedules = async (es: EmployeeShift) => {
+    const daysToRemove = es.day_of_week !== null ? [es.day_of_week] : [0, 1, 2, 3, 4, 5, 6];
+    for (const dayOfWeek of daysToRemove) {
+      await supabase.from("hr_employee_schedules")
+        .delete()
+        .eq("employee_id", es.employee_id)
+        .eq("day_of_week", dayOfWeek)
+        .eq("shift_id", es.shift_id);
+    }
+  };
+
   const handleAssign = async () => {
     if (!assignForm.employee_id || !assignForm.shift_id || !businessOwnerId) return;
     setSaving(true);
-    await supabase.from("hr_employee_shifts").insert({
+
+    const { data: newAssignment, error } = await supabase.from("hr_employee_shifts").insert({
       business_id: businessOwnerId, employee_id: assignForm.employee_id, shift_id: assignForm.shift_id,
       effective_from: assignForm.effective_from, effective_to: assignForm.effective_to || null,
       day_of_week: assignForm.day_of_week ? parseInt(assignForm.day_of_week) : null,
-    });
+    }).select().single();
+
+    if (!error && newAssignment) {
+      // Sync to hr_employee_schedules
+      await syncToSchedules(newAssignment);
+    }
+
     setSaving(false);
     setAssignForm({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "" });
     setShowAssignForm(false);
+    loadData();
+  };
+
+  const handleUnassign = async (es: EmployeeShift) => {
+    await unsyncFromSchedules(es);
+    await supabase.from("hr_employee_shifts").update({ is_active: false }).eq("id", es.id);
+    loadData();
+  };
+
+  // Sync all active assignments to schedules (useful after editing a shift)
+  const syncAllToSchedules = async () => {
+    setSyncing(true);
+    const activeAssignments = employeeShifts.filter(es => es.is_active);
+    for (const es of activeAssignments) {
+      await syncToSchedules(es);
+    }
+    setSyncing(false);
     loadData();
   };
 
@@ -117,17 +182,22 @@ export default function BusinessShiftRoster() {
   const getShiftName = (id: string) => shifts.find(s => s.id === id)?.name || "Unknown";
 
   return (
-    <BusinessLayout title="Shift Roster" description="Define work shifts and assign them to employees">
+    <BusinessLayout title="Shift Roster" description="Define work shifts and assign them to employees — assignments auto-sync to attendance & payroll schedules">
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : (
         <div className="space-y-6">
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <button onClick={() => { resetShiftForm(); setShowShiftForm(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2">
               <Plus className="w-4 h-4" /> New Shift
             </button>
             <button onClick={() => setShowAssignForm(true)} className="px-4 py-2 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors flex items-center gap-2">
               <Users className="w-4 h-4" /> Assign Shift
+            </button>
+            <button onClick={syncAllToSchedules} disabled={syncing}
+              className="px-4 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2">
+              {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Sync All to Schedules
             </button>
           </div>
 
@@ -270,6 +340,7 @@ export default function BusinessShiftRoster() {
               <div className="px-4 py-3 border-b border-border font-semibold text-sm flex items-center gap-2">
                 <Users className="w-4 h-4 text-indigo-500" />
                 Current Assignments
+                <span className="text-xs text-muted-foreground font-normal ml-1">(auto-synced to attendance & payroll schedules)</span>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -279,6 +350,7 @@ export default function BusinessShiftRoster() {
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Shift</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Effective</th>
                       <th className="text-left px-4 py-3 font-medium text-muted-foreground">Day</th>
+                      <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -288,6 +360,13 @@ export default function BusinessShiftRoster() {
                         <td className="px-4 py-3">{getShiftName(es.shift_id)}</td>
                         <td className="px-4 py-3 text-muted-foreground">{es.effective_from}{es.effective_to ? ` → ${es.effective_to}` : ""}</td>
                         <td className="px-4 py-3 text-muted-foreground">{es.day_of_week !== null ? DAYS[es.day_of_week] : "All"}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button onClick={() => handleUnassign(es)}
+                            className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-600 transition-colors"
+                            title="Unassign (removes from schedules)">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>

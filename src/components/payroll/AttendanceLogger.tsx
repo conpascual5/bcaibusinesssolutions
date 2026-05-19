@@ -1,17 +1,20 @@
 import { useState } from "react";
-import { Plus, Trash2, X, Loader2, CalendarDays } from "lucide-react";
+import { Plus, Trash2, X, Loader2, CalendarDays, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Employee, Attendance, PayrollPeriod } from "@/pages/BusinessPayroll";
+import type { Employee, Attendance, PayrollPeriod, Schedule } from "@/pages/BusinessPayroll";
 
 interface Props {
   employees: Employee[];
   attendance: Attendance[];
   payrollPeriods: PayrollPeriod[];
+  schedules: Schedule[];
   onRefresh: () => Promise<void>;
   getEmployee: (id: string) => Employee | undefined;
 }
 
-export default function AttendanceLogger({ employees, attendance, payrollPeriods, onRefresh, getEmployee }: Props) {
+const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+export default function AttendanceLogger({ employees, attendance, payrollPeriods, schedules, onRefresh, getEmployee }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
   const [selectedPeriodId, setSelectedPeriodId] = useState("");
@@ -24,14 +27,46 @@ export default function AttendanceLogger({ employees, attendance, payrollPeriods
     ? attendance.filter(a => a.date >= selectedPeriod.start_date && a.date <= selectedPeriod.end_date)
     : attendance;
 
+  // Get the schedule for an employee on a given date
+  const getScheduleForDate = (employeeId: string, dateStr: string): Schedule | undefined => {
+    const dayOfWeek = new Date(dateStr + "T00:00:00").getDay();
+    return schedules.find(s => s.employee_id === employeeId && s.day_of_week === dayOfWeek);
+  };
+
+  // Compute tardiness considering grace period
+  const computeTardiness = (employeeId: string, dateStr: string, timeIn: string | null): number => {
+    if (!timeIn) return 0;
+    const schedule = getScheduleForDate(employeeId, dateStr);
+    if (!schedule || schedule.is_rest_day) return 0;
+
+    const [sh, sm] = schedule.start_time.split(":").map(Number);
+    const [ah, am] = timeIn.split(":").map(Number);
+    const scheduledMinutes = sh * 60 + sm;
+    const actualMinutes = ah * 60 + am;
+    const gracePeriod = schedule.grace_period_minutes || 0;
+
+    if (actualMinutes > scheduledMinutes + gracePeriod) {
+      return actualMinutes - scheduledMinutes;
+    }
+    return 0;
+  };
+
   const save = async () => {
     if (!form.employee_id || !form.date) return;
     setSaving(true);
+
+    // Auto-compute tardiness if present
+    const tardinessMinutes = form.status === "present"
+      ? computeTardiness(form.employee_id, form.date, form.time_in)
+      : 0;
+
     const { error } = await supabase.from("hr_attendance_logs").upsert({
       employee_id: form.employee_id, date: form.date,
       time_in: form.status === "absent" ? null : form.time_in,
       time_out: form.status === "absent" ? null : form.time_out,
-      status: form.status, notes: form.notes || null,
+      status: form.status,
+      tardiness_minutes: tardinessMinutes,
+      notes: form.notes || null,
     }, { onConflict: "employee_id,date" });
     if (error) { alert(`Failed: ${error.message}`); setSaving(false); return; }
     setSaving(false);
@@ -147,27 +182,41 @@ export default function AttendanceLogger({ employees, attendance, payrollPeriods
               <tr className="border-b border-border bg-muted/30">
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Employee</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Scheduled</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Time In</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Time Out</th>
                 <th className="text-center py-3 px-4 font-medium text-muted-foreground">Status</th>
+                <th className="text-center py-3 px-4 font-medium text-muted-foreground">Tardy</th>
                 <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredAttendance.length === 0 ? (
-                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">
+                <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">
                   {selectedPeriod ? "No attendance records for this period. Log some attendance first!" : "No attendance records yet."}
                 </td></tr>
               ) : filteredAttendance.map(a => {
                 const emp = getEmployee(a.employee_id);
+                const schedule = getScheduleForDate(a.employee_id, a.date);
+                const schedLabel = schedule
+                  ? (schedule.is_rest_day ? "Rest day" : `${fmtTime(schedule.start_time)}-${fmtTime(schedule.end_time)}`)
+                  : "—";
                 return (
                   <tr key={a.id} className="border-b border-border/50 hover:bg-muted/30">
                     <td className="py-3 px-4 font-medium">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}</td>
                     <td className="py-3 px-4">{a.date}</td>
+                    <td className="py-3 px-4 text-muted-foreground text-xs">{schedLabel}</td>
                     <td className="py-3 px-4">{fmtTime(a.time_in)}</td>
                     <td className="py-3 px-4">{fmtTime(a.time_out)}</td>
                     <td className="py-3 px-4 text-center">
                       <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${statusColors[a.status] || ""}`}>{a.status}</span>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      {a.tardiness_minutes && a.tardiness_minutes > 0 ? (
+                        <span className="text-xs font-medium text-amber-600 dark:text-amber-400">{a.tardiness_minutes}m</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button onClick={() => deleteAtt(a.id)}

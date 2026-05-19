@@ -278,6 +278,7 @@ export default function BusinessPayroll() {
             employees={employees}
             attendance={attendance}
             payrollPeriods={payrollPeriods}
+            schedules={schedules}
             onRefresh={refreshAll}
             getEmployee={getEmployee}
           />

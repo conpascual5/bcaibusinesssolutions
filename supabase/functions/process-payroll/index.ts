@@ -296,7 +296,7 @@ serve(async (req) => {
       const totalAbsences = empAttendance.filter(a => a.status === 'absent').length
       const totalLeaveDays = empLeaves.reduce((sum, l) => sum + Number(l.days_taken), 0)
 
-      // Compute tardiness
+      // Compute tardiness (with grace period from schedule)
       let totalTardinessMinutes = 0
       for (const att of empAttendance) {
         if (att.time_in && att.status === 'present') {
@@ -305,8 +305,9 @@ serve(async (req) => {
             const [sh, sm] = schedule.start_time.split(':').map(Number)
             const [ah, am] = att.time_in.split(':').map(Number)
             const scheduledMinutes = sh * 60 + sm
+            const gracePeriod = schedule.grace_period_minutes || 0
             const actualMinutes = ah * 60 + am
-            if (actualMinutes > scheduledMinutes) {
+            if (actualMinutes > scheduledMinutes + gracePeriod) {
               totalTardinessMinutes += (actualMinutes - scheduledMinutes)
             }
           }
