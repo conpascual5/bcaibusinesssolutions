@@ -1,19 +1,28 @@
 import { useState } from "react";
-import { Plus, Trash2, X, Loader2 } from "lucide-react";
+import { Plus, Trash2, X, Loader2, CalendarDays } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import type { Employee, Attendance } from "@/pages/BusinessPayroll";
+import type { Employee, Attendance, PayrollPeriod } from "@/pages/BusinessPayroll";
 
 interface Props {
   employees: Employee[];
   attendance: Attendance[];
+  payrollPeriods: PayrollPeriod[];
   onRefresh: () => Promise<void>;
   getEmployee: (id: string) => Employee | undefined;
 }
 
-export default function AttendanceLogger({ employees, attendance, onRefresh, getEmployee }: Props) {
+export default function AttendanceLogger({ employees, attendance, payrollPeriods, onRefresh, getEmployee }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ employee_id: "", date: "", time_in: "08:00", time_out: "17:00", status: "present", notes: "" });
+  const [selectedPeriodId, setSelectedPeriodId] = useState("");
+  const [form, setForm] = useState({ employee_id: "", date: "", time_in: "08:00", time_out: "17:00", status: "present" as string, notes: "" });
+
+  const selectedPeriod = payrollPeriods.find(p => p.id === selectedPeriodId);
+
+  // Filter attendance to only show records within the selected period's date range
+  const filteredAttendance = selectedPeriod
+    ? attendance.filter(a => a.date >= selectedPeriod.start_date && a.date <= selectedPeriod.end_date)
+    : attendance;
 
   const save = async () => {
     if (!form.employee_id || !form.date) return;
@@ -46,12 +55,28 @@ export default function AttendanceLogger({ employees, attendance, onRefresh, get
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <CalendarDays className="w-4 h-4 text-muted-foreground" />
+          <select value={selectedPeriodId} onChange={e => setSelectedPeriodId(e.target.value)}
+            className="px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 min-w-[200px]">
+            <option value="">All attendance</option>
+            {payrollPeriods.map(p => (
+              <option key={p.id} value={p.id}>{p.name} ({p.start_date} to {p.end_date})</option>
+            ))}
+          </select>
+        </div>
         <button onClick={() => setShowForm(true)}
           className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors">
           <Plus className="w-4 h-4" /> Log Attendance
         </button>
       </div>
+
+      {selectedPeriod && (
+        <div className="text-xs text-muted-foreground bg-muted/30 rounded-xl px-4 py-2">
+          Showing attendance for <span className="font-medium text-foreground">{selectedPeriod.name}</span> &mdash; {selectedPeriod.start_date} to {selectedPeriod.end_date}
+        </div>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -129,9 +154,11 @@ export default function AttendanceLogger({ employees, attendance, onRefresh, get
               </tr>
             </thead>
             <tbody>
-              {attendance.length === 0 ? (
-                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">No attendance records yet.</td></tr>
-              ) : attendance.map(a => {
+              {filteredAttendance.length === 0 ? (
+                <tr><td colSpan={6} className="py-12 text-center text-muted-foreground">
+                  {selectedPeriod ? "No attendance records for this period. Log some attendance first!" : "No attendance records yet."}
+                </td></tr>
+              ) : filteredAttendance.map(a => {
                 const emp = getEmployee(a.employee_id);
                 return (
                   <tr key={a.id} className="border-b border-border/50 hover:bg-muted/30">

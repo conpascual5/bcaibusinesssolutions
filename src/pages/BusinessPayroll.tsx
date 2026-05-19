@@ -151,79 +151,46 @@ export default function BusinessPayroll() {
 
   const handleGeneratePayslips = useCallback(async (periodId: string) => {
     const period = payrollPeriods.find(p => p.id === periodId)
-    if (!period) return
+    if (!period || !businessOwnerId) return
 
-    const activeEmployees = employees.filter(e => e.is_active)
-    for (const emp of activeEmployees) {
-      const empAttendance = attendance.filter(a => a.employee_id === emp.id)
-      const empSchedules = schedules.filter(s => s.employee_id === emp.id)
+    try {
+      const { data: session } = await supabase.auth.getSession()
+      const token = session?.session?.access_token
+      if (!token) {
+        toast({ title: "Error", description: "Not authenticated", variant: "destructive" })
+        return
+      }
 
-      const daysWorked = empAttendance.filter(a => a.status === "present").length
-      const halfDays = empAttendance.filter(a => a.status === "half_day").length
-      const absences = empAttendance.filter(a => a.status === "absent").length
-      const totalDays = daysWorked + halfDays * 0.5
-
-      let tardinessMinutes = 0
-      for (const att of empAttendance) {
-        if (att.time_in && att.status === "present") {
-          const sched = empSchedules.find(s => s.day_of_week === new Date(att.date + "T00:00:00").getDay())
-          if (sched && !sched.is_rest_day) {
-            const [sh, sm] = sched.start_time.split(":").map(Number)
-            const [ah, am] = att.time_in.split(":").map(Number)
-            const schedMin = sh * 60 + sm
-            const actualMin = ah * 60 + am
-            if (actualMin > schedMin) tardinessMinutes += actualMin - schedMin
-          }
+      const res = await fetch(
+        "https://dkatgjtvhitknghvaxxn.supabase.co/functions/v1/process-payroll",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            business_id: businessOwnerId,
+            payroll_period_id: periodId,
+          }),
         }
+      )
+
+      const result = await res.json()
+      if (!res.ok) {
+        toast({ title: "Error", description: result.error || "Failed to generate payslips", variant: "destructive" })
+        return
       }
 
-      const dailyRate = Number(emp.daily_rate) || 0
-      const hourlyRate = Number(emp.hourly_rate) || (dailyRate / 8)
-      let grossPay = dailyRate * totalDays
-      if (hourlyRate > 0 && tardinessMinutes > 0) {
-        grossPay = Math.max(0, grossPay - (hourlyRate / 60) * tardinessMinutes)
-      }
-      if (dailyRate > 0 && absences > 0) {
-        grossPay = Math.max(0, grossPay - dailyRate * absences)
-      }
-      grossPay = Math.round(grossPay * 100) / 100
-
-      const mandatoryDeductions = deductions.filter(d => d.is_mandatory)
-      let totalDeductions = 0
-      const breakdown: any[] = []
-      for (const d of mandatoryDeductions) {
-        const amount = d.amount_type === "percentage" ? grossPay * (d.amount / 100) : d.amount
-        totalDeductions += amount
-        breakdown.push({ name: d.name, amount: Math.round(amount * 100) / 100 })
-      }
-      totalDeductions = Math.round(totalDeductions * 100) / 100
-      const netPay = Math.max(0, grossPay - totalDeductions)
-
-      const { error } = await supabase.from("hr_payslips").upsert({
-        business_id: period.business_id,
-        employee_id: emp.id,
-        payroll_period_id: periodId,
-        daily_rate: dailyRate,
-        total_days_worked: totalDays,
-        total_hours_worked: 0,
-        total_tardiness_minutes: tardinessMinutes,
-        total_absences: absences,
-        total_leave_days: 0,
-        gross_pay: grossPay,
-        total_deductions: totalDeductions,
-        net_pay: Math.round(netPay * 100) / 100,
-        deductions_breakdown: breakdown,
-        status: "draft",
-      }, { onConflict: "employee_id,payroll_period_id" })
-
-      if (error) {
-        console.error(`Error generating payslip for ${emp.first_name}:`, error)
-      }
+      toast({
+        title: "Payslips Generated",
+        description: `Generated ${result.payslips_count} payslips with statutory deductions`,
+      })
+      refreshAll()
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message || "Failed to generate payslips", variant: "destructive" })
     }
-
-    toast({ title: "Payslips Generated", description: `Generated payslips for ${activeEmployees.length} employees` })
-    refreshAll()
-  }, [employees, payrollPeriods, attendance, schedules, deductions, toast, refreshAll])
+  }, [payrollPeriods, businessOwnerId, toast, refreshAll])
 
   const updatePayslipStatus = useCallback(async (id: string, status: string) => {
     const { error } = await supabase.from("hr_payslips").update({ status }).eq("id", id)
@@ -310,6 +277,7 @@ export default function BusinessPayroll() {
           <AttendanceLogger
             employees={employees}
             attendance={attendance}
+            payrollPeriods={payrollPeriods}
             onRefresh={refreshAll}
             getEmployee={getEmployee}
           />
