@@ -4,8 +4,6 @@ import { Sparkles, ArrowLeft, Mail, Lock, Eye, EyeOff, Loader2, RefreshCw, Gift 
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/providers/auth";
 import { toast } from "sonner";
-import { trackEvent } from "@/lib/metaPixel";
-
 export default function AuthPage() {
   const navigate = useNavigate();
   const { user, isLoading, forceReset } = useAuth();
@@ -67,7 +65,6 @@ export default function AuthPage() {
           },
         });
         if (signUpError) throw signUpError;
-        trackEvent("CompleteRegistration", { email, method: "email" });
         toast.success("Check your email for the confirmation link!");
         setMode("sign_in");
       } else {

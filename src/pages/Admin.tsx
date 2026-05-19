@@ -9,7 +9,6 @@ import AdminBMSAccess from "@/components/AdminBMSAccess";
 import AdminGCashAccess from "@/components/AdminGCashAccess";
 import AdminHRAccess from "@/components/AdminHRAccess";
 import AdminModuleAccess from "@/components/AdminModuleAccess";
-import { trackEvent } from "@/lib/metaPixel";
 import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1306,14 +1305,6 @@ export default function Admin() {
         });
       }
     }
-
-    trackEvent("CompleteRegistration", {
-      plan,
-      previous_plan: previousPlan,
-      user_id: userId,
-      currency: "PHP",
-      value: plan === "pro" ? 499 : plan === "pro_plus" ? 999 : 0,
-    });
 
     await loadUsers("reset");
   };

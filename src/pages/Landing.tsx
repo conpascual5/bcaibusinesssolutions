@@ -18,36 +18,16 @@ import {
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
 import LiveNotification from '@/components/LiveNotification';
-import { trackEvent } from '@/lib/metaPixel';
 
 export default function Landing() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const plansTracked = useRef(false);
-  const plansRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50);
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  // Fire ViewContent when user scrolls to pricing section
-  useEffect(() => {
-    const el = plansRef.current;
-    if (!el || plansTracked.current) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !plansTracked.current) {
-          plansTracked.current = true;
-          trackEvent('ViewContent', {
-            content_name: 'Pricing Plans',
-            content_type: 'product_group',
-            content_ids: ['free', 'pro', 'pro_plus', 'vip'],
-          });
-          observer.disconnect();
-        }
       },
       { threshold: 0.3 }
     );
