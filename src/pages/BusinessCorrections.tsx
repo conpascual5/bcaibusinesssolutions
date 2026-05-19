@@ -43,7 +43,7 @@ export default function BusinessCorrections() {
   const loadData = async () => {
     if (!businessOwnerId) return;
     const [corRes, empRes] = await Promise.all([
-      supabase.from("hr_corrections").select("*").order("created_at", { ascending: false }),
+      supabase.from("hr_corrections").select("*").eq("business_id", businessOwnerId).order("created_at", { ascending: false }),
       supabase.from("hr_employees").select("id, first_name, last_name").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
     ]);
     if (corRes.data) setCorrections(corRes.data);
