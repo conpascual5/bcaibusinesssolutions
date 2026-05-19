@@ -48,7 +48,7 @@ type LeaveRequest = {
 };
 
 export default function EmployeePortal() {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
@@ -219,7 +219,7 @@ export default function EmployeePortal() {
   };
 
   const handleLogout = async () => {
-    await signOut();
+    await logout();
     navigate("/employee/auth");
   };
 

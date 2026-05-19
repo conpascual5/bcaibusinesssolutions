@@ -59,6 +59,8 @@ import BusinessPayroll from './pages/BusinessPayroll'
 import BusinessBonuses from './pages/BusinessBonuses'
 import BusinessGCash from './pages/BusinessGCash'
 import BusinessHelp from './pages/BusinessHelp'
+import EmployeeAuth from './pages/EmployeeAuth'
+import EmployeePortal from './pages/EmployeePortal'
 import { BusinessTeamProvider } from '@/providers/business-team'
 import { HRAccessProvider } from '@/providers/hr-access'
 import HRAccessGuard from '@/components/HRAccessGuard'
@@ -206,6 +208,8 @@ export default function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/setup" element={<Setup />} />
         <Route path="/upload" element={<ProtectedRoute><Upload /></ProtectedRoute>} />
+        <Route path="/employee/auth" element={<EmployeeAuth />} />
+        <Route path="/employee/portal" element={<EmployeePortal />} />
       </Routes>
       <SupportChatWidget />
     </>
