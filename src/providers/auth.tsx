@@ -22,10 +22,8 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 10000;
+const SESSION_TIMEOUT_MS = 8000;
 
-// Hardcoded admin emails for fallback — these users always get admin access
-// even if the profiles table gets corrupted
 const ADMIN_EMAILS = new Set(["conpascual5@gmail.com"]);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -38,7 +36,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const email = s.user.email ?? "";
 
-    // First check if this is a hardcoded admin
     if (ADMIN_EMAILS.has(email)) {
       return {
         id: s.user.id,
@@ -95,38 +92,65 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const timeoutId = setTimeout(() => {
       if (!resolved) {
         console.warn("[auth] Session resolution timed out — forcing loading=false");
-        finishLoading();
+        // If getSession() timed out, the session is likely stale/corrupted
+        // Clear it so the user can re-login
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          finishLoading();
+        }
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Use getSession() as the primary source of truth
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted || resolved) return;
+    // Try to get the session with a race against the timeout
+    const getSessionWithTimeout = async () => {
+      try {
+        const result = await Promise.race([
+          supabase.auth.getSession(),
+          new Promise<null>((_, reject) =>
+            setTimeout(() => reject(new Error("getSession timed out")), SESSION_TIMEOUT_MS - 1000)
+          ),
+        ]);
 
-      if (data.session) {
-        console.log("[auth] Found existing session via getSession()");
-        setSession(data.session);
-        const profile = await fetchProfile(data.session);
-        if (mounted) {
-          setUser(profile);
+        if (!mounted || resolved) return;
+
+        if (result && result.data?.session) {
+          console.log("[auth] Found existing session via getSession()");
+          setSession(result.data.session);
+          const profile = await fetchProfile(result.data.session);
+          if (mounted) {
+            setUser(profile);
+            finishLoading();
+          }
+        } else {
+          console.log("[auth] No existing session found");
+          setSession(null);
+          setUser(null);
           finishLoading();
         }
-      } else {
-        console.log("[auth] No existing session found via getSession()");
-        setSession(null);
-        setUser(null);
-        finishLoading();
-      }
-    }).catch((err) => {
-      console.error("[auth] getSession error:", err);
-      if (mounted) {
-        setSession(null);
-        setUser(null);
-        finishLoading();
-      }
-    });
+      } catch (err) {
+        console.error("[auth] getSession failed or timed out:", err);
+        // Session is stale — clear localStorage and treat as logged out
+        const keysToRemove: string[] = [];
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i);
+          if (key && (key.includes("supabase") || key.includes("sb-") || key.includes("auth-token"))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
 
-    // Subscribe to subsequent auth changes (SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED)
+        if (mounted) {
+          setSession(null);
+          setUser(null);
+          finishLoading();
+        }
+      }
+    };
+
+    getSessionWithTimeout();
+
+    // Subscribe to subsequent auth changes
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 

@@ -42,6 +42,21 @@ export default function AuthPage() {
     }
   };
 
+  // Clear stale Supabase session data from localStorage on mount
+  useEffect(() => {
+    const keysToRemove: string[] = [];
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key.includes("supabase") || key.includes("sb-") || key.includes("auth-token"))) {
+        keysToRemove.push(key);
+      }
+    }
+    if (keysToRemove.length > 0) {
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      console.log("[auth] Cleared stale session keys on Auth page mount:", keysToRemove);
+    }
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
