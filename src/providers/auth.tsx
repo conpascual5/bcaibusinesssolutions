@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,7 +22,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 8000; // 8 seconds safety net
+const SESSION_TIMEOUT_MS = 8000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -64,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // Guard against StrictMode double-execution
     let mounted = true;
     let resolved = false;
 
@@ -75,7 +74,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Safety timeout — always resolve loading after SESSION_TIMEOUT_MS
     const timeoutId = setTimeout(() => {
       if (!resolved) {
         console.warn("[auth] Session resolution timed out — forcing loading=false");
@@ -83,13 +81,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Step 1: Get the existing session first
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!mounted || resolved) return;
+    // Single source of truth: listen to ALL auth state changes including INITIAL_SESSION
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
+      if (!mounted) return;
 
-      if (data.session) {
-        setSession(data.session);
-        const profile = await fetchProfile(data.session);
+      if (event === "SIGNED_OUT") {
+        setSession(null);
+        setUser(null);
+        finishLoading();
+        window.location.href = "/auth";
+        return;
+      }
+
+      // Handle INITIAL_SESSION, SIGNED_IN, TOKEN_REFRESHED, USER_UPDATED
+      if (newSession) {
+        setSession(newSession);
+        const profile = await fetchProfile(newSession);
         if (mounted) {
           setUser(profile);
           finishLoading();
@@ -98,34 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setSession(null);
         setUser(null);
         finishLoading();
-      }
-    }).catch((err) => {
-      console.error("[auth] getSession error:", err);
-      if (mounted) {
-        setSession(null);
-        setUser(null);
-        finishLoading();
-      }
-    });
-
-    // Step 2: Subscribe to subsequent auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
-      if (!mounted) return;
-
-      if (event === "INITIAL_SESSION") return;
-
-      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
-        setSession(newSession);
-        const profile = await fetchProfile(newSession);
-        if (mounted) {
-          setUser(profile);
-          finishLoading();
-        }
-      } else if (event === "SIGNED_OUT") {
-        setSession(null);
-        setUser(null);
-        finishLoading();
-        window.location.href = "/auth";
       }
     });
 
@@ -147,16 +126,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       token,
       logout: async () => {
         await supabase.auth.signOut();
-        // The onAuthStateChange SIGNED_OUT handler will redirect to /auth
       },
       forceReset: async () => {
-        // Clear all Supabase-related localStorage items
+        const keysToRemove: string[] = [];
         for (let i = localStorage.length - 1; i >= 0; i--) {
           const key = localStorage.key(i);
-          if (key && (key.includes("supabase") || key.includes("auth-token") || key.includes("sb-"))) {
-            localStorage.removeItem(key);
+          if (key && (
+            key.includes("supabase") ||
+            key.includes("auth-token") ||
+            key.includes("sb-") ||
+            key.includes("oauth") ||
+            key.includes("pkce") ||
+            key.includes("code_verifier")
+          )) {
+            keysToRemove.push(key);
           }
         }
+        keysToRemove.forEach(key => localStorage.removeItem(key));
         await supabase.auth.signOut();
         window.location.reload();
       },

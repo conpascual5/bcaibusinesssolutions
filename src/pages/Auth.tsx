@@ -47,6 +47,18 @@ export default function AuthPage() {
     setError(null);
     setSubmitting(true);
 
+    // Clear any stale session data before attempting login
+    if (mode === "sign_in") {
+      const keysToRemove: string[] = [];
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.includes("supabase") || key.includes("sb-"))) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+    }
+
     try {
       if (mode === "sign_up") {
         if (!agreedToTerms) {
@@ -74,8 +86,9 @@ export default function AuthPage() {
         });
         if (signInError) throw signInError;
 
-        // Full page reload ensures the AuthProvider re-initializes cleanly
-        // with the new session from localStorage
+        // Wait for the session to be persisted to localStorage before reloading
+        // This prevents the stale session race condition
+        await new Promise(resolve => setTimeout(resolve, 500));
         window.location.href = "/app";
       }
     } catch (err: any) {
