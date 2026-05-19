@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import {
   Clock, LogOut, Loader2, Calendar,
   Umbrella, Send, Building2, Sun, Moon,
-  AlertCircle, History, Timer, Coffee
+  AlertCircle, History, Timer, Coffee,
+  Wallet, Download, ChevronRight, X
 } from "lucide-react";
 
 type Employee = {
@@ -59,6 +60,33 @@ type TodaySchedule = {
   shift_name: string | null;
 };
 
+type Payslip = {
+  id: string;
+  employee_id: string;
+  payroll_period_id: string;
+  daily_rate: number;
+  total_days_worked: number;
+  total_hours_worked: number;
+  total_tardiness_minutes: number;
+  total_absences: number;
+  total_leave_days: number;
+  gross_pay: number;
+  total_deductions: number;
+  net_pay: number;
+  deductions_breakdown: any[];
+  status: string;
+  notes: string | null;
+  created_at: string;
+};
+
+type PayrollPeriod = {
+  id: string;
+  name: string;
+  start_date: string;
+  end_date: string;
+  pay_date: string | null;
+};
+
 export default function EmployeePortal() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -71,7 +99,7 @@ export default function EmployeePortal() {
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [clocking, setClocking] = useState(false);
   const [clockMessage, setClockMessage] = useState("");
-  const [activeTab, setActiveTab] = useState<"attendance" | "leave">("attendance");
+  const [activeTab, setActiveTab] = useState<"attendance" | "leave" | "payslips">("attendance");
 
   // Leave form state
   const [showLeaveForm, setShowLeaveForm] = useState(false);
@@ -83,6 +111,11 @@ export default function EmployeePortal() {
   });
   const [submittingLeave, setSubmittingLeave] = useState(false);
   const [leaveError, setLeaveError] = useState("");
+
+  // Payslip state
+  const [payslips, setPayslips] = useState<Payslip[]>([]);
+  const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
+  const [viewingPayslip, setViewingPayslip] = useState<Payslip | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -187,6 +220,24 @@ export default function EmployeePortal() {
       .limit(10);
 
     if (lrData) setLeaveRequests(lrData as unknown as LeaveRequest[]);
+
+    // Get my payslips
+    const { data: psData } = await supabase
+      .from("hr_payslips")
+      .select("*")
+      .eq("employee_id", empData.id)
+      .order("created_at", { ascending: false });
+
+    if (psData) setPayslips(psData as unknown as Payslip[]);
+
+    // Get payroll periods for payslip display
+    const { data: ppData } = await supabase
+      .from("hr_payroll_periods")
+      .select("*")
+      .eq("business_id", empData.business_id)
+      .order("start_date", { ascending: false });
+
+    if (ppData) setPayrollPeriods(ppData as unknown as PayrollPeriod[]);
 
     setLoading(false);
   };
@@ -495,6 +546,14 @@ export default function EmployeePortal() {
           >
             <Umbrella className="w-4 h-4" /> Leave
           </button>
+          <button
+            onClick={() => setActiveTab("payslips")}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === "payslips" ? "bg-indigo-500 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Wallet className="w-4 h-4" /> Payslips
+          </button>
         </div>
 
         {/* Attendance Tab */}
@@ -546,6 +605,207 @@ export default function EmployeePortal() {
                   })}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Payslips Tab */}
+        {activeTab === "payslips" && (
+          <div className="space-y-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4 text-muted-foreground" />
+              <h3 className="font-semibold text-sm">My Payslips</h3>
+              {payslips.length > 0 && (
+                <span className="text-xs text-muted-foreground">({payslips.length})</span>
+              )}
+            </div>
+
+            <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+              {payslips.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">
+                  <Wallet className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
+                  No payslips yet. Payslips will appear here once your employer runs payroll.
+                </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {payslips.map((ps) => {
+                    const period = payrollPeriods.find(p => p.id === ps.payroll_period_id);
+                    return (
+                      <button
+                        key={ps.id}
+                        onClick={() => setViewingPayslip(ps)}
+                        className="w-full flex items-center justify-between px-4 py-3.5 hover:bg-muted/20 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 flex items-center justify-center">
+                            <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium">{period?.name || "Payroll Period"}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {period ? `${period.start_date} → ${period.end_date}` : ""}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-2">
+                          <div>
+                            <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                              ₱{Number(ps.net_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground">
+                              {ps.status === "paid" ? "Paid" : ps.status}
+                            </p>
+                          </div>
+                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Payslip Detail Modal */}
+        {viewingPayslip && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between p-5 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-100 to-teal-100 dark:from-emerald-900/30 dark:to-teal-900/30 flex items-center justify-center">
+                    <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-sm">Payslip Details</h3>
+                    <p className="text-xs text-muted-foreground">
+                      {payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.name || "Payroll Period"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setViewingPayslip(null)}
+                  className="p-2 hover:bg-muted rounded-xl transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Period Info */}
+              <div className="px-5 py-4 bg-muted/30 border-b border-border">
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <span className="text-xs text-muted-foreground">Period Start</span>
+                    <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.start_date || "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Period End</span>
+                    <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.end_date || "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Pay Date</span>
+                    <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.pay_date || "—"}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-muted-foreground">Status</span>
+                    <p className="font-medium capitalize">{viewingPayslip.status}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Earnings */}
+              <div className="px-5 py-4 border-b border-border">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Earnings</h4>
+                <div className="space-y-2.5">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Daily Rate</span>
+                    <span className="font-medium">₱{Number(viewingPayslip.daily_rate).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Days Worked</span>
+                    <span className="font-medium">{viewingPayslip.total_days_worked}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Hours Worked</span>
+                    <span className="font-medium">{viewingPayslip.total_hours_worked}h</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Leave Days</span>
+                    <span className="font-medium">{viewingPayslip.total_leave_days}</span>
+                  </div>
+                  {viewingPayslip.total_tardiness_minutes > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-amber-600 dark:text-amber-400">Tardiness</span>
+                      <span className="font-medium text-amber-600 dark:text-amber-400">{viewingPayslip.total_tardiness_minutes} min</span>
+                    </div>
+                  )}
+                  {viewingPayslip.total_absences > 0 && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-rose-600 dark:text-rose-400">Absences</span>
+                      <span className="font-medium text-rose-600 dark:text-rose-400">{viewingPayslip.total_absences} day(s)</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm pt-2 border-t border-border">
+                    <span className="font-semibold">Gross Pay</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      ₱{Number(viewingPayslip.gross_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Deductions */}
+              <div className="px-5 py-4 border-b border-border">
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Deductions</h4>
+                {viewingPayslip.deductions_breakdown && viewingPayslip.deductions_breakdown.length > 0 ? (
+                  <div className="space-y-2.5">
+                    {viewingPayslip.deductions_breakdown.map((d: any, i: number) => (
+                      <div key={i} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">{d.name || d.label || `Deduction ${i + 1}`}</span>
+                        <span className="font-medium text-rose-600 dark:text-rose-400">
+                          -₱{Number(d.amount).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between text-sm pt-2 border-t border-border">
+                      <span className="font-semibold">Total Deductions</span>
+                      <span className="font-bold text-rose-600 dark:text-rose-400">
+                        -₱{Number(viewingPayslip.total_deductions).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No deductions</p>
+                )}
+              </div>
+
+              {/* Net Pay */}
+              <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-bold">Net Pay</span>
+                  <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                    ₱{Number(viewingPayslip.net_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Notes */}
+              {viewingPayslip.notes && (
+                <div className="px-5 py-3 border-t border-border">
+                  <p className="text-xs text-muted-foreground italic">{viewingPayslip.notes}</p>
+                </div>
+              )}
+
+              {/* Close button */}
+              <div className="px-5 py-3 border-t border-border">
+                <button
+                  onClick={() => setViewingPayslip(null)}
+                  className="w-full py-2.5 bg-muted hover:bg-muted/80 rounded-xl text-sm font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         )}
