@@ -102,6 +102,27 @@ export default function BusinessAttendance() {
 
   useEffect(() => { if (businessOwnerId) loadData(); }, [loadData]);
 
+  // Real-time subscription for live attendance updates
+  useEffect(() => {
+    if (!businessOwnerId) return;
+
+    const channel = supabase
+      .channel("attendance-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "hr_attendance_logs" },
+        () => {
+          // Reload logs whenever anything changes (insert, update, delete)
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessOwnerId, loadData]);
+
   const isHoliday = (dateStr: string) => holidays.find(h => h.date === dateStr);
   const isRestDay = (date: Date) => restDays.find(r => r.day_of_week === date.getDay());
   const isOnLeave = (empId: string, dateStr: string) => leaveRequests.find(l => l.employee_id === empId && dateStr >= l.start_date && dateStr <= l.end_date);
@@ -310,12 +331,26 @@ export default function BusinessAttendance() {
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Moon className="w-3 h-3 text-indigo-400 shrink-0" />
-                                      <input
-                                        type="time"
-                                        value={log?.time_out || getDefaultEnd(emp.id, d)}
-                                        onChange={e => updateLog(emp.id, dateStr, d, "time_out", e.target.value)}
-                                        className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                      />
+                                      {log?.time_out ? (
+                                        <input
+                                          type="time"
+                                          value={log.time_out}
+                                          onChange={e => updateLog(emp.id, dateStr, d, "time_out", e.target.value)}
+                                          className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                      ) : log?.time_in ? (
+                                        <div className="w-full px-1.5 py-1 rounded-md border border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium text-center flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                          Clocked in — waiting for punch out
+                                        </div>
+                                      ) : (
+                                        <input
+                                          type="time"
+                                          value={getDefaultEnd(emp.id, d)}
+                                          onChange={e => updateLog(emp.id, dateStr, d, "time_out", e.target.value)}
+                                          className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                      )}
                                     </div>
                                     {log?.hours_worked != null && (
                                       <div className="text-[10px] text-muted-foreground text-center">
