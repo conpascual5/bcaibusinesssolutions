@@ -250,7 +250,7 @@ export default function Landing() {
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business &amp; HR Management Systems</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-                Two powerful suites to run your entire business. <strong>Business Management System</strong> covers products, inventory, sales, expenses, and more. <strong>HR Management System</strong> handles employees, attendance, leave, payroll, and more.
+                Two powerful suites to run your entire business. <strong>Business Management System</strong> covers products, inventory, sales, expenses, and more. <strong>HR Management System</strong> handles employees, attendance, leave, shift roster, payroll, employee portal, and more.
                 Access is granted per user upon request. Each plan has a user limit: <strong>Pro (1 BMS user)</strong>, <strong>Pro Plus (3 BMS users + HR included)</strong>, <strong>VIP (5 BMS users + HR included)</strong>.
               </p>
             </div>
@@ -778,6 +778,7 @@ export default function Landing() {
                       'Attendance tracking & corrections',
                       'Leave management with types',
                       'Shift roster & scheduling',
+                      'Employee Portal (clock in/out, leave requests)',
                       'Payroll engine with payslip generator',
                     ].map((f, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
