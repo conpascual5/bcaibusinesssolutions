@@ -83,6 +83,7 @@ export default function BusinessAttendance() {
 
   const loadData = useCallback(async () => {
     if (!businessOwnerId) return;
+    console.log("[BusinessAttendance] Loading data for week:", weekStartStr, "to", weekEndStr);
     const [empRes, logRes, holRes, restRes, leaveRes, schedRes] = await Promise.all([
       supabase.from("hr_employees").select("id, first_name, last_name, is_active").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
       supabase.from("hr_attendance_logs").select("*").gte("date", weekStartStr).lte("date", weekEndStr),
@@ -91,6 +92,12 @@ export default function BusinessAttendance() {
       supabase.from("hr_leave_requests").select("*").gte("end_date", weekStartStr).lte("start_date", weekEndStr).eq("status", "approved"),
       supabase.from("hr_employee_schedules").select("employee_id, day_of_week, start_time, end_time, grace_period_minutes, break_start, break_end, break_paid, is_rest_day"),
     ]);
+    console.log("[BusinessAttendance] Loaded logs:", logRes.data?.length, "records", logRes.error);
+    if (logRes.data) {
+      logRes.data.forEach(log => {
+        console.log("[BusinessAttendance] Log:", log.employee_id, log.date, "time_in:", log.time_in, "time_out:", log.time_out);
+      });
+    }
     if (empRes.data) setEmployees(empRes.data);
     if (logRes.data) setLogs(logRes.data);
     if (holRes.data) setHolidays(holRes.data);
@@ -106,19 +113,25 @@ export default function BusinessAttendance() {
   useEffect(() => {
     if (!businessOwnerId) return;
 
+    console.log("[BusinessAttendance] Setting up real-time subscription for attendance logs");
+
     const channel = supabase
       .channel("attendance-live")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "hr_attendance_logs" },
-        () => {
+        (payload) => {
+          console.log("[BusinessAttendance] Real-time attendance change detected", { eventType: payload.eventType, new: payload.new, old: payload.old });
           // Reload logs whenever anything changes (insert, update, delete)
           loadData();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[BusinessAttendance] Subscription status:", status);
+      });
 
     return () => {
+      console.log("[BusinessAttendance] Cleaning up real-time subscription");
       supabase.removeChannel(channel);
     };
   }, [businessOwnerId, loadData]);
@@ -209,6 +222,14 @@ export default function BusinessAttendance() {
     await loadData();
   };
 
+  const todayDateStr = formatDate(new Date());
+
+  // Live monitoring data — only today's logs
+  const todayLogs = logs.filter(l => l.date === todayDateStr);
+  const clockedIn = todayLogs.filter(l => l.time_in && !l.time_out);
+  const clockedOut = todayLogs.filter(l => l.time_in && l.time_out);
+  const notClockedIn = employees.filter(e => !todayLogs.find(l => l.employee_id === e.id));
+
   const filteredEmployees = selectedEmployee === "all" ? employees : employees.filter(e => e.id === selectedEmployee);
 
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -216,6 +237,132 @@ export default function BusinessAttendance() {
   return (
     <BusinessLayout title="Attendance & Time Tracking" description="Daily time logs, tardiness tracking, and hours calculator">
       <div className="space-y-6">
+        {/* Live Monitoring Dashboard */}
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-emerald-50/50 to-indigo-50/50 dark:from-emerald-950/20 dark:to-indigo-950/20">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h3 className="font-bold text-sm">Live Monitoring</h3>
+              <span className="text-xs text-muted-foreground">— Today's attendance updating in real-time</span>
+            </div>
+          </div>
+          <div className="p-5">
+            {/* Summary stats */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-4 py-3 border border-emerald-200 dark:border-emerald-800">
+                <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Clocked In</p>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mt-0.5">{clockedIn.length}</p>
+              </div>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl px-4 py-3 border border-indigo-200 dark:border-indigo-800">
+                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Clocked Out</p>
+                <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 mt-0.5">{clockedOut.length}</p>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl px-4 py-3 border border-amber-200 dark:border-amber-800">
+                <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Not Yet In</p>
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-0.5">{notClockedIn.length}</p>
+              </div>
+            </div>
+
+            {/* Live employee cards */}
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {employees.map(emp => {
+                const todayLog = todayLogs.find(l => l.employee_id === emp.id);
+                const isIn = todayLog?.time_in && !todayLog?.time_out;
+                const isOut = todayLog?.time_in && todayLog?.time_out;
+                const sched = getSchedule(emp.id, new Date());
+                const schedStart = sched?.start_time?.slice(0, 5) || DEFAULT_START;
+                const schedEnd = sched?.end_time?.slice(0, 5) || DEFAULT_END;
+
+                return (
+                  <div
+                    key={emp.id}
+                    className={`rounded-xl border p-3.5 transition-all ${
+                      isIn
+                        ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50/80 dark:bg-emerald-900/15 shadow-sm shadow-emerald-200/50 dark:shadow-emerald-900/30"
+                        : isOut
+                          ? "border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/10"
+                          : "border-border bg-muted/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${
+                          isIn
+                            ? "bg-emerald-500 shadow-sm shadow-emerald-500/30"
+                            : isOut
+                              ? "bg-indigo-500"
+                              : "bg-muted-foreground/40"
+                        }`}>
+                          {emp.first_name.charAt(0)}{emp.last_name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{emp.first_name} {emp.last_name}</p>
+                          <p className="text-[10px] text-muted-foreground">{schedStart} – {schedEnd}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {isIn ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Live
+                          </span>
+                        ) : isOut ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-[10px] font-semibold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Done
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-semibold">
+                            <Clock className="w-3 h-3" />
+                            Awaiting
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time details */}
+                    <div className="flex items-center gap-3 text-xs">
+                      {todayLog?.time_in ? (
+                        <div className="flex items-center gap-1">
+                          <Sun className="w-3 h-3 text-amber-500" />
+                          <span className="font-medium">{todayLog.time_in.slice(0, 5)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Sun className="w-3 h-3" />
+                          <span>—</span>
+                        </div>
+                      )}
+                      {todayLog?.time_out ? (
+                        <div className="flex items-center gap-1">
+                          <Moon className="w-3 h-3 text-indigo-400" />
+                          <span className="font-medium">{todayLog.time_out.slice(0, 5)}</span>
+                        </div>
+                      ) : todayLog?.time_in ? (
+                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-medium text-[10px]">On shift</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Moon className="w-3 h-3" />
+                          <span>—</span>
+                        </div>
+                      )}
+                      {todayLog?.hours_worked != null && (
+                        <span className="text-muted-foreground font-medium ml-auto">{todayLog.hours_worked}h</span>
+                      )}
+                      {todayLog?.tardiness_minutes != null && todayLog.tardiness_minutes > 0 && (
+                        <span className="text-rose-600 font-medium ml-auto text-[10px]">{todayLog.tardiness_minutes}min late</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* Week Navigation */}
         <div className="flex items-center justify-between bg-card rounded-2xl border border-border p-4">
           <button onClick={() => { const d = new Date(currentWeekStart); d.setDate(d.getDate() - 7); setCurrentWeekStart(d); setLoading(true); }} className="p-2 rounded-lg hover:bg-muted transition-colors">
