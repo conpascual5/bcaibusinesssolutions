@@ -27,6 +27,7 @@ type EmployeeShift = {
   effective_to: string | null;
   day_of_week: number | null;
   is_active: boolean;
+  is_rest_day: boolean;
 };
 
 const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -44,7 +45,7 @@ export default function BusinessShiftRoster() {
   const [saving, setSaving] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [shiftForm, setShiftForm] = useState({ name: "", start_time: "08:00", end_time: "17:00", grace_period_minutes: 15, break_start: "12:00", break_end: "13:00", break_paid: false, description: "" });
-  const [assignForm, setAssignForm] = useState({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "" });
+  const [assignForm, setAssignForm] = useState({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "", is_rest_day: false });
 
   const loadData = async () => {
     if (!businessOwnerId) return;
@@ -111,7 +112,7 @@ export default function BusinessShiftRoster() {
         day_of_week: dayOfWeek,
         start_time: shift.start_time,
         end_time: shift.end_time,
-        is_rest_day: false,
+        is_rest_day: es.is_rest_day || false,
         grace_period_minutes: shift.grace_period_minutes,
         break_start: shift.break_start,
         break_end: shift.break_end,
@@ -144,6 +145,7 @@ export default function BusinessShiftRoster() {
       business_id: businessOwnerId, employee_id: assignForm.employee_id, shift_id: assignForm.shift_id,
       effective_from: assignForm.effective_from, effective_to: assignForm.effective_to || null,
       day_of_week: assignForm.day_of_week ? parseInt(assignForm.day_of_week) : null,
+      is_rest_day: assignForm.is_rest_day,
     }).select().single();
 
     if (!error && newAssignment) {
@@ -152,7 +154,7 @@ export default function BusinessShiftRoster() {
     }
 
     setSaving(false);
-    setAssignForm({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "" });
+    setAssignForm({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "", is_rest_day: false });
     setShowAssignForm(false);
     loadData();
   };
@@ -283,6 +285,12 @@ export default function BusinessShiftRoster() {
                     {DAYS.map((day, i) => <option key={i} value={i}>{day}</option>)}
                   </select>
                 </div>
+                <div className="sm:col-span-2">
+                  <label className="flex items-center gap-3 cursor-pointer pt-5">
+                    <input type="checkbox" checked={assignForm.is_rest_day} onChange={e => setAssignForm(p => ({ ...p, is_rest_day: e.target.checked }))} className="w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500" />
+                    <span className="text-sm font-medium">Mark as Rest Day (no time tracking)</span>
+                  </label>
+                </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <button onClick={handleAssign} disabled={saving || !assignForm.employee_id || !assignForm.shift_id} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
@@ -357,7 +365,7 @@ export default function BusinessShiftRoster() {
                     {employeeShifts.filter(es => es.is_active).slice(0, 20).map(es => (
                       <tr key={es.id} className="border-b border-border last:border-0 hover:bg-muted/20">
                         <td className="px-4 py-3 font-medium">{getEmployeeName(es.employee_id)}</td>
-                        <td className="px-4 py-3">{getShiftName(es.shift_id)}</td>
+                        <td className="px-4 py-3">{es.is_rest_day ? <span className="text-amber-600 font-medium">Rest Day</span> : getShiftName(es.shift_id)}</td>
                         <td className="px-4 py-3 text-muted-foreground">{es.effective_from}{es.effective_to ? ` → ${es.effective_to}` : ""}</td>
                         <td className="px-4 py-3 text-muted-foreground">{es.day_of_week !== null ? DAYS[es.day_of_week] : "All"}</td>
                         <td className="px-4 py-3 text-right">

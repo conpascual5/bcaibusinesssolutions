@@ -28,6 +28,7 @@ type EmployeeSchedule = {
   break_start: string | null;
   break_end: string | null;
   break_paid: boolean | null;
+  is_rest_day: boolean | null;
 };
 
 const DEFAULT_START = "08:00";
@@ -85,7 +86,7 @@ export default function BusinessAttendance() {
       supabase.from("hr_holidays").select("*").eq("business_id", businessOwnerId),
       supabase.from("hr_rest_days").select("*").eq("business_id", businessOwnerId),
       supabase.from("hr_leave_requests").select("*").gte("end_date", weekStartStr).lte("start_date", weekEndStr).eq("status", "approved"),
-      supabase.from("hr_employee_schedules").select("employee_id, day_of_week, start_time, end_time, grace_period_minutes, break_start, break_end, break_paid"),
+      supabase.from("hr_employee_schedules").select("employee_id, day_of_week, start_time, end_time, grace_period_minutes, break_start, break_end, break_paid, is_rest_day"),
     ]);
     if (empRes.data) setEmployees(empRes.data);
     if (logRes.data) setLogs(logRes.data);
@@ -101,6 +102,10 @@ export default function BusinessAttendance() {
   const isHoliday = (dateStr: string) => holidays.find(h => h.date === dateStr);
   const isRestDay = (date: Date) => restDays.find(r => r.day_of_week === date.getDay());
   const isOnLeave = (empId: string, dateStr: string) => leaveRequests.find(l => l.employee_id === empId && dateStr >= l.start_date && dateStr <= l.end_date);
+  const isScheduledRestDay = (empId: string, date: Date) => {
+    const sched = getSchedule(empId, date);
+    return sched?.is_rest_day === true;
+  };
 
   const getLog = (empId: string, dateStr: string) => logs.find(l => l.employee_id === empId && l.date === dateStr);
 
@@ -122,6 +127,7 @@ export default function BusinessAttendance() {
   const getDefaultStatus = (empId: string, dateStr: string, date: Date): string => {
     if (isHoliday(dateStr)) return "holiday";
     if (isRestDay(date)) return "rest-day";
+    if (isScheduledRestDay(empId, date)) return "rest-day";
     if (isOnLeave(empId, dateStr)) return "leave";
     return "present";
   };
