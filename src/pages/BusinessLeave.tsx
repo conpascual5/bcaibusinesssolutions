@@ -304,9 +304,35 @@ export default function BusinessLeave() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3.5 text-right">
-                                  <button onClick={() => deleteRequest(req.id)} className="p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete">
-                                    <Trash2 className="w-4 h-4" />
-                                  </button>
+                                  <div className="flex items-center justify-end gap-1">
+                                    {req.status === "pending" && (
+                                      <>
+                                        <button
+                                          onClick={async () => {
+                                            await supabase.from("hr_leave_requests").update({ status: "approved" }).eq("id", req.id);
+                                            await loadData();
+                                          }}
+                                          className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors"
+                                          title="Approve"
+                                        >
+                                          <CheckCircle2 className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            await supabase.from("hr_leave_requests").update({ status: "rejected" }).eq("id", req.id);
+                                            await loadData();
+                                          }}
+                                          className="p-2 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-colors"
+                                          title="Reject"
+                                        >
+                                          <X className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    )}
+                                    <button onClick={() => deleteRequest(req.id)} className="p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors" title="Delete">
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
