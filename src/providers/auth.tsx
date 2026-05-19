@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -22,7 +22,7 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 15000; // 15 seconds safety net
+const SESSION_TIMEOUT_MS = 8000; // 8 seconds safety net
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -64,6 +64,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // Guard against StrictMode double-execution
     let mounted = true;
     let resolved = false;
 
@@ -82,7 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Step 1: Get the existing session first (most reliable for initial load)
+    // Step 1: Get the existing session first
     supabase.auth.getSession().then(async ({ data }) => {
       if (!mounted || resolved) return;
 
@@ -107,12 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    // Step 2: Subscribe to subsequent auth changes (SIGNED_IN, SIGNED_OUT, etc.)
-    // We ignore INITIAL_SESSION since getSession() handles the initial state
+    // Step 2: Subscribe to subsequent auth changes
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
-      // Skip INITIAL_SESSION — getSession() already handled it
       if (event === "INITIAL_SESSION") return;
 
       if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {

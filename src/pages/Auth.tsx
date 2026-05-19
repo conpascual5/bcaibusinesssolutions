@@ -74,13 +74,9 @@ export default function AuthPage() {
         });
         if (signInError) throw signInError;
 
-        // Use React Router navigate instead of full page reload to avoid
-        // re-initializing the app and triggering ad-blocked scripts again.
-        if (data?.session) {
-          // Give the provider a moment to process the auth state change
-          await new Promise(resolve => setTimeout(resolve, 800));
-          navigate("/app", { replace: true });
-        }
+        // Full page reload ensures the AuthProvider re-initializes cleanly
+        // with the new session from localStorage
+        window.location.href = "/app";
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");
