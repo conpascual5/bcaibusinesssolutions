@@ -83,7 +83,6 @@ export default function BusinessAttendance() {
 
   const loadData = useCallback(async () => {
     if (!businessOwnerId) return;
-    console.log("[BusinessAttendance] Loading data for week", { weekStartStr, weekEndStr });
     const [empRes, logRes, holRes, restRes, leaveRes, schedRes] = await Promise.all([
       supabase.from("hr_employees").select("id, first_name, last_name, is_active").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
       supabase.from("hr_attendance_logs").select("*").gte("date", weekStartStr).lte("date", weekEndStr),
@@ -96,10 +95,7 @@ export default function BusinessAttendance() {
     if (logRes.data) setLogs(logRes.data);
     if (holRes.data) setHolidays(holRes.data);
     if (restRes.data) setRestDays(restRes.data);
-    if (leaveRes.data) {
-      console.log("[BusinessAttendance] Leave requests loaded", leaveRes.data);
-      setLeaveRequests(leaveRes.data);
-    }
+    if (leaveRes.data) setLeaveRequests(leaveRes.data);
     if (schedRes.data) setSchedules(schedRes.data);
     setLoading(false);
   }, [businessOwnerId, weekStartStr, weekEndStr]);

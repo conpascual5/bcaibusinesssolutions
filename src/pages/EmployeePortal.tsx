@@ -122,7 +122,7 @@ export default function EmployeePortal() {
 
   const today = new Date();
   const todayDayOfWeek = today.getDay();
-  const todayDateStr = today.toISOString().split("T")[0];
+  const todayDateStr = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
 
   useEffect(() => {
     if (!user) {
@@ -150,7 +150,7 @@ export default function EmployeePortal() {
 
     setEmployee(empData as unknown as Employee);
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
     const dayOfWeek = new Date().getDay(); // 0=Sun, 1=Mon, ...
 
     // Load full week schedule from hr_employee_schedules
@@ -217,7 +217,7 @@ export default function EmployeePortal() {
       .from("hr_attendance_logs")
       .select("*")
       .eq("employee_id", empData.id)
-      .gte("date", sevenDaysAgo.toISOString().split("T")[0])
+      .gte("date", (() => { const d = sevenDaysAgo; return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })())
       .order("date", { ascending: false });
 
     if (recentData) setRecentLogs(recentData as unknown as AttendanceLog[]);
@@ -304,7 +304,7 @@ export default function EmployeePortal() {
     setClocking(true);
     setClockMessage("");
 
-    const today = new Date().toISOString().split("T")[0];
+    const today = (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; })();
     const now = new Date();
     const timeStr = now.toTimeString().split(":").slice(0, 2).join(":");
 
