@@ -127,7 +127,7 @@ export default function BusinessPayroll() {
       supabase.from("hr_payroll_periods").select("*").eq("business_id", userData.user.id).order("start_date", { ascending: false }),
       supabase.from("hr_payslips").select("*").eq("business_id", userData.user.id),
       supabase.from("hr_deductions").select("*").eq("business_id", userData.user.id),
-      supabase.from("hr_attendance").select("*"),
+      supabase.from("hr_attendance_logs").select("*"),
       supabase.from("hr_employee_schedules").select("*"),
     ])
 

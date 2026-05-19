@@ -261,7 +261,7 @@ serve(async (req) => {
 
     // Get attendance for the period
     const { data: attendance } = await supabaseClient
-      .from('hr_attendance')
+      .from('hr_attendance_logs')
       .select('*')
       .in('employee_id', employeeIds)
       .gte('date', period.start_date)

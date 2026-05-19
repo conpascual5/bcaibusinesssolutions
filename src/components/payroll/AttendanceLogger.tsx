@@ -27,7 +27,7 @@ export default function AttendanceLogger({ employees, attendance, payrollPeriods
   const save = async () => {
     if (!form.employee_id || !form.date) return;
     setSaving(true);
-    const { error } = await supabase.from("hr_attendance").upsert({
+    const { error } = await supabase.from("hr_attendance_logs").upsert({
       employee_id: form.employee_id, date: form.date,
       time_in: form.status === "absent" ? null : form.time_in,
       time_out: form.status === "absent" ? null : form.time_out,
@@ -41,7 +41,7 @@ export default function AttendanceLogger({ employees, attendance, payrollPeriods
   };
 
   const deleteAtt = async (id: string) => {
-    await supabase.from("hr_attendance").delete().eq("id", id);
+    await supabase.from("hr_attendance_logs").delete().eq("id", id);
     await onRefresh();
   };
 
