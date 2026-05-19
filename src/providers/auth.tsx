@@ -24,6 +24,10 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const SESSION_TIMEOUT_MS = 10000;
 
+// Hardcoded admin emails for fallback — these users always get admin access
+// even if the profiles table gets corrupted
+const ADMIN_EMAILS = new Set(["conpascual5@gmail.com"]);
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -31,6 +35,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = async (s: Session | null): Promise<AuthUser | null> => {
     if (!s?.user) return null;
+
+    const email = s.user.email ?? "";
+
+    // First check if this is a hardcoded admin
+    if (ADMIN_EMAILS.has(email)) {
+      return {
+        id: s.user.id,
+        email,
+        name: (s.user.user_metadata as any)?.full_name ?? (s.user.user_metadata as any)?.name ?? "",
+        isAdmin: true,
+        plan: "pro_plus",
+        isActive: true,
+      };
+    }
 
     const { data, error } = await supabase
       .from("profiles")
@@ -41,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error || !data) {
       return {
         id: s.user.id,
-        email: s.user.email ?? "",
+        email,
         name: (s.user.user_metadata as any)?.full_name ?? (s.user.user_metadata as any)?.name ?? "",
         isAdmin: false,
         plan: "free",
@@ -51,7 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return {
       id: s.user.id,
-      email: s.user.email ?? "",
+      email,
       name:
         data?.full_name ??
         (s.user.user_metadata as any)?.full_name ??
@@ -115,7 +133,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log("[auth] onAuthStateChange event:", event, "hasSession:", !!newSession);
 
       if (event === "INITIAL_SESSION") {
-        // Already handled by getSession() above — skip to avoid double-processing
         return;
       }
 
