@@ -19,9 +19,19 @@ type AttendanceLog = {
 type Holiday = { id: string; name: string; date: string };
 type RestDay = { id: string; day_of_week: number; name: string };
 type LeaveRequest = { id: string; employee_id: string; start_date: string; end_date: string; days_taken: number; leave_type_id: string };
+type EmployeeSchedule = {
+  employee_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  grace_period_minutes: number | null;
+  break_start: string | null;
+  break_end: string | null;
+  break_paid: boolean | null;
+};
 
-const STANDARD_START = "08:00";
-const STANDARD_END = "17:00";
+const DEFAULT_START = "08:00";
+const DEFAULT_END = "17:00";
 const LUNCH_BREAK_HOURS = 1;
 
 function getWeekDates(date: Date): Date[] {
@@ -52,6 +62,7 @@ export default function BusinessAttendance() {
   const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [restDays, setRestDays] = useState<RestDay[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [schedules, setSchedules] = useState<EmployeeSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const d = new Date();
@@ -68,18 +79,20 @@ export default function BusinessAttendance() {
 
   const loadData = useCallback(async () => {
     if (!businessOwnerId) return;
-    const [empRes, logRes, holRes, restRes, leaveRes] = await Promise.all([
+    const [empRes, logRes, holRes, restRes, leaveRes, schedRes] = await Promise.all([
       supabase.from("hr_employees").select("id, first_name, last_name, is_active").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
       supabase.from("hr_attendance_logs").select("*").gte("date", weekStartStr).lte("date", weekEndStr),
       supabase.from("hr_holidays").select("*").eq("business_id", businessOwnerId),
       supabase.from("hr_rest_days").select("*").eq("business_id", businessOwnerId),
       supabase.from("hr_leave_requests").select("*").gte("end_date", weekStartStr).lte("start_date", weekEndStr).eq("status", "approved"),
+      supabase.from("hr_employee_schedules").select("employee_id, day_of_week, start_time, end_time, grace_period_minutes, break_start, break_end, break_paid"),
     ]);
     if (empRes.data) setEmployees(empRes.data);
     if (logRes.data) setLogs(logRes.data);
     if (holRes.data) setHolidays(holRes.data);
     if (restRes.data) setRestDays(restRes.data);
     if (leaveRes.data) setLeaveRequests(leaveRes.data);
+    if (schedRes.data) setSchedules(schedRes.data);
     setLoading(false);
   }, [businessOwnerId, weekStartStr, weekEndStr]);
 
@@ -90,6 +103,21 @@ export default function BusinessAttendance() {
   const isOnLeave = (empId: string, dateStr: string) => leaveRequests.find(l => l.employee_id === empId && dateStr >= l.start_date && dateStr <= l.end_date);
 
   const getLog = (empId: string, dateStr: string) => logs.find(l => l.employee_id === empId && l.date === dateStr);
+
+  const getSchedule = (empId: string, date: Date) => {
+    const dayOfWeek = date.getDay();
+    return schedules.find(s => s.employee_id === empId && s.day_of_week === dayOfWeek);
+  };
+
+  const getDefaultStart = (empId: string, date: Date) => {
+    const sched = getSchedule(empId, date);
+    return sched?.start_time?.slice(0, 5) || DEFAULT_START;
+  };
+
+  const getDefaultEnd = (empId: string, date: Date) => {
+    const sched = getSchedule(empId, date);
+    return sched?.end_time?.slice(0, 5) || DEFAULT_END;
+  };
 
   const getDefaultStatus = (empId: string, dateStr: string, date: Date): string => {
     if (isHoliday(dateStr)) return "holiday";
@@ -107,8 +135,8 @@ export default function BusinessAttendance() {
     if (field === "status") {
       payload.status = value;
       if (value === "present" || value === "late") {
-        payload.time_in = value === "late" ? "08:15" : STANDARD_START;
-        payload.time_out = STANDARD_END;
+        payload.time_in = value === "late" ? "08:15" : getDefaultStart(empId, date);
+        payload.time_out = getDefaultEnd(empId, date);
       } else {
         payload.time_in = null;
         payload.time_out = null;
@@ -133,10 +161,12 @@ export default function BusinessAttendance() {
       // OT: hours beyond 8
       payload.overtime_hours = Math.max(0, Math.round((payload.hours_worked - 8) * 100) / 100);
 
-      // Tardiness: minutes past 8:00 AM
+      // Tardiness: minutes past scheduled start time
       const startMinutes = inH * 60 + inM;
-      const standardStartMinutes = 8 * 60;
-      payload.tardiness_minutes = Math.max(0, startMinutes - standardStartMinutes);
+      const schedStart = getDefaultStart(empId, date);
+      const [schedH, schedM] = schedStart.split(":").map(Number);
+      const schedStartMinutes = schedH * 60 + schedM;
+      payload.tardiness_minutes = Math.max(0, startMinutes - schedStartMinutes);
       payload.status = payload.tardiness_minutes > 0 ? "late" : "present";
     }
 
@@ -264,7 +294,7 @@ export default function BusinessAttendance() {
                                       <Sun className="w-3 h-3 text-amber-500 shrink-0" />
                                       <input
                                         type="time"
-                                        value={log?.time_in || STANDARD_START}
+                                        value={log?.time_in || getDefaultStart(emp.id, d)}
                                         onChange={e => updateLog(emp.id, dateStr, d, "time_in", e.target.value)}
                                         className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                       />
@@ -273,7 +303,7 @@ export default function BusinessAttendance() {
                                       <Moon className="w-3 h-3 text-indigo-400 shrink-0" />
                                       <input
                                         type="time"
-                                        value={log?.time_out || STANDARD_END}
+                                        value={log?.time_out || getDefaultEnd(emp.id, d)}
                                         onChange={e => updateLog(emp.id, dateStr, d, "time_out", e.target.value)}
                                         className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                       />
