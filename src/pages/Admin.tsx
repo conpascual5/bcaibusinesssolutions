@@ -1684,6 +1684,8 @@ export default function Admin() {
 
         {activeSection === "hr" && <AdminHRAccess />}
 
+        {activeSection === "modules" && <AdminModuleAccess />}
+
         {activeSection === "gcash" && <AdminGCashAccess />}
 
         {activeSection === "affiliates" && <AdminAffiliates />}

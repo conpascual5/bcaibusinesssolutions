@@ -10,7 +10,7 @@ type Message = {
 };
 
 type AICommandBarProps = {
-  context: "bms" | "hr";
+  context: "bms" | "hr" | "modules";
   placeholder?: string;
   title?: string;
 };
