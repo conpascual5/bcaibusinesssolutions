@@ -6,7 +6,7 @@ import AICommandBar from './AICommandBar';
 import {
   BarChart3, Users, GitBranch, Building2, MapPin, Layers, BadgeCheck,
   Clock, RefreshCw, Umbrella, Calendar, TrendingUp, Calculator, Gift,
-  Menu, ArrowLeft, Sparkles
+  Grid3X3, ArrowLeft, Sparkles
 } from 'lucide-react';
 
 interface HRLayoutProps {
@@ -50,13 +50,24 @@ export default function HRLayout({ children, title, description }: HRLayoutProps
       <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
         <div className="flex items-center justify-between px-4 h-14">
           <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-indigo-500" />
+              <h1 className="text-base font-bold">{title}</h1>
+            </div>
+            {description && (
+              <p className="text-xs text-muted-foreground mt-0.5 hidden sm:block">{description}</p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
             <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="shrink-0">
-                  <Menu className="w-5 h-5" />
+                <Button variant="outline" size="sm" className="shrink-0 gap-2">
+                  <Grid3X3 className="w-4 h-4" />
+                  <span className="hidden sm:inline">All Modules</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] sm:w-[320px] p-0">
+              <SheetContent side="right" className="w-[280px] sm:w-[320px] p-0">
                 <SheetHeader className="px-6 pt-6 pb-0 mb-4">
                   <SheetTitle className="flex items-center gap-2 text-lg">
                     <Sparkles className="w-5 h-5 text-indigo-500" />
@@ -97,18 +108,6 @@ export default function HRLayout({ children, title, description }: HRLayoutProps
               </SheetContent>
             </Sheet>
 
-            <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-500" />
-                <h1 className="text-base font-bold">{title}</h1>
-              </div>
-              {description && (
-                <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
