@@ -75,6 +75,231 @@ type PlanHistoryRow = {
   created_at: string;
 };
 
+function AdminSeats() {
+  const [businessOwners, setBusinessOwners] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, { seat_limit: number; additional_seat_price: number }>>({});
+
+  const fetchBusinessOwners = useCallback(async () => {
+    setLoading(true);
+    // Get all users who have business_seats records or are business owners
+    const { data: seatsData } = await supabase
+      .from("business_seats")
+      .select("*, business_id")
+      .order("created_at", { ascending: false });
+
+    if (seatsData && seatsData.length > 0) {
+      // Fetch profiles for these business owners
+      const userIds = seatsData.map((s: any) => s.business_id);
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("id, full_name, email")
+        .in("id", userIds);
+
+      const profileMap: Record<string, any> = {};
+      (profileData || []).forEach((p: any) => {
+        profileMap[p.id] = p;
+      });
+
+      const enriched = seatsData.map((s: any) => ({
+        ...s,
+        profiles: profileMap[s.business_id] || null,
+      }));
+      setBusinessOwners(enriched);
+
+      // Initialize edit values
+      const ev: Record<string, { seat_limit: number; additional_seat_price: number }> = {};
+      enriched.forEach((b: any) => {
+        ev[b.business_id] = {
+          seat_limit: b.seat_limit ?? 10,
+          additional_seat_price: b.additional_seat_price ?? 69,
+        };
+      });
+      setEditValues(ev);
+    } else {
+      setBusinessOwners([]);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchBusinessOwners();
+  }, [fetchBusinessOwners]);
+
+  const handleSave = async (businessId: string) => {
+    setSaving(businessId);
+    const vals = editValues[businessId];
+    if (!vals) return;
+
+    const { error } = await supabase
+      .from("business_seats")
+      .update({
+        seat_limit: vals.seat_limit,
+        additional_seat_price: vals.additional_seat_price,
+      })
+      .eq("business_id", businessId);
+
+    if (error) {
+      console.error("Failed to update seat limits", error);
+      toast.error("Failed to update seat limits");
+    } else {
+      toast.success("Seat limits updated successfully");
+    }
+    setSaving(null);
+  };
+
+  const handleCreateSeats = async (userId: string) => {
+    setSaving(userId);
+    const { error } = await supabase
+      .from("business_seats")
+      .insert({
+        business_id: userId,
+        seat_limit: 10,
+        additional_seat_price: 69,
+      });
+
+    if (error) {
+      console.error("Failed to create seat record", error);
+      toast.error("Failed to create seat record");
+    } else {
+      toast.success("Seat record created");
+      fetchBusinessOwners();
+    }
+    setSaving(null);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold">Business Seat Limits</h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Manage seat limits per business owner. Each business owner can have a maximum number of team members.
+          </p>
+        </div>
+      </div>
+
+      {businessOwners.length === 0 ? (
+        <div className="text-center py-16 border-2 border-dashed rounded-xl">
+          <UserCheck className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+          <h3 className="text-lg font-semibold text-muted-foreground">No Business Seat Records</h3>
+          <p className="text-sm text-muted-foreground/70 mt-1">
+            Seat records are created automatically when a business owner first accesses their team page.
+          </p>
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b">
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Business Owner</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Seat Limit</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Additional Seat Price (₱)</th>
+                <th className="text-left px-4 py-3 text-xs font-bold uppercase tracking-wider text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y">
+              {businessOwners.map((owner) => {
+                const vals = editValues[owner.business_id] || { seat_limit: 10, additional_seat_price: 69 };
+                return (
+                  <tr key={owner.business_id} className="hover:bg-accent/30 transition-colors">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold">
+                          {owner.profiles?.full_name?.charAt(0)?.toUpperCase() || "?"}
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{owner.profiles?.full_name || "Unknown"}</p>
+                          <p className="text-xs text-muted-foreground">{owner.profiles?.email || owner.business_id}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const current = editValues[owner.business_id]?.seat_limit ?? 10;
+                            setEditValues((prev) => ({
+                              ...prev,
+                              [owner.business_id]: { ...prev[owner.business_id], seat_limit: Math.max(1, current - 1) },
+                            }));
+                          }}
+                          className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-accent transition-colors"
+                        >
+                          <Minus className="w-3 h-3" />
+                        </button>
+                        <span className="w-12 text-center font-bold text-lg tabular-nums">{vals.seat_limit}</span>
+                        <button
+                          onClick={() => {
+                            const current = editValues[owner.business_id]?.seat_limit ?? 10;
+                            setEditValues((prev) => ({
+                              ...prev,
+                              [owner.business_id]: { ...prev[owner.business_id], seat_limit: current + 1 },
+                            }));
+                          }}
+                          className="w-7 h-7 rounded-full border flex items-center justify-center hover:bg-accent transition-colors"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg font-bold tabular-nums">₱</span>
+                        <input
+                          type="number"
+                          value={vals.additional_seat_price}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 0;
+                            setEditValues((prev) => ({
+                              ...prev,
+                              [owner.business_id]: { ...prev[owner.business_id], additional_seat_price: val },
+                            }));
+                          }}
+                          className="w-20 px-2 py-1 rounded-lg border bg-background text-sm font-medium text-center"
+                          min={0}
+                        />
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <button
+                        onClick={() => handleSave(owner.business_id)}
+                        disabled={saving === owner.business_id}
+                        className="px-4 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
+                      >
+                        {saving === owner.business_id ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            Save
+                          </>
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AdminAffiliates() {
   const [affiliates, setAffiliates] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);

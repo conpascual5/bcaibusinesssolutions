@@ -741,8 +741,10 @@ export default function Landing() {
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                      <span className="line-through text-gray-300">₱3,000</span>
-                      <span className="text-emerald-600 font-semibold ml-1">Save 67%</span>
+                      <span className="text-emerald-600 font-semibold">Up to 10 users included</span>
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      <span className="text-amber-600 font-semibold">₱69/month per additional user</span>
                     </p>
                   </div>
                   <ul className="space-y-3 mb-6">
