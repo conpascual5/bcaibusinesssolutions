@@ -3,9 +3,9 @@ import { useNavigate } from "react-router";
 import { useAuth } from "@/providers/auth";
 import { supabase } from "@/integrations/supabase/client";
 import {
-  Clock, LogOut, Loader2, CheckCircle2, XCircle, Calendar,
-  Umbrella, Send, User, Building2, Sparkles, Sun, Moon,
-  AlertCircle, History, ChevronRight, MapPin
+  Clock, LogOut, Loader2, Calendar,
+  Umbrella, Send, Building2, Sun, Moon,
+  AlertCircle, History, Timer, Coffee
 } from "lucide-react";
 
 type Employee = {
@@ -26,6 +26,7 @@ type AttendanceLog = {
   time_out: string | null;
   status: string;
   hours_worked: number | null;
+  tardiness_minutes: number | null;
 };
 
 type LeaveType = {
@@ -47,6 +48,17 @@ type LeaveRequest = {
   created_at: string;
 };
 
+type TodaySchedule = {
+  start_time: string;
+  end_time: string;
+  grace_period_minutes: number;
+  is_rest_day: boolean;
+  break_start: string | null;
+  break_end: string | null;
+  break_paid: boolean;
+  shift_name: string | null;
+};
+
 export default function EmployeePortal() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -54,6 +66,7 @@ export default function EmployeePortal() {
   const [loading, setLoading] = useState(true);
   const [todayLog, setTodayLog] = useState<AttendanceLog | null>(null);
   const [recentLogs, setRecentLogs] = useState<AttendanceLog[]>([]);
+  const [todaySchedule, setTodaySchedule] = useState<TodaySchedule | null>(null);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [clocking, setClocking] = useState(false);
@@ -83,7 +96,6 @@ export default function EmployeePortal() {
     if (!user) return;
     setLoading(true);
 
-    // Find employee linked to this auth user
     const { data: empData } = await supabase
       .from("hr_employees")
       .select("*")
@@ -99,6 +111,41 @@ export default function EmployeePortal() {
     setEmployee(empData as unknown as Employee);
 
     const today = new Date().toISOString().split("T")[0];
+    const dayOfWeek = new Date().getDay(); // 0=Sun, 1=Mon, ...
+
+    // Get today's schedule from hr_employee_schedules
+    const { data: scheduleData } = await supabase
+      .from("hr_employee_schedules")
+      .select("*")
+      .eq("employee_id", empData.id)
+      .eq("day_of_week", dayOfWeek)
+      .maybeSingle();
+
+    if (scheduleData) {
+      // If there's a shift_id, fetch the shift name
+      let shiftName: string | null = null;
+      if (scheduleData.shift_id) {
+        const { data: shiftData } = await supabase
+          .from("hr_shift_rosters")
+          .select("name")
+          .eq("id", scheduleData.shift_id)
+          .maybeSingle();
+        shiftName = shiftData?.name || null;
+      }
+
+      setTodaySchedule({
+        start_time: scheduleData.start_time,
+        end_time: scheduleData.end_time,
+        grace_period_minutes: scheduleData.grace_period_minutes ?? 15,
+        is_rest_day: scheduleData.is_rest_day ?? false,
+        break_start: scheduleData.break_start,
+        break_end: scheduleData.break_end,
+        break_paid: scheduleData.break_paid ?? false,
+        shift_name: shiftName,
+      });
+    } else {
+      setTodaySchedule(null);
+    }
 
     // Get today's attendance
     const { data: logData } = await supabase
@@ -144,6 +191,43 @@ export default function EmployeePortal() {
     setLoading(false);
   };
 
+  /** Compare a time string (HH:mm) against the shift start + grace period */
+  const determineStatus = (timeStr: string, schedule: TodaySchedule): string => {
+    if (schedule.is_rest_day) return "present";
+
+    const [h, m] = timeStr.split(":").map(Number);
+    const clockMinutes = h * 60 + m;
+
+    const [sh, sm] = schedule.start_time.split(":").map(Number);
+    const shiftStartMinutes = sh * 60 + sm;
+    const graceEndMinutes = shiftStartMinutes + schedule.grace_period_minutes;
+
+    if (clockMinutes <= graceEndMinutes) return "present";
+    return "late";
+  };
+
+  /** Calculate hours worked between two time strings */
+  const calcHoursWorked = (timeIn: string, timeOut: string): number => {
+    const [ih, im] = timeIn.split(":").map(Number);
+    const [oh, om] = timeOut.split(":").map(Number);
+    const inMinutes = ih * 60 + im;
+    const outMinutes = oh * 60 + om;
+    let diff = outMinutes - inMinutes;
+    if (diff < 0) diff += 1440; // crossed midnight
+    return Math.round((diff / 60) * 100) / 100;
+  };
+
+  /** Calculate tardiness in minutes */
+  const calcTardiness = (timeIn: string, schedule: TodaySchedule): number => {
+    if (schedule.is_rest_day) return 0;
+    const [h, m] = timeIn.split(":").map(Number);
+    const clockMinutes = h * 60 + m;
+    const [sh, sm] = schedule.start_time.split(":").map(Number);
+    const shiftStartMinutes = sh * 60 + sm;
+    const tardiness = clockMinutes - shiftStartMinutes;
+    return tardiness > 0 ? tardiness : 0;
+  };
+
   const handleClockIn = async () => {
     if (!employee) return;
     setClocking(true);
@@ -155,27 +239,42 @@ export default function EmployeePortal() {
 
     try {
       if (todayLog?.time_in && !todayLog.time_out) {
-        // Clock out
+        // Clock out — calculate hours worked
+        const hoursWorked = calcHoursWorked(todayLog.time_in, timeStr);
         const { error } = await supabase
           .from("hr_attendance_logs")
-          .update({ time_out: timeStr })
+          .update({ time_out: timeStr, hours_worked: hoursWorked })
           .eq("id", todayLog.id);
 
         if (error) throw error;
-        setClockMessage(`Clocked out at ${timeStr}`);
+        setClockMessage(`Clocked out at ${timeStr} — ${hoursWorked}h worked`);
       } else {
-        // Clock in
+        // Clock in — determine status based on schedule
+        let status = "present";
+        let tardinessMinutes = 0;
+
+        if (todaySchedule && !todaySchedule.is_rest_day) {
+          status = determineStatus(timeStr, todaySchedule);
+          tardinessMinutes = calcTardiness(timeStr, todaySchedule);
+        }
+
         const { error } = await supabase
           .from("hr_attendance_logs")
           .insert({
             employee_id: employee.id,
             date: today,
             time_in: timeStr,
-            status: "present",
+            status,
+            tardiness_minutes: tardinessMinutes > 0 ? tardinessMinutes : null,
           });
 
         if (error) throw error;
-        setClockMessage(`Clocked in at ${timeStr}`);
+
+        if (status === "late") {
+          setClockMessage(`Clocked in at ${timeStr} — ${tardinessMinutes} min late`);
+        } else {
+          setClockMessage(`Clocked in at ${timeStr}`);
+        }
       }
 
       await loadEmployeeData();
@@ -265,6 +364,7 @@ export default function EmployeePortal() {
   }
 
   const isClockedIn = todayLog?.time_in && !todayLog?.time_out;
+  const isRestDay = todaySchedule?.is_rest_day ?? false;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950">
@@ -303,7 +403,9 @@ export default function EmployeePortal() {
             <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
               isClockedIn
                 ? "bg-emerald-100 dark:bg-emerald-900/30 shadow-lg shadow-emerald-500/20"
-                : "bg-muted shadow-sm"
+                : isRestDay
+                  ? "bg-blue-100 dark:bg-blue-900/20 shadow-sm"
+                  : "bg-muted shadow-sm"
             }`}>
               <Clock className={`w-10 h-10 transition-colors ${
                 isClockedIn ? "text-emerald-600 dark:text-emerald-400" : "text-muted-foreground"
@@ -311,15 +413,44 @@ export default function EmployeePortal() {
             </div>
             <div className="flex-1 text-center sm:text-left">
               <h2 className="text-xl font-bold">
-                {isClockedIn ? "You're clocked in" : "Ready to work?"}
+                {isRestDay
+                  ? "It's your rest day 🎉"
+                  : isClockedIn
+                    ? "You're clocked in"
+                    : "Ready to work?"}
               </h2>
               <p className="text-sm text-muted-foreground mt-1">
-                {isClockedIn
-                  ? `Clocked in at ${todayLog?.time_in?.slice(0, 5)}`
-                  : todayLog?.time_out
-                    ? `Last clock out: ${todayLog.time_out.slice(0, 5)}`
-                    : "Tap the button to clock in for today"}
+                {isRestDay
+                  ? "Enjoy your day off!"
+                  : isClockedIn
+                    ? `Clocked in at ${todayLog?.time_in?.slice(0, 5)}`
+                    : todayLog?.time_out
+                      ? `Last clock out: ${todayLog.time_out.slice(0, 5)}`
+                      : "Tap the button to clock in for today"}
               </p>
+
+              {/* Schedule info */}
+              {todaySchedule && !isRestDay && (
+                <div className="flex flex-wrap items-center gap-3 mt-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-lg text-xs font-medium">
+                    <Timer className="w-3 h-3" />
+                    {todaySchedule.shift_name
+                      ? `${todaySchedule.shift_name}: `
+                      : ""}
+                    {todaySchedule.start_time.slice(0, 5)} – {todaySchedule.end_time.slice(0, 5)}
+                  </span>
+                  {todaySchedule.break_start && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-medium">
+                      <Coffee className="w-3 h-3" />
+                      Break {todaySchedule.break_start.slice(0, 5)}–{todaySchedule.break_end?.slice(0, 5)}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground">
+                    Grace: {todaySchedule.grace_period_minutes} min
+                  </span>
+                </div>
+              )}
+
               {clockMessage && (
                 <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1 font-medium">
                   {clockMessage}
@@ -328,7 +459,7 @@ export default function EmployeePortal() {
             </div>
             <button
               onClick={handleClockIn}
-              disabled={clocking || (!!todayLog?.time_in && !!todayLog?.time_out)}
+              disabled={clocking || isRestDay || (!!todayLog?.time_in && !!todayLog?.time_out)}
               className={`flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg ${
                 isClockedIn
                   ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
@@ -338,13 +469,9 @@ export default function EmployeePortal() {
               {clocking ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
               ) : isClockedIn ? (
-                <>
-                  <Moon className="w-5 h-5" /> Clock Out
-                </>
+                <><Moon className="w-5 h-5" /> Clock Out</>
               ) : (
-                <>
-                  <Sun className="w-5 h-5" /> Clock In
-                </>
+                <><Sun className="w-5 h-5" /> Clock In</>
               )}
             </button>
           </div>
@@ -399,6 +526,11 @@ export default function EmployeePortal() {
                             <p className="text-xs text-muted-foreground">
                               {log.time_in ? `${log.time_in.slice(0, 5)}` : "—"} → {log.time_out ? `${log.time_out.slice(0, 5)}` : "—"}
                             </p>
+                            {log.tardiness_minutes != null && log.tardiness_minutes > 0 && (
+                              <p className="text-[10px] text-amber-600 dark:text-amber-400">
+                                {log.tardiness_minutes} min late
+                              </p>
+                            )}
                           </div>
                         </div>
                         <div className="text-right">
@@ -440,7 +572,7 @@ export default function EmployeePortal() {
                 <div className="flex items-center justify-between mb-4">
                   <h4 className="font-bold text-sm">New Leave Request</h4>
                   <button onClick={() => setShowLeaveForm(false)} className="p-1 hover:bg-muted rounded-lg">
-                    <XCircle className="w-4 h-4 text-muted-foreground" />
+                    <AlertCircle className="w-4 h-4 text-muted-foreground" />
                   </button>
                 </div>
                 <div className="grid gap-4 sm:grid-cols-2">
