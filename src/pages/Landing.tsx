@@ -271,15 +271,16 @@ export default function Landing() {
               { icon: <Target className="w-5 h-5" />, color: "from-purple-500 to-pink-400", title: "Targets", desc: "Set business goals with progress tracking, target values, and status monitoring." },
               { icon: <Database className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Records", desc: "Yearly record keeping with search, filter by type, and comprehensive data management." },
               // HR Management System cards
-              { icon: <Users className="w-5 h-5" />, color: "from-cyan-500 to-blue-500", title: "HR Dashboard", desc: "Overview of employee count, attendance stats, pending leaves, and upcoming payroll." },
-              { icon: <Users className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Employees", desc: "Manage employee profiles with roles, status, contact details, and employment history." },
-              { icon: <ClipboardList className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Attendance", desc: "Track daily attendance with time-in/time-out, late flags, and attendance reports." },
-              { icon: <FileText className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Leave Management", desc: "Manage leave requests with different leave types, balances, and approval workflow." },
-              { icon: <Calendar className="w-5 h-5" />, color: "from-purple-500 to-violet-400", title: "Shift Roster", desc: "Create and assign shift schedules with break management and rotation support." },
+              { icon: <Users className="w-5 h-5" />, color: "from-cyan-500 to-blue-500", title: "HR Dashboard", desc: "Overview of employee count, attendance stats, pending leaves, late arrivals, and upcoming payroll." },
+              { icon: <Users className="w-5 h-5" />, color: "from-teal-500 to-emerald-400", title: "Employees", desc: "Manage employee profiles with roles, status, contact details, employment history, daily rate, and shift assignment." },
+              { icon: <ClipboardList className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Attendance", desc: "Track daily attendance with time-in/time-out, auto-computed tardiness vs schedule, overtime, and hours worked." },
+              { icon: <FileText className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Leave Management", desc: "Manage leave types (sick, vacation, emergency), approve/reject requests, and track balances." },
+              { icon: <Calendar className="w-5 h-5" />, color: "from-purple-500 to-violet-400", title: "Shift Roster", desc: "Create shift templates with break management, grace period. Assign to employees — auto-syncs to attendance & payroll." },
+              { icon: <Smartphone className="w-5 h-5" />, color: "from-indigo-500 to-purple-500", title: "Employee Portal", desc: "Self-service portal for employees to clock in/out, view schedules, track attendance, and submit leave requests." },
               { icon: <Target className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Performance", desc: "Track employee performance reviews, ratings, and feedback over time." },
               { icon: <DollarSign className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "Payroll Engine", desc: "Generate automated payslips with attendance-based computation, deductions, and net pay breakdown." },
               { icon: <Crown className="w-5 h-5" />, color: "from-amber-500 to-yellow-400", title: "Bonuses", desc: "Manage employee bonuses with types, amounts, and payout scheduling." },
-              { icon: <Building2 className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Company Setup", desc: "Configure company info, offices, departments, designations, and organizational chart." },
+              { icon: <Building2 className="w-5 h-5" />, color: "from-gray-500 to-slate-400", title: "Company Setup", desc: "Configure company info, offices, departments, designations, and interactive organizational chart." },
             ].map((tool, i) => (
               <AnimatedSection key={i} delay={i * 60} direction="up">
                 <div className="group bg-white rounded-2xl p-5 border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
