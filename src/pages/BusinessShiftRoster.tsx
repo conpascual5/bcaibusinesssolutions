@@ -22,7 +22,7 @@ type Employee = { id: string; first_name: string; last_name: string };
 type EmployeeShift = {
   id: string;
   employee_id: string;
-  shift_id: string;
+  shift_id: string | null;
   effective_from: string;
   effective_to: string | null;
   day_of_week: number | null;
@@ -46,6 +46,7 @@ export default function BusinessShiftRoster() {
   const [syncing, setSyncing] = useState(false);
   const [shiftForm, setShiftForm] = useState({ name: "", start_time: "08:00", end_time: "17:00", grace_period_minutes: 15, break_start: "12:00", break_end: "13:00", break_paid: false, description: "" });
   const [assignForm, setAssignForm] = useState({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "", is_rest_day: false });
+  const [assignMode, setAssignMode] = useState<"shift" | "restday">("shift");
 
   const loadData = async () => {
     if (!businessOwnerId) return;
@@ -99,29 +100,47 @@ export default function BusinessShiftRoster() {
 
   // Sync a single employee shift assignment into hr_employee_schedules
   const syncToSchedules = async (es: EmployeeShift) => {
-    const shift = shifts.find(s => s.id === es.shift_id);
-    if (!shift) return;
-
     // Determine which days of week this applies to
     const daysToSync = es.day_of_week !== null ? [es.day_of_week] : [0, 1, 2, 3, 4, 5, 6];
 
     for (const dayOfWeek of daysToSync) {
-      // Upsert the schedule for this employee + day_of_week
-      await supabase.from("hr_employee_schedules").upsert({
-        employee_id: es.employee_id,
-        day_of_week: dayOfWeek,
-        start_time: shift.start_time,
-        end_time: shift.end_time,
-        is_rest_day: es.is_rest_day || false,
-        grace_period_minutes: shift.grace_period_minutes,
-        break_start: shift.break_start,
-        break_end: shift.break_end,
-        break_paid: shift.break_paid,
-        shift_id: shift.id,
-      }, {
-        onConflict: "employee_id,day_of_week",
-        ignoreDuplicates: false,
-      });
+      if (es.is_rest_day) {
+        // Rest day: set is_rest_day=true, clear shift fields
+        await supabase.from("hr_employee_schedules").upsert({
+          employee_id: es.employee_id,
+          day_of_week: dayOfWeek,
+          start_time: null,
+          end_time: null,
+          is_rest_day: true,
+          grace_period_minutes: null,
+          break_start: null,
+          break_end: null,
+          break_paid: null,
+          shift_id: null,
+        }, {
+          onConflict: "employee_id,day_of_week",
+          ignoreDuplicates: false,
+        });
+      } else {
+        const shift = shifts.find(s => s.id === es.shift_id);
+        if (!shift) continue;
+
+        await supabase.from("hr_employee_schedules").upsert({
+          employee_id: es.employee_id,
+          day_of_week: dayOfWeek,
+          start_time: shift.start_time,
+          end_time: shift.end_time,
+          is_rest_day: false,
+          grace_period_minutes: shift.grace_period_minutes,
+          break_start: shift.break_start,
+          break_end: shift.break_end,
+          break_paid: shift.break_paid,
+          shift_id: shift.id,
+        }, {
+          onConflict: "employee_id,day_of_week",
+          ignoreDuplicates: false,
+        });
+      }
     }
   };
 
@@ -129,20 +148,25 @@ export default function BusinessShiftRoster() {
   const unsyncFromSchedules = async (es: EmployeeShift) => {
     const daysToRemove = es.day_of_week !== null ? [es.day_of_week] : [0, 1, 2, 3, 4, 5, 6];
     for (const dayOfWeek of daysToRemove) {
-      await supabase.from("hr_employee_schedules")
+      const query = supabase.from("hr_employee_schedules")
         .delete()
         .eq("employee_id", es.employee_id)
-        .eq("day_of_week", dayOfWeek)
-        .eq("shift_id", es.shift_id);
+        .eq("day_of_week", dayOfWeek);
+      if (es.is_rest_day) {
+        await query.eq("is_rest_day", true);
+      } else {
+        await query.eq("shift_id", es.shift_id);
+      }
     }
   };
 
   const handleAssign = async () => {
-    if (!assignForm.employee_id || !assignForm.shift_id || !businessOwnerId) return;
+    if (!assignForm.employee_id || !businessOwnerId) return;
+    if (assignMode === "shift" && !assignForm.shift_id) return;
     setSaving(true);
 
     const { data: newAssignment, error } = await supabase.from("hr_employee_shifts").insert({
-      business_id: businessOwnerId, employee_id: assignForm.employee_id, shift_id: assignForm.shift_id,
+      business_id: businessOwnerId, employee_id: assignForm.employee_id, shift_id: assignForm.shift_id || null,
       effective_from: assignForm.effective_from, effective_to: assignForm.effective_to || null,
       day_of_week: assignForm.day_of_week ? parseInt(assignForm.day_of_week) : null,
       is_rest_day: assignForm.is_rest_day,
@@ -181,7 +205,7 @@ export default function BusinessShiftRoster() {
     return e ? `${e.first_name} ${e.last_name}` : "Unknown";
   };
 
-  const getShiftName = (id: string) => shifts.find(s => s.id === id)?.name || "Unknown";
+  const getShiftName = (id: string | null) => id ? shifts.find(s => s.id === id)?.name || "Unknown" : "";
 
   return (
     <BusinessLayout title="Shift Roster" description="Define work shifts and assign them to employees — assignments auto-sync to attendance & payroll schedules">
@@ -254,7 +278,19 @@ export default function BusinessShiftRoster() {
 
           {showAssignForm && (
             <div className="bg-card rounded-2xl border border-border p-6">
-              <h3 className="font-bold mb-4">Assign Shift to Employee</h3>
+              <div className="flex items-center gap-3 mb-4">
+                <h3 className="font-bold">Assign to Employee</h3>
+                <div className="flex bg-muted rounded-xl p-0.5">
+                  <button onClick={() => { setAssignMode("shift"); setAssignForm(p => ({ ...p, is_rest_day: false })); }}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${assignMode === "shift" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                    Shift
+                  </button>
+                  <button onClick={() => { setAssignMode("restday"); setAssignForm(p => ({ ...p, is_rest_day: true, shift_id: "" })); }}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${assignMode === "restday" ? "bg-background shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>
+                    Rest Day
+                  </button>
+                </div>
+              </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground block mb-1">Employee *</label>
@@ -263,13 +299,22 @@ export default function BusinessShiftRoster() {
                     {employees.map(e => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground block mb-1">Shift *</label>
-                  <select value={assignForm.shift_id} onChange={e => setAssignForm(p => ({ ...p, shift_id: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Select shift...</option>
-                    {shifts.filter(s => s.is_active).map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0,5)}-{s.end_time.slice(0,5)})</option>)}
-                  </select>
-                </div>
+                {assignMode === "shift" && (
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground block mb-1">Shift *</label>
+                    <select value={assignForm.shift_id} onChange={e => setAssignForm(p => ({ ...p, shift_id: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                      <option value="">Select shift...</option>
+                      {shifts.filter(s => s.is_active).map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0,5)}-{s.end_time.slice(0,5)})</option>)}
+                    </select>
+                  </div>
+                )}
+                {assignMode === "restday" && (
+                  <div className="flex items-center pt-5">
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl text-sm text-amber-700 dark:text-amber-400 font-medium">
+                      <span className="text-lg">🌙</span> Rest Day — no time tracking
+                    </div>
+                  </div>
+                )}
                 <div>
                   <label className="text-xs font-medium text-muted-foreground block mb-1">Effective From</label>
                   <input type="date" value={assignForm.effective_from} onChange={e => setAssignForm(p => ({ ...p, effective_from: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" />
@@ -285,17 +330,11 @@ export default function BusinessShiftRoster() {
                     {DAYS.map((day, i) => <option key={i} value={i}>{day}</option>)}
                   </select>
                 </div>
-                <div className="sm:col-span-2">
-                  <label className="flex items-center gap-3 cursor-pointer pt-5">
-                    <input type="checkbox" checked={assignForm.is_rest_day} onChange={e => setAssignForm(p => ({ ...p, is_rest_day: e.target.checked }))} className="w-4 h-4 rounded border-border text-amber-600 focus:ring-amber-500" />
-                    <span className="text-sm font-medium">Mark as Rest Day (no time tracking)</span>
-                  </label>
-                </div>
               </div>
               <div className="flex gap-2 mt-4">
-                <button onClick={handleAssign} disabled={saving || !assignForm.employee_id || !assignForm.shift_id} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
+                <button onClick={handleAssign} disabled={saving || !assignForm.employee_id || (assignMode === "shift" && !assignForm.shift_id)} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  Assign
+                  {assignMode === "restday" ? "Assign Rest Day" : "Assign Shift"}
                 </button>
                 <button onClick={() => setShowAssignForm(false)} className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
               </div>
