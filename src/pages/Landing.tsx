@@ -1029,7 +1029,7 @@ export default function Landing() {
                       { refs: "1 referral", earn: "₱150", plan: "Pro (₱499/mo)" },
                       { refs: "5 referrals", earn: "₱1,500", plan: "Pro (₱499/mo each)" },
                       { refs: "10 referrals", earn: "₱3,000", plan: "Pro (₱499/mo each)" },
-                      { refs: "10 referrals", earn: "₱3,000", plan: "Pro Plus (₱999/mo each)" },
+                      { refs: "10 referrals", earn: "₱3,000", plan: "Pro Plus (₱1,499/mo each)" },
                     ].map((row, i) => (
                       <div key={i} className="flex items-center justify-between bg-white/15 backdrop-blur rounded-xl px-4 py-3 border border-white/20">
                         <div>
