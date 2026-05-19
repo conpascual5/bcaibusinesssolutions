@@ -62,7 +62,17 @@ import BusinessHelp from './pages/BusinessHelp'
 import { BusinessTeamProvider } from '@/providers/business-team'
 import { HRAccessProvider } from '@/providers/hr-access'
 import HRAccessGuard from '@/components/HRAccessGuard'
+import { ModuleAccessProvider } from '@/providers/module-access'
+import ModuleAccessGuard from '@/components/ModuleAccessGuard'
 import StandaloneHRDashboard from './pages/StandaloneHRDashboard'
+import StandaloneSalesWizard from './pages/StandaloneSalesWizard'
+import StandaloneSalesReport from './pages/StandaloneSalesReport'
+import StandaloneFBAdsTargeting from './pages/StandaloneFBAdsTargeting'
+import StandaloneImageAnalyzer from './pages/StandaloneImageAnalyzer'
+import StandaloneAdAnalyzer from './pages/StandaloneAdAnalyzer'
+import StandaloneInvoices from './pages/StandaloneInvoices'
+import StandaloneMyAssets from './pages/StandaloneMyAssets'
+import StandaloneLibrary from './pages/StandaloneLibrary'
 import AppShop from './pages/AppShop'
 import Shop from './pages/Shop'
 
@@ -167,6 +177,17 @@ export default function App() {
         <Route path="/app/hr/performances" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/payroll" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/bonuses" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+
+        {/* Standalone App Modules (assignable to any user) */}
+        <Route path="/app/modules" element={<ProtectedRoute><ModuleAccessProvider><StandaloneSalesWizard /></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/sales-wizard" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="sales_wizard"><StandaloneSalesWizard /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/sales-report" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="sales_report"><StandaloneSalesReport /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/fb-ads-targeting" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="fb_ads_targeting"><StandaloneFBAdsTargeting /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/image-analyzer" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="image_analyzer"><StandaloneImageAnalyzer /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/ad-analyzer" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="ad_analyzer"><StandaloneAdAnalyzer /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/invoices" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="invoices"><StandaloneInvoices /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/my-assets" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="my_assets"><StandaloneMyAssets /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
+        <Route path="/app/modules/library" element={<ProtectedRoute><ModuleAccessProvider><ModuleAccessGuard module="library"><StandaloneLibrary /></ModuleAccessGuard></ModuleAccessProvider></ProtectedRoute>} />
 
         <Route path="/app/sales-wizard" element={<ProtectedRoute><AppLayoutRoute><SalesWizard /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/competitor-analysis" element={<ProtectedRoute><AppLayoutRoute><CompetitorAnalysis /></AppLayoutRoute></ProtectedRoute>} />
