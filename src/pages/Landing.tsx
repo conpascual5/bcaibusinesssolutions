@@ -671,8 +671,8 @@ export default function Landing() {
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
                     <p className="text-xs text-gray-400 mt-1">
-                      <span className="line-through text-gray-300">₱999</span>
-                      <span className="text-emerald-600 font-semibold ml-1">Original price</span>
+                      <span className="line-through text-gray-300">₱699</span>
+                      <span className="text-emerald-600 font-semibold ml-1">Was ₱699</span>
                     </p>
                   </div>
                   <ul className="space-y-3 mb-6">
