@@ -126,10 +126,13 @@ export default function BusinessLeave() {
     if (!businessOwnerId || !typeForm.code || !typeForm.name) return;
     setSaving(true);
     const payload = { business_id: businessOwnerId, code: typeForm.code, name: typeForm.name, description: typeForm.description || null, max_days_per_year: typeForm.max_days_per_year };
+    console.log("[BusinessLeave] Saving leave type", payload);
     if (editingType) {
-      await supabase.from("hr_leave_types").update(payload).eq("id", editingType.id);
+      const { error } = await supabase.from("hr_leave_types").update(payload).eq("id", editingType.id);
+      if (error) { console.error("[BusinessLeave] Update leave type error", error); alert(`Failed: ${error.message}`); setSaving(false); return; }
     } else {
-      await supabase.from("hr_leave_types").insert(payload);
+      const { error } = await supabase.from("hr_leave_types").insert(payload);
+      if (error) { console.error("[BusinessLeave] Insert leave type error", error); alert(`Failed: ${error.message}`); setSaving(false); return; }
     }
     setSaving(false);
     setShowTypeForm(false);
@@ -139,7 +142,8 @@ export default function BusinessLeave() {
   };
 
   const deleteLeaveType = async (id: string) => {
-    await supabase.from("hr_leave_types").delete().eq("id", id);
+    const { error } = await supabase.from("hr_leave_types").delete().eq("id", id);
+    if (error) { console.error("[BusinessLeave] Delete leave type error", error); alert(`Failed: ${error.message}`); }
     await loadData();
   };
 
@@ -147,10 +151,13 @@ export default function BusinessLeave() {
     if (!entForm.employee_id || !entForm.leave_type_id) return;
     setSaving(true);
     const existing = entitlements.find(e => e.employee_id === entForm.employee_id && e.leave_type_id === entForm.leave_type_id && e.year === entForm.year);
+    console.log("[BusinessLeave] Saving entitlement", entForm, existing ? "updating" : "inserting");
     if (existing) {
-      await supabase.from("hr_leave_entitlements").update({ max_days: entForm.max_days }).eq("id", existing.id);
+      const { error } = await supabase.from("hr_leave_entitlements").update({ max_days: entForm.max_days }).eq("id", existing.id);
+      if (error) { console.error("[BusinessLeave] Update entitlement error", error); alert(`Failed: ${error.message}`); setSaving(false); return; }
     } else {
-      await supabase.from("hr_leave_entitlements").insert(entForm);
+      const { error } = await supabase.from("hr_leave_entitlements").insert(entForm);
+      if (error) { console.error("[BusinessLeave] Insert entitlement error", error); alert(`Failed: ${error.message}`); setSaving(false); return; }
     }
     setSaving(false);
     setShowEntForm(false);
