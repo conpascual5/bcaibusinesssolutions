@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2, X, CheckCircle2, Loader2 } from "lucide-react";
+import { Plus, Trash2, X, CheckCircle2, Loader2, Link2, Clock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { DAY_NAMES } from "@/pages/BusinessPayroll";
 import type { Employee, Schedule } from "@/pages/BusinessPayroll";
@@ -19,7 +19,13 @@ export default function ScheduleManager({ employees, schedules, onRefresh, getEm
   const save = async () => {
     if (!form.employee_id) return;
     setSaving(true);
-    const { error } = await supabase.from("hr_employee_schedules").insert(form);
+    const { error } = await supabase.from("hr_employee_schedules").insert({
+      employee_id: form.employee_id,
+      day_of_week: form.day_of_week,
+      start_time: form.start_time,
+      end_time: form.end_time,
+      is_rest_day: form.is_rest_day,
+    });
     if (error) { alert(`Failed: ${error.message}`); setSaving(false); return; }
     setSaving(false);
     setShowForm(false);
@@ -32,13 +38,17 @@ export default function ScheduleManager({ employees, schedules, onRefresh, getEm
     await onRefresh();
   };
 
-  const fmtTime = (t: string) => t?.substring(0, 5) || "--:--";
+  const fmtTime = (t: string | null) => t?.substring(0, 5) || "--:--";
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground">
+          Schedules synced from <span className="font-medium text-foreground">Shift Roster</span> are managed there.
+          Manual schedules can be added and removed here.
+        </p>
         <button onClick={() => setShowForm(true)}
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors">
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors shrink-0">
           <Plus className="w-4 h-4" /> Add Schedule
         </button>
       </div>
@@ -102,26 +112,47 @@ export default function ScheduleManager({ employees, schedules, onRefresh, getEm
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Employee</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Day</th>
                 <th className="text-left py-3 px-4 font-medium text-muted-foreground">Time</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Grace</th>
+                <th className="text-left py-3 px-4 font-medium text-muted-foreground">Break</th>
                 <th className="text-center py-3 px-4 font-medium text-muted-foreground">Rest Day</th>
+                <th className="text-center py-3 px-4 font-medium text-muted-foreground">Source</th>
                 <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody>
               {schedules.length === 0 ? (
-                <tr><td colSpan={5} className="py-12 text-center text-muted-foreground">No schedules yet.</td></tr>
+                <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">No schedules yet.</td></tr>
               ) : schedules.map(s => {
                 const emp = getEmployee(s.employee_id);
+                const isFromShift = !!s.shift_id;
                 return (
-                  <tr key={s.id} className="border-b border-border/50 hover:bg-muted/30">
+                  <tr key={s.id} className={`border-b border-border/50 hover:bg-muted/30 ${isFromShift ? "bg-indigo-50/30 dark:bg-indigo-950/10" : ""}`}>
                     <td className="py-3 px-4 font-medium">{emp ? `${emp.first_name} ${emp.last_name}` : "Unknown"}</td>
                     <td className="py-3 px-4">{DAY_NAMES[s.day_of_week]}</td>
-                    <td className="py-3 px-4">{s.is_rest_day ? "\u2014" : `${fmtTime(s.start_time)} - ${fmtTime(s.end_time)}`}</td>
-                    <td className="py-3 px-4 text-center">{s.is_rest_day ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" /> : "\u2014"}</td>
+                    <td className="py-3 px-4">{s.is_rest_day ? "—" : `${fmtTime(s.start_time)} - ${fmtTime(s.end_time)}`}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">{s.grace_period_minutes != null ? `${s.grace_period_minutes}m` : "—"}</td>
+                    <td className="py-3 px-4 text-xs text-muted-foreground">
+                      {s.break_start ? `${fmtTime(s.break_start)}-${fmtTime(s.break_end)}${s.break_paid ? " (paid)" : ""}` : "—"}
+                    </td>
+                    <td className="py-3 px-4 text-center">{s.is_rest_day ? <CheckCircle2 className="w-4 h-4 text-emerald-500 mx-auto" /> : "—"}</td>
+                    <td className="py-3 px-4 text-center">
+                      {isFromShift ? (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                          <Link2 className="w-3 h-3" /> Shift
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Manual</span>
+                      )}
+                    </td>
                     <td className="py-3 px-4 text-right">
-                      <button onClick={() => deleteSched(s.id)}
-                        className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-600 transition-colors">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {isFromShift ? (
+                        <span className="text-xs text-muted-foreground italic">Managed in Shift Roster</span>
+                      ) : (
+                        <button onClick={() => deleteSched(s.id)}
+                          className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-600 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </td>
                   </tr>
                 );

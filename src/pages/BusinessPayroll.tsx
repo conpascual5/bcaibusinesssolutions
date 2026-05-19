@@ -89,7 +89,9 @@ export interface Attendance {
   time_in: string | null
   time_out: string | null
   status: string
-  leave_request_id: string | null
+  hours_worked: number | null
+  overtime_hours: number | null
+  tardiness_minutes: number | null
   notes: string | null
   created_at: string
 }
@@ -101,6 +103,11 @@ export interface Schedule {
   start_time: string
   end_time: string
   is_rest_day: boolean
+  grace_period_minutes: number | null
+  break_start: string | null
+  break_end: string | null
+  break_paid: boolean | null
+  shift_id: string | null
   created_at: string
 }
 
