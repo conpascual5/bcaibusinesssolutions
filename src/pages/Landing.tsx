@@ -491,7 +491,7 @@ export default function Landing() {
               <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
                 <Crown className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-gray-700">
-                  <strong className="text-amber-700">Business Management System</strong> (standalone ₱699/mo) and <strong className="text-cyan-700">HR Management System</strong> (standalone ₱699/mo) are available as add-ons or included in paid plans.{' '}
+                  <strong className="text-amber-700">Business Management System</strong> (standalone ₱999/mo) and <strong className="text-cyan-700">HR Management System</strong> (standalone ₱999/mo) are available as add-ons or included in paid plans.{' '}
                   <strong>Pro (1 BMS user)</strong> · <strong>Pro Plus (3 BMS users + HR included)</strong> · <strong>VIP (5 BMS users + HR included)</strong>
                   {' — '}
                   <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
@@ -667,9 +667,13 @@ export default function Landing() {
                     <p className="text-sm text-gray-500 mt-1">Digital wallet + physical cash tracker</p>
                     <div className="flex items-baseline justify-center gap-1 mt-4">
                       <span className="text-sm text-gray-400">PHP</span>
-                      <span className="text-5xl font-extrabold text-gray-900">299</span>
+                      <span className="text-5xl font-extrabold text-gray-900">999</span>
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      <span className="line-through text-gray-300">₱999</span>
+                      <span className="text-emerald-600 font-semibold ml-1">Original price</span>
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-6">
                     {[
@@ -711,9 +715,13 @@ export default function Landing() {
                     <p className="text-sm text-gray-500 mt-1">Complete business operations suite</p>
                     <div className="flex items-baseline justify-center gap-1 mt-4">
                       <span className="text-sm text-gray-400">PHP</span>
-                      <span className="text-5xl font-extrabold text-gray-900">699</span>
+                      <span className="text-5xl font-extrabold text-gray-900">999</span>
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      <span className="line-through text-gray-300">₱3,000</span>
+                      <span className="text-emerald-600 font-semibold ml-1">Save 67%</span>
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-6">
                     {[
@@ -755,9 +763,13 @@ export default function Landing() {
                     <p className="text-sm text-gray-500 mt-1">Complete HR operations suite</p>
                     <div className="flex items-baseline justify-center gap-1 mt-4">
                       <span className="text-sm text-gray-400">PHP</span>
-                      <span className="text-5xl font-extrabold text-gray-900">699</span>
+                      <span className="text-5xl font-extrabold text-gray-900">999</span>
                       <span className="text-sm text-gray-400">/month</span>
                     </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      <span className="line-through text-gray-300">₱3,000</span>
+                      <span className="text-emerald-600 font-semibold ml-1">Save 67%</span>
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-6">
                     {[
