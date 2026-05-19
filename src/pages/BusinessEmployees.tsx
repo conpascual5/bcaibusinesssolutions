@@ -21,6 +21,7 @@ type Employee = {
   is_active: boolean;
   gender: string | null;
   notes: string | null;
+  daily_rate: number;
 };
 
 function calculateTenure(hireDate: string, resignationDate: string | null): string {
@@ -48,7 +49,8 @@ export default function BusinessEmployees() {
   // Form state
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "", phone: "",
-    position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: ""
+    position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: "",
+    daily_rate: ""
   });
 
   const loadEmployees = async () => {
@@ -67,7 +69,7 @@ export default function BusinessEmployees() {
   }, [businessOwnerId]);
 
   const resetForm = () => {
-    setForm({ first_name: "", last_name: "", email: "", phone: "", position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: "" });
+    setForm({ first_name: "", last_name: "", email: "", phone: "", position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: "", daily_rate: "" });
     setEditing(null);
     setShowForm(false);
   };
@@ -77,7 +79,8 @@ export default function BusinessEmployees() {
       first_name: emp.first_name, last_name: emp.last_name,
       email: emp.email || "", phone: emp.phone || "",
       position: emp.position || "", department: emp.department || "",
-      hire_date: emp.hire_date, resignation_date: emp.resignation_date || "", gender: emp.gender || "", notes: emp.notes || ""
+      hire_date: emp.hire_date, resignation_date: emp.resignation_date || "", gender: emp.gender || "", notes: emp.notes || "",
+      daily_rate: emp.daily_rate ? String(emp.daily_rate) : ""
     });
     setEditing(emp);
     setShowForm(true);
@@ -99,6 +102,7 @@ export default function BusinessEmployees() {
       is_active: !form.resignation_date,
       gender: form.gender || null,
       notes: form.notes || null,
+      daily_rate: form.daily_rate ? Number(form.daily_rate) : 0,
     };
 
     let error;
@@ -212,6 +216,11 @@ export default function BusinessEmployees() {
                     <option value="Other">Other</option>
                   </select>
                 </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1.5">Daily Rate (₱)</label>
+                  <input type="number" value={form.daily_rate} onChange={e => setForm({ ...form, daily_rate: e.target.value })}
+                    placeholder="e.g. 750" className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                </div>
                 <div className="col-span-2">
                   <label className="block text-xs font-medium text-muted-foreground mb-1.5">Notes</label>
                   <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" />
@@ -245,6 +254,7 @@ export default function BusinessEmployees() {
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Employee</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Position</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Department</th>
+                    <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Daily Rate</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Tenure</th>
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground">Status</th>
                     <th className="text-right px-4 py-3 font-semibold text-muted-foreground">Actions</th>
@@ -266,6 +276,7 @@ export default function BusinessEmployees() {
                       </td>
                       <td className="px-4 py-3.5 text-muted-foreground">{emp.position || "—"}</td>
                       <td className="px-4 py-3.5 text-muted-foreground">{emp.department || "—"}</td>
+                      <td className="px-4 py-3.5 text-right font-medium">₱{Number(emp.daily_rate || 0).toLocaleString()}</td>
                       <td className="px-4 py-3.5">
                         <span className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400">
                           <Calendar className="w-3 h-3" />

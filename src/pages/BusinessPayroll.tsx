@@ -186,7 +186,7 @@ export default function BusinessPayroll() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
+          <div className="flex items-center justify-center py-20"><div className="w-6 h-6 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" /></div>
         ) : (
           <>
             {activeTab === "dashboard" && (

@@ -13,7 +13,7 @@ export default function DeductionManager({ businessOwnerId, deductions, onRefres
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Deduction | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", code: "", description: "", amount_type: "fixed" as const, amount: 0, is_mandatory: false });
+  const [form, setForm] = useState({ name: "", code: "", description: "", amount_type: "fixed" as "fixed" | "percentage", amount: 0, is_mandatory: false });
 
   const openNew = () => { setEditing(null); setForm({ name: "", code: "", description: "", amount_type: "fixed", amount: 0, is_mandatory: false }); setShowForm(true); };
   const openEdit = (d: Deduction) => { setEditing(d); setForm({ name: d.name, code: d.code, description: d.description || "", amount_type: d.amount_type as "fixed" | "percentage", amount: Number(d.amount), is_mandatory: d.is_mandatory }); setShowForm(true); };
