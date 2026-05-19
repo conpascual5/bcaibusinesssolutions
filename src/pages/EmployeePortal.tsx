@@ -51,6 +51,18 @@ type LeaveRequest = {
   created_at: string;
 };
 
+type DaySchedule = {
+  day_of_week: number;
+  start_time: string | null;
+  end_time: string | null;
+  grace_period_minutes: number | null;
+  is_rest_day: boolean;
+  break_start: string | null;
+  break_end: string | null;
+  break_paid: boolean;
+  shift_name: string | null;
+};
+
 type Payslip = {
   id: string;
   employee_id: string;
@@ -85,7 +97,7 @@ export default function EmployeePortal() {
   const [loading, setLoading] = useState(true);
   const [todayLog, setTodayLog] = useState<AttendanceLog | null>(null);
   const [recentLogs, setRecentLogs] = useState<AttendanceLog[]>([]);
-  // Weekly schedule is now loaded into weekSchedule array
+  const [weekSchedule, setWeekSchedule] = useState<DaySchedule[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<LeaveType[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
   const [clocking, setClocking] = useState(false);
@@ -107,6 +119,10 @@ export default function EmployeePortal() {
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
   const [viewingPayslip, setViewingPayslip] = useState<Payslip | null>(null);
+
+  const today = new Date();
+  const todayDayOfWeek = today.getDay();
+  const todayDateStr = today.toISOString().split("T")[0];
 
   useEffect(() => {
     if (!user) {
@@ -247,15 +263,15 @@ export default function EmployeePortal() {
   };
 
   /** Compare a time string (HH:mm) against the shift start + grace period */
-  const determineStatus = (timeStr: string, schedule: TodaySchedule): string => {
-    if (schedule.is_rest_day) return "present";
+  const determineStatus = (timeStr: string, schedule: DaySchedule): string => {
+    if (schedule.is_rest_day || !schedule.start_time) return "present";
 
     const [h, m] = timeStr.split(":").map(Number);
     const clockMinutes = h * 60 + m;
 
     const [sh, sm] = schedule.start_time.split(":").map(Number);
     const shiftStartMinutes = sh * 60 + sm;
-    const graceEndMinutes = shiftStartMinutes + schedule.grace_period_minutes;
+    const graceEndMinutes = shiftStartMinutes + (schedule.grace_period_minutes ?? 15);
 
     if (clockMinutes <= graceEndMinutes) return "present";
     return "late";
@@ -273,8 +289,8 @@ export default function EmployeePortal() {
   };
 
   /** Calculate tardiness in minutes */
-  const calcTardiness = (timeIn: string, schedule: TodaySchedule): number => {
-    if (schedule.is_rest_day) return 0;
+  const calcTardiness = (timeIn: string, schedule: DaySchedule): number => {
+    if (schedule.is_rest_day || !schedule.start_time) return 0;
     const [h, m] = timeIn.split(":").map(Number);
     const clockMinutes = h * 60 + m;
     const [sh, sm] = schedule.start_time.split(":").map(Number);
@@ -302,7 +318,7 @@ export default function EmployeePortal() {
           .eq("id", todayLog.id);
 
         if (error) throw error;
-        setClockMessage(`Clocked out at ${timeStr} — ${hoursWorked}h worked`);
+        setClockMessage(`Clocked out at ${timeStr} — ${hoursWorked}h worked ✨`);
       } else {
         // Clock in — determine status based on schedule
         let status = "present";
@@ -317,7 +333,7 @@ export default function EmployeePortal() {
           .from("hr_attendance_logs")
           .insert({
             employee_id: employee.id,
-            date: today,
+            date: todayDateStr,
             time_in: timeStr,
             status,
             tardiness_minutes: tardinessMinutes > 0 ? tardinessMinutes : null,
@@ -326,9 +342,9 @@ export default function EmployeePortal() {
         if (error) throw error;
 
         if (status === "late") {
-          setClockMessage(`Clocked in at ${timeStr} — ${tardinessMinutes} min late`);
+          setClockMessage(`Clocked in at ${timeStr} — ${tardinessMinutes} min late ⏰`);
         } else {
-          setClockMessage(`Clocked in at ${timeStr}`);
+          setClockMessage(`Clocked in at ${timeStr} ✅`);
         }
       }
 
