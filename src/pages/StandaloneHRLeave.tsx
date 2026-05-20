@@ -3,10 +3,10 @@ import { useAuth } from "@/providers/auth";
 import { useHRAccess } from "@/providers/hr-access";
 import { supabase } from "@/integrations/supabase/client";
 import HRLayout from "@/components/HRLayout";
-import { Loader2, Plus, Pencil, Trash2, X, Check, Umbrella, Search, Filter } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, X, Check, Umbrella, Search, Filter, CheckCircle, XCircle } from "lucide-react";
 
 type LeaveType = { id: string; name: string; code: string; days_allowed: number; };
-type LeaveRecord = { id: string; employee_id: string; leave_type_id: string; start_date: string; end_date: string; days_taken: number; status: string; reason: string | null; };
+type LeaveRecord = { id: string; employee_id: string; leave_type_id: string; start_date: string; end_date: string; days_taken: number; status: string; reason: string | null; source: "admin" | "employee"; };
 type Employee = { id: string; first_name: string; last_name: string; };
 
 export default function StandaloneHRLeave() {
@@ -26,12 +26,28 @@ export default function StandaloneHRLeave() {
 
   const load = async () => {
     if (!businessOwnerId) return;
-    const [lRes, ltRes, eRes] = await Promise.all([
+    const [lRes, lrRes, ltRes, eRes] = await Promise.all([
       supabase.from("hr_leave").select("*").eq("business_id", businessOwnerId).order("start_date", { ascending: false }),
+      supabase.from("hr_leave_requests").select("*, hr_employees!inner(business_id)").eq("hr_employees.business_id", businessOwnerId).order("start_date", { ascending: false }),
       supabase.from("hr_leave_types").select("*").eq("business_id", businessOwnerId).order("name"),
       supabase.from("hr_employees").select("id, first_name, last_name").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
     ]);
-    if (lRes.data) setRecords(lRes.data);
+
+    const adminRecords: LeaveRecord[] = (lRes.data || []).map((r: any) => ({ ...r, source: "admin" as const }));
+    const employeeRecords: LeaveRecord[] = (lrRes.data || []).map((r: any) => ({
+      id: r.id,
+      employee_id: r.employee_id,
+      leave_type_id: r.leave_type_id,
+      start_date: r.start_date,
+      end_date: r.end_date,
+      days_taken: r.days_taken,
+      status: r.status || "pending",
+      reason: r.reason,
+      source: "employee" as const,
+    }));
+
+    // Merge: employee-submitted first (so they appear on top), then admin records
+    setRecords([...employeeRecords, ...adminRecords]);
     if (ltRes.data) setLeaveTypes(ltRes.data);
     if (eRes.data) setEmployees(eRes.data);
     setLoading(false);
@@ -54,16 +70,37 @@ export default function StandaloneHRLeave() {
     if (!form.employee_id || !form.leave_type_id || !form.start_date || !form.end_date) return;
     setSaving(true);
     const payload = { ...form, business_id: businessOwnerId };
-    if (editing) await supabase.from("hr_leave").update(payload).eq("id", editing.id);
-    else await supabase.from("hr_leave").insert(payload);
+    if (editing) {
+      if (editing.source === "employee") {
+        await supabase.from("hr_leave_requests").update({ status: form.status, reason: form.reason }).eq("id", editing.id);
+      } else {
+        await supabase.from("hr_leave").update(payload).eq("id", editing.id);
+      }
+    } else {
+      await supabase.from("hr_leave").insert(payload);
+    }
     setSaving(false);
     resetForm();
     load();
   };
 
-  const deleteRecord = async (id: string) => {
+  const deleteRecord = async (r: LeaveRecord) => {
     if (!confirm("Delete this leave record?")) return;
-    await supabase.from("hr_leave").delete().eq("id", id);
+    if (r.source === "employee") {
+      await supabase.from("hr_leave_requests").delete().eq("id", r.id);
+    } else {
+      await supabase.from("hr_leave").delete().eq("id", r.id);
+    }
+    load();
+  };
+
+  const approveRequest = async (r: LeaveRecord) => {
+    await supabase.from("hr_leave_requests").update({ status: "approved" }).eq("id", r.id);
+    load();
+  };
+
+  const rejectRequest = async (r: LeaveRecord) => {
+    await supabase.from("hr_leave_requests").update({ status: "rejected" }).eq("id", r.id);
     load();
   };
 
@@ -157,12 +194,13 @@ export default function StandaloneHRLeave() {
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Dates</th>
                     <th className="text-center px-4 py-3 font-medium text-muted-foreground">Days</th>
                     <th className="text-center px-4 py-3 font-medium text-muted-foreground">Status</th>
+                    <th className="text-center px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Source</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filtered.map(r => (
-                    <tr key={r.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                    <tr key={`${r.source}-${r.id}`} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
                       <td className="px-4 py-3 font-medium">{getEmployeeName(r.employee_id)}</td>
                       <td className="px-4 py-3 text-muted-foreground">{getLeaveTypeName(r.leave_type_id)}</td>
                       <td className="px-4 py-3 text-muted-foreground hidden sm:table-cell">{r.start_date} → {r.end_date}</td>
@@ -172,16 +210,39 @@ export default function StandaloneHRLeave() {
                           {r.status}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-center hidden sm:table-cell">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                          r.source === "employee"
+                            ? "bg-purple-100 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400"
+                            : "bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400"
+                        }`}>
+                          {r.source === "employee" ? "Portal" : "Admin"}
+                        </span>
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {r.source === "employee" && r.status === "pending" && (
+                            <>
+                              <button onClick={() => approveRequest(r)}
+                                className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/20 rounded-lg transition-colors"
+                                title="Approve">
+                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                              </button>
+                              <button onClick={() => rejectRequest(r)}
+                                className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/20 rounded-lg transition-colors"
+                                title="Reject">
+                                <XCircle className="w-3.5 h-3.5 text-rose-500" />
+                              </button>
+                            </>
+                          )}
                           <button onClick={() => openEdit(r)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                          <button onClick={() => deleteRecord(r.id)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-rose-500" /></button>
+                          <button onClick={() => deleteRecord(r)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-rose-500" /></button>
                         </div>
                       </td>
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No leave records found.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">No leave records found.</td></tr>
                   )}
                 </tbody>
               </table>
