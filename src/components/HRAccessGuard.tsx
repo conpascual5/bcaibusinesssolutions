@@ -20,6 +20,8 @@ export default function HRAccessGuard({ children }: { children: ReactNode }) {
   }
 
   if (!user) return <Navigate to="/auth" replace />;
+  // Admins always have HR access
+  if (user.isAdmin) return <>{children}</>;
   if (!hasHRAccess) return <Navigate to="/app" replace />;
   return <>{children}</>;
 }
