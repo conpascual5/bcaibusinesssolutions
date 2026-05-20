@@ -14,6 +14,7 @@ import {
   CheckCircle2,
   Link2, Share2, TrendingUp,
   Calendar,
+  Play, BookOpen,
 } from 'lucide-react';
 import PortfolioGallery from '@/components/PortfolioGallery';
 import AnimatedSection from '@/components/AnimatedSection';
@@ -861,6 +862,39 @@ export default function Landing() {
                     </div>
                   </details>
                 ))}
+              </div>
+            </div>
+          </AnimatedSection>
+
+          {/* Learn More — Tutorials & Knowledge Base */}
+          <AnimatedSection delay={580} direction="up">
+            <div className="mt-6 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-3xl border border-indigo-200 p-8">
+              <h3 className="text-xl font-extrabold text-gray-900 text-center mb-6">Learn More About Our Services</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-2xl mx-auto">
+                <Link
+                  to="/tutorial"
+                  className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-center"
+                >
+                  <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:scale-110 transition-transform">
+                    <Play className="w-7 h-7 text-white" />
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-1">Video Tutorials</h4>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Watch step-by-step walkthroughs of every tool — Sales Wizard, FB Ads Targeting, Invoice Generator, and more.
+                  </p>
+                </Link>
+                <Link
+                  to="/knowledge-base"
+                  className="group bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 text-center"
+                >
+                  <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md group-hover:scale-110 transition-transform">
+                    <BookOpen className="w-7 h-7 text-white" />
+                  </div>
+                  <h4 className="font-bold text-gray-900 mb-1">Knowledge Base</h4>
+                  <p className="text-sm text-gray-500 leading-relaxed">
+                    Detailed guides and documentation for every feature — AI tools, Business Management, HR Management, and more.
+                  </p>
+                </Link>
               </div>
             </div>
           </AnimatedSection>
