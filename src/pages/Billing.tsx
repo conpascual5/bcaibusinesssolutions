@@ -29,8 +29,7 @@ type Invoice = {
 };
 
 const PLAN_LABELS: Record<string, string> = {
-  pro: "Pro",
-  pro_plus: "Pro Plus",
+  pro: "Marketing Kit",
   vip: "VIP",
   gcash: "GCash Access",
   bms: "Business Management",
@@ -38,7 +37,6 @@ const PLAN_LABELS: Record<string, string> = {
 
 const PLAN_COLORS: Record<string, string> = {
   pro: "bg-amber-100 text-amber-700 border-amber-200",
-  pro_plus: "bg-rose-100 text-rose-700 border-rose-200",
   vip: "bg-purple-100 text-purple-700 border-purple-200",
   gcash: "bg-emerald-100 text-emerald-700 border-emerald-200",
   bms: "bg-indigo-100 text-indigo-700 border-indigo-200",

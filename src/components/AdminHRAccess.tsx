@@ -240,7 +240,6 @@ export default function AdminHRAccess() {
                     <td className="px-5 py-4 text-sm text-muted-foreground">{u.email || "—"}</td>
                     <td className="px-5 py-4 text-center">
                       <span className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
-                        u.plan === "pro_plus" ? "bg-rose-100 text-rose-700" :
                         u.plan === "pro" ? "bg-amber-100 text-amber-700" :
                         u.plan === "vip" ? "bg-purple-100 text-purple-700" :
                         "bg-gray-100 text-gray-600"

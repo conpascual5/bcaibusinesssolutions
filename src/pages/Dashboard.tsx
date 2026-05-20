@@ -67,16 +67,9 @@ export default function Dashboard() {
     pro: {
       bg: "from-amber-50 to-orange-50",
       text: "text-amber-800",
-      icon: Crown,
+      icon: Package,
       gradient: "from-amber-400 to-orange-500",
       badge: "bg-amber-100 text-amber-700 border-amber-200",
-    },
-    pro_plus: {
-      bg: "from-sky-50 to-blue-50",
-      text: "text-sky-800",
-      icon: Crown,
-      gradient: "from-sky-400 to-blue-500",
-      badge: "bg-sky-100 text-sky-700 border-sky-200",
     },
     default: {
       bg: "from-gray-50 to-slate-50",
@@ -167,7 +160,7 @@ export default function Dashboard() {
                 <PlanIcon className="w-5 h-5 text-white" />
               </div>
               <span className={`px-3 py-1 rounded-full text-xs font-bold border ${pc.badge}`}>
-                {plan === "pro_plus" ? "PRO+" : plan.toUpperCase()}
+                {plan === "vip" ? "VIP" : plan === "pro" ? "MARKETING KIT" : plan.toUpperCase()}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
@@ -275,7 +268,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         {[
           { icon: Wand2, label: "AI Tools", value: "6", desc: "Available tools", color: "text-indigo-600", bg: "bg-indigo-50" },
-          { icon: Users, label: "Plan", value: plan === "vip" ? "VIP" : plan === "pro" ? "Pro" : plan === "pro_plus" ? "Pro+" : "Free", desc: plan === "free" ? "Upgrade to unlock more" : "Active subscription", color: "text-amber-600", bg: "bg-amber-50" },
+          { icon: Users, label: "Plan", value: plan === "vip" ? "VIP" : plan === "pro" ? "Marketing Kit" : "Free", desc: plan === "free" ? "Upgrade to unlock more" : "Active subscription", color: "text-amber-600", bg: "bg-amber-50" },
           { icon: Gift, label: "Affiliate", value: affiliate ? "Active" : "Join Free", desc: affiliate ? `${affiliateStats.referrals} referrals` : "Earn 30% recurring", color: "text-purple-600", bg: "bg-purple-50" },
           { icon: Clock, label: "Status", value: "Active", desc: "Account in good standing", color: "text-emerald-600", bg: "bg-emerald-50" },
         ].map((stat, i) => (

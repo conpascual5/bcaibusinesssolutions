@@ -64,6 +64,7 @@ import {
   BadgeCheck,
   RefreshCw,
   Calendar,
+  Package,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -191,8 +192,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 )}
                 {usage?.plan === "pro" && (
                   <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-gradient-to-r from-amber-400 to-orange-500 text-white text-[9px] font-bold rounded-full">
-                    <Crown className="w-2 h-2" />
-                    PRO
+                    <Package className="w-2 h-2" />
+                    MK
                   </span>
                 )}
               </div>

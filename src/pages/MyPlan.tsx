@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/providers/auth';
-import { Crown, Star, Sparkles, Shield, CheckCircle, XCircle, BarChart3, RefreshCw } from 'lucide-react';
+import { Crown, Star, Sparkles, Shield, CheckCircle, XCircle, BarChart3, RefreshCw, Package } from 'lucide-react';
 
 const PLAN_INFO = {
   free: {
@@ -11,18 +11,11 @@ const PLAN_INFO = {
     border: 'border-gray-200 dark:border-gray-700',
   },
   pro: {
-    label: 'Pro',
-    icon: Crown,
+    label: 'Marketing Kit',
+    icon: Package,
     color: 'text-amber-500',
     bg: 'bg-amber-50 dark:bg-amber-900/20',
     border: 'border-amber-200 dark:border-amber-800',
-  },
-  pro_plus: {
-    label: 'Pro Plus',
-    icon: Crown,
-    color: 'text-rose-500',
-    bg: 'bg-rose-50 dark:bg-rose-900/20',
-    border: 'border-rose-200 dark:border-rose-800',
   },
   vip: {
     label: 'VIP',
@@ -111,9 +104,7 @@ export default function MyPlan() {
               {plan === 'vip'
                 ? 'VIP access — 100 generations per month across all tools'
                 : plan === 'pro'
-                ? 'Pro access — 500 generations per month across all tools'
-                : plan === 'pro_plus'
-                ? 'Pro Plus access — 500 generations per month across all tools'
+                ? 'Marketing Kit — 500 generations per month across all tools'
                 : 'Free trial — 3 total generations (one-time)'}
             </p>
           </div>
@@ -140,7 +131,7 @@ export default function MyPlan() {
             const isPro = usage?.isPro ?? plan === 'pro';
             const isVip = usage?.isVip ?? plan === 'vip';
             const used = usage?.used ?? 0;
-            const limit = usage?.limit ?? (plan === 'pro' || plan === 'pro_plus' ? 500 : plan === 'vip' ? 100 : 3);
+            const limit = usage?.limit ?? (plan === 'pro' ? 500 : plan === 'vip' ? 100 : 3);
             const remaining = usage?.remaining ?? Math.max(0, limit - used);
             const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
 
@@ -148,9 +139,9 @@ export default function MyPlan() {
               <div key={feat.key} className="bg-card rounded-xl border border-border p-4 card-shadow-sm">
                 <div className="flex items-center justify-between mb-2.5">
                   <span className="text-sm font-medium text-foreground">{feat.label}</span>
-                  {isPro || plan === 'pro_plus' ? (
+                  {isPro ? (
                     <span className="text-xs font-semibold text-amber-600 flex items-center gap-1">
-                      <Crown className="w-3.5 h-3.5" />
+                      <Package className="w-3.5 h-3.5" />
                       {remaining} / 500 remaining
                     </span>
                   ) : isVip ? (

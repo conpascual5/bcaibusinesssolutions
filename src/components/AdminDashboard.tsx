@@ -10,6 +10,7 @@ import {
   TrendingUp,
   Activity,
   RefreshCw,
+  Package,
 } from "lucide-react";
 
 type DashboardStats = {
@@ -18,7 +19,6 @@ type DashboardStats = {
   inactive: number;
   free: number;
   pro: number;
-  pro_plus: number;
   vip: number;
 };
 
@@ -51,10 +51,9 @@ export default function AdminDashboard() {
       const inactive = rows.filter((r) => !r.is_active).length;
       const free = rows.filter((r) => r.plan === "free").length;
       const pro = rows.filter((r) => r.plan === "pro").length;
-      const pro_plus = rows.filter((r) => r.plan === "pro_plus").length;
       const vip = rows.filter((r) => r.plan === "vip").length;
 
-      setStats({ total, active, inactive, free, pro, pro_plus, vip });
+      setStats({ total, active, inactive, free, pro, vip });
     } catch (err: any) {
       setError(err?.message || "Failed to load stats");
     } finally {
@@ -130,20 +129,12 @@ export default function AdminDashboard() {
       border: "border-slate-200",
     },
     {
-      label: "Pro",
+      label: "Marketing Kit",
       value: stats.pro,
-      icon: Crown,
+      icon: Package,
       color: "text-amber-600",
       bg: "bg-amber-50",
       border: "border-amber-100",
-    },
-    {
-      label: "Pro Plus",
-      value: stats.pro_plus,
-      icon: TrendingUp,
-      color: "text-rose-600",
-      bg: "bg-rose-50",
-      border: "border-rose-100",
     },
     {
       label: "VIP",
@@ -177,7 +168,7 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {cards.map((card) => {
           const Icon = card.icon;
           return (
@@ -208,14 +199,7 @@ export default function AdminDashboard() {
             <div
               className="bg-amber-400 transition-all"
               style={{ width: `${(stats.pro / stats.total) * 100}%` }}
-              title={`Pro: ${stats.pro}`}
-            />
-          )}
-          {stats.pro_plus > 0 && (
-            <div
-              className="bg-rose-400 transition-all"
-              style={{ width: `${(stats.pro_plus / stats.total) * 100}%` }}
-              title={`Pro Plus: ${stats.pro_plus}`}
+              title={`Marketing Kit: ${stats.pro}`}
             />
           )}
           {stats.vip > 0 && (
@@ -229,8 +213,7 @@ export default function AdminDashboard() {
         <div className="flex flex-wrap gap-4 mt-3">
           {[
             { label: "Free", count: stats.free, color: "bg-slate-400" },
-            { label: "Pro", count: stats.pro, color: "bg-amber-400" },
-            { label: "Pro Plus", count: stats.pro_plus, color: "bg-rose-400" },
+            { label: "Marketing Kit", count: stats.pro, color: "bg-amber-400" },
             { label: "VIP", count: stats.vip, color: "bg-purple-400" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-xs text-muted-foreground">

@@ -1,4 +1,4 @@
-import { Sparkles, Crown, Star, X } from "lucide-react";
+import { Package, Sparkles, Star, X } from "lucide-react";
 
 type UpgradePromptProps = {
   feature: string;
@@ -66,10 +66,10 @@ export default function UpgradePrompt({ feature, used, limit, plan, isVip, onClo
 
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2.5 bg-gradient-to-br from-amber-400 to-orange-500 rounded-xl shadow-md">
-          <Crown className="w-5 h-5 text-white" />
+          <Package className="w-5 h-5 text-white" />
         </div>
         <div>
-          <h3 className="font-bold text-gray-900">Upgrade to Pro</h3>
+          <h3 className="font-bold text-gray-900">Upgrade to Marketing Kit</h3>
           <p className="text-xs text-gray-500">Unlock unlimited access</p>
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function UpgradePrompt({ feature, used, limit, plan, isVip, onClo
       </div>
 
       <p className="text-sm text-gray-600 mb-4">
-        You've reached the free limit for <strong>{featureName}</strong>. Get <strong>unlimited</strong> access to all tools for just <strong>₱499/month</strong>.
+        You've reached the free limit for <strong>{featureName}</strong>. Get <strong>unlimited</strong> access to all tools for just <strong>₱299/month</strong>.
       </p>
 
       <div className="space-y-2 mb-4">
@@ -106,12 +106,12 @@ export default function UpgradePrompt({ feature, used, limit, plan, isVip, onClo
       </div>
 
       <button className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-xl font-bold text-sm hover:from-amber-600 hover:to-orange-700 transition-all shadow-lg shadow-amber-200 flex items-center justify-center gap-2">
-        <Crown className="w-4 h-4" />
-        Upgrade to Pro — ₱499/mo
+        <Package className="w-4 h-4" />
+        Upgrade to Marketing Kit — ₱299/mo
       </button>
 
       <p className="text-xs text-gray-400 text-center mt-3">
-        Or save 17% with annual plan at ₱4,999/year
+        Or save 17% with annual plan at ₱2,999/year
       </p>
     </div>
   );

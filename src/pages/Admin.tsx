@@ -1355,8 +1355,7 @@ function AdminAssetManager() {
 
 const PLAN_OPTIONS = [
   { value: "free", label: "Free", icon: Sparkles },
-  { value: "pro", label: "Pro", icon: Crown },
-  { value: "pro_plus", label: "Pro Plus", icon: Crown },
+  { value: "pro", label: "Marketing Kit", icon: Package },
   { value: "vip", label: "VIP", icon: Star },
 ] as const;
 
@@ -1458,14 +1457,13 @@ export default function Admin() {
     return (plan: string) => {
       if (plan === "vip") return "bg-purple-50 text-purple-700 border-purple-200";
       if (plan === "pro") return "bg-amber-50 text-amber-700 border-amber-200";
-      if (plan === "pro_plus") return "bg-rose-50 text-rose-700 border-rose-200";
       return "bg-slate-100 text-slate-700 border-slate-200";
     };
   }, []);
 
   const totalUsers = users.length;
 
-  const setPlan = async (userId: string, plan: "free" | "pro" | "pro_plus" | "vip") => {
+  const setPlan = async (userId: string, plan: "free" | "pro" | "vip") => {
     const { data: current } = await supabase.from("profiles").select("plan").eq("id", userId).maybeSingle();
     const previousPlan = (current as any)?.plan ?? "free";
     await supabase
@@ -1483,9 +1481,9 @@ export default function Admin() {
     } as any);
 
     // Create subscription + invoice for paid plans
-    const paidPlans = ["pro", "pro_plus", "vip"];
+    const paidPlans = ["pro", "vip"];
     if (paidPlans.includes(plan)) {
-      const planPrices: Record<string, number> = { pro: 499, pro_plus: 1499, vip: 1999 };
+      const planPrices: Record<string, number> = { pro: 299, vip: 1999 };
       const price = planPrices[plan] || 0;
       await supabase.rpc("create_subscription_with_invoice", {
         p_user_id: userId,
@@ -1496,7 +1494,7 @@ export default function Admin() {
 
     // Auto-create affiliate commission if this is a paid plan upgrade
     if (paidPlans.includes(plan) && previousPlan === "free") {
-      const planPrices: Record<string, number> = { pro: 499, pro_plus: 1499, vip: 1999 };
+      const planPrices: Record<string, number> = { pro: 299, vip: 1999 };
       const price = planPrices[plan] || 0;
       const commissionAmount = Math.round(price * 0.3 * 100) / 100; // 30%
 
