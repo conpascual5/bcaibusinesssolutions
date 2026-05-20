@@ -8,7 +8,8 @@ import {
   Umbrella, Send, Building2, Sun, Moon,
   AlertCircle, History, Timer, Coffee,
   Wallet, ChevronRight, X,
-  Sparkles, Heart, Star
+  Sparkles, Heart, Star, Smartphone,
+  CheckCircle2, Fingerprint
 } from "lucide-react";
 
 type Employee = {
@@ -445,7 +446,7 @@ export default function EmployeePortal() {
   const hasClockedToday = !!todayLog?.time_in && !!todayLog?.time_out;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50/30 to-sky-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50/30 to-sky-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950 pb-20">
       {/* Top Bar */}
       <header className="sticky top-0 z-40 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md border-b border-border">
         <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
@@ -478,36 +479,62 @@ export default function EmployeePortal() {
         {/* Weekly Schedule */}
         <WeeklySchedule schedule={weekSchedule} />
 
-        {/* Clock In/Out Card */}
-        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-border shadow-lg p-6">
-          <div className="flex flex-col sm:flex-row items-center gap-6">
-            <div className={`w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 ${
-              isClockedIn
-                ? "bg-emerald-100 dark:bg-emerald-900/30 shadow-lg shadow-emerald-500/20 ring-4 ring-emerald-200 dark:ring-emerald-800"
-                : isRestDay
-                  ? "bg-amber-100 dark:bg-amber-900/20 shadow-sm ring-4 ring-amber-200 dark:ring-amber-800"
-                  : hasClockedToday
-                    ? "bg-indigo-100 dark:bg-indigo-900/20 shadow-sm ring-4 ring-indigo-200 dark:ring-indigo-800"
-                    : "bg-muted shadow-sm"
-            }`}>
-              {isRestDay ? (
-                <Heart className="w-10 h-10 text-amber-500" />
-              ) : isClockedIn ? (
-                <Sun className="w-10 h-10 text-emerald-500" />
-              ) : (
-                <Clock className="w-10 h-10 text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex-1 text-center sm:text-left">
-              <h2 className="text-xl font-bold">
-                {isRestDay
-                  ? "Enjoy your rest day! 🎉"
-                  : isClockedIn
-                    ? "You're clocked in ✨"
+        {/* Clock In/Out Card — Mobile-first design */}
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-border shadow-lg overflow-hidden">
+          {/* Status banner */}
+          <div className={`px-5 py-3 text-center text-xs font-bold uppercase tracking-wider ${
+            isRestDay
+              ? "bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-b border-amber-200 dark:border-amber-800"
+              : isClockedIn
+                ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 border-b border-emerald-200 dark:border-emerald-800"
+                : hasClockedToday
+                  ? "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 border-b border-indigo-200 dark:border-indigo-800"
+                  : "bg-muted/30 text-muted-foreground border-b border-border"
+          }`}>
+            {isRestDay
+              ? "🎉 Rest Day — Enjoy your day off!"
+              : isClockedIn
+                ? "✨ You are currently on shift"
+                : hasClockedToday
+                  ? "✅ Shift completed for today"
+                  : "⏰ Ready to start your shift"}
+          </div>
+
+          <div className="p-6">
+            {/* Big clock icon — centered, prominent */}
+            <div className="flex justify-center mb-5">
+              <div className={`w-28 h-28 rounded-full flex items-center justify-center transition-all duration-500 ${
+                isClockedIn
+                  ? "bg-emerald-100 dark:bg-emerald-900/30 shadow-lg shadow-emerald-500/20 ring-4 ring-emerald-200 dark:ring-emerald-800 scale-105"
+                  : isRestDay
+                    ? "bg-amber-100 dark:bg-amber-900/20 shadow-sm ring-4 ring-amber-200 dark:ring-amber-800"
                     : hasClockedToday
-                      ? "All done for today! 🎯"
-                      : "Ready to work? 🌟"}
-              </h2>
+                      ? "bg-indigo-100 dark:bg-indigo-900/20 shadow-sm ring-4 ring-indigo-200 dark:ring-indigo-800"
+                      : "bg-muted shadow-sm"
+              }`}>
+                {isRestDay ? (
+                  <Heart className="w-12 h-12 text-amber-500" />
+                ) : isClockedIn ? (
+                  <Sun className="w-12 h-12 text-emerald-500" />
+                ) : hasClockedToday ? (
+                  <CheckCircle2 className="w-12 h-12 text-indigo-500" />
+                ) : (
+                  <Clock className="w-12 h-12 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+
+            {/* Time display — large, readable */}
+            <div className="text-center mb-5">
+              <p className="text-3xl font-extrabold">
+                {isRestDay
+                  ? "Rest Day"
+                  : isClockedIn
+                    ? todayLog?.time_in?.slice(0, 5) || "—"
+                    : hasClockedToday
+                      ? `${todayLog?.time_out?.slice(0, 5) || "—"}`
+                      : "— : —"}
+              </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {isRestDay
                   ? "Take a break, you deserve it!"
@@ -515,83 +542,117 @@ export default function EmployeePortal() {
                     ? `Clocked in at ${todayLog?.time_in?.slice(0, 5)}`
                     : hasClockedToday
                       ? `Completed at ${todayLog?.time_out?.slice(0, 5)} — ${todayLog?.hours_worked}h worked`
-                      : todayLog?.time_out
-                        ? `Last clock out: ${todayLog.time_out.slice(0, 5)}`
-                        : "Tap the button to clock in"}
+                      : "Tap the button below to clock in"}
               </p>
+            </div>
 
-              {todaySched && !isRestDay && todaySched.start_time && (
-                <div className="flex flex-wrap items-center gap-2 mt-2 justify-center sm:justify-start">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-lg text-xs font-medium">
-                    <Timer className="w-3 h-3" />
-                    {todaySched.shift_name ? `${todaySched.shift_name}: ` : ""}
-                    {todaySched.start_time.slice(0, 5)} – {todaySched.end_time?.slice(0, 5)}
+            {/* Schedule info chips */}
+            {todaySched && !isRestDay && todaySched.start_time && (
+              <div className="flex flex-wrap items-center justify-center gap-2 mb-5">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 rounded-full text-xs font-medium">
+                  <Timer className="w-3.5 h-3.5" />
+                  {todaySched.shift_name ? `${todaySched.shift_name}: ` : ""}
+                  {todaySched.start_time.slice(0, 5)} – {todaySched.end_time?.slice(0, 5)}
+                </span>
+                {todaySched.break_start && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-full text-xs font-medium">
+                    <Coffee className="w-3.5 h-3.5" />
+                    Break {todaySched.break_start.slice(0, 5)}–{todaySched.break_end?.slice(0, 5)}
                   </span>
-                  {todaySched.break_start && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 rounded-lg text-xs font-medium">
-                      <Coffee className="w-3 h-3" />
-                      Break {todaySched.break_start.slice(0, 5)}–{todaySched.break_end?.slice(0, 5)}
-                    </span>
-                  )}
-                  <span className="text-[10px] text-muted-foreground">
-                    Grace: {todaySched.grace_period_minutes} min
-                  </span>
-                </div>
-              )}
+                )}
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 dark:bg-sky-900/20 text-sky-700 dark:text-sky-400 rounded-full text-xs font-medium">
+                  <Clock className="w-3.5 h-3.5" />
+                  Grace: {todaySched.grace_period_minutes} min
+                </span>
+              </div>
+            )}
 
-              {clockMessage && (
-                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1.5 font-medium bg-purple-50 dark:bg-purple-900/20 inline-block px-3 py-1 rounded-full">
+            {/* Clock message */}
+            {clockMessage && (
+              <div className="text-center mb-5">
+                <p className="text-xs text-purple-600 dark:text-purple-400 font-medium bg-purple-50 dark:bg-purple-900/20 inline-block px-4 py-1.5 rounded-full">
                   {clockMessage}
                 </p>
-              )}
-            </div>
+              </div>
+            )}
+
+            {/* Big clock in/out button — large tap target for mobile */}
             <button
               onClick={handleClockIn}
               disabled={clocking || isRestDay || hasClockedToday}
-              className={`flex items-center gap-2 px-8 py-3 rounded-xl text-sm font-bold transition-all shadow-lg ${
+              className={`w-full flex items-center justify-center gap-3 py-5 rounded-2xl text-base font-bold transition-all shadow-lg active:scale-[0.98] ${
                 isClockedIn
-                  ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/20"
-                  : "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-purple-500/20"
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  ? "bg-rose-500 hover:bg-rose-600 text-white shadow-rose-500/30"
+                  : "bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white shadow-purple-500/30"
+              } disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100`}
             >
               {clocking ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
+                <Loader2 className="w-6 h-6 animate-spin" />
               ) : isClockedIn ? (
-                <><Moon className="w-5 h-5" /> Clock Out</>
+                <>
+                  <Moon className="w-6 h-6" />
+                  <span className="text-lg">Clock Out</span>
+                </>
               ) : (
-                <><Sun className="w-5 h-5" /> Clock In</>
+                <>
+                  <Sun className="w-6 h-6" />
+                  <span className="text-lg">Clock In</span>
+                </>
               )}
             </button>
+
+            {/* Mobile-friendly hint */}
+            <p className="text-center text-[10px] text-muted-foreground mt-3 flex items-center justify-center gap-1">
+              <Smartphone className="w-3 h-3" />
+              Works on any device — just tap to clock in/out
+            </p>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex bg-white dark:bg-slate-900 rounded-xl p-1 border border-border shadow-sm">
-          <button
-            onClick={() => setActiveTab("attendance")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "attendance" ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Clock className="w-4 h-4" /> Attendance
-          </button>
-          <button
-            onClick={() => setActiveTab("leave")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "leave" ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Umbrella className="w-4 h-4" /> Leave
-          </button>
-          <button
-            onClick={() => setActiveTab("payslips")}
-            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === "payslips" ? "bg-gradient-to-r from-purple-500 to-pink-600 text-white shadow-md" : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <Wallet className="w-4 h-4" /> Payslips
-          </button>
-        </div>
+        {/* Bottom Navigation Bar — mobile-friendly */}
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 dark:bg-slate-950/90 backdrop-blur-xl border-t border-border shadow-2xl">
+          <div className="max-w-4xl mx-auto flex items-center justify-around px-2 py-1">
+            <button
+              onClick={() => setActiveTab("attendance")}
+              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-[10px] font-medium transition-all min-w-0 ${
+                activeTab === "attendance" ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div className={`p-1.5 rounded-lg transition-all ${
+                activeTab === "attendance" ? "bg-purple-100 dark:bg-purple-900/30" : ""
+              }`}>
+                <Clock className={`w-5 h-5 ${activeTab === "attendance" ? "text-purple-600 dark:text-purple-400" : ""}`} />
+              </div>
+              <span className="font-semibold">Attendance</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("leave")}
+              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-[10px] font-medium transition-all min-w-0 ${
+                activeTab === "leave" ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div className={`p-1.5 rounded-lg transition-all ${
+                activeTab === "leave" ? "bg-purple-100 dark:bg-purple-900/30" : ""
+              }`}>
+                <Umbrella className={`w-5 h-5 ${activeTab === "leave" ? "text-purple-600 dark:text-purple-400" : ""}`} />
+              </div>
+              <span className="font-semibold">Leave</span>
+            </button>
+            <button
+              onClick={() => setActiveTab("payslips")}
+              className={`flex flex-col items-center gap-0.5 px-4 py-2 rounded-xl text-[10px] font-medium transition-all min-w-0 ${
+                activeTab === "payslips" ? "text-purple-600 dark:text-purple-400" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <div className={`p-1.5 rounded-lg transition-all ${
+                activeTab === "payslips" ? "bg-purple-100 dark:bg-purple-900/30" : ""
+              }`}>
+                <Wallet className={`w-5 h-5 ${activeTab === "payslips" ? "text-purple-600 dark:text-purple-400" : ""}`} />
+              </div>
+              <span className="font-semibold">Payslips</span>
+            </button>
+          </div>
+        </nav>
 
         {/* Attendance Tab */}
         {activeTab === "attendance" && (

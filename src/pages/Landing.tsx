@@ -249,7 +249,7 @@ export default function Landing() {
               { icon: <ClipboardList className="w-5 h-5" />, color: "from-amber-500 to-orange-400", title: "Attendance", desc: "Track daily attendance with time-in/time-out, auto-computed tardiness vs schedule, overtime, and hours worked." },
               { icon: <FileText className="w-5 h-5" />, color: "from-rose-500 to-pink-400", title: "Leave Management", desc: "Manage leave types (sick, vacation, emergency), approve/reject requests, and track balances." },
               { icon: <Calendar className="w-5 h-5" />, color: "from-purple-500 to-violet-400", title: "Shift Roster", desc: "Create shift templates with break management, grace period. Assign to employees — auto-syncs to attendance & payroll." },
-              { icon: <Smartphone className="w-5 h-5" />, color: "from-indigo-500 to-purple-500", title: "Employee Portal", desc: "Self-service portal for employees to clock in/out, view schedules, track attendance, and submit leave requests." },
+              { icon: <Smartphone className="w-5 h-5" />, color: "from-indigo-500 to-purple-500", title: "Employee Portal", desc: "Mobile-friendly self-service portal for employees to clock in/out from any phone, view schedules, track attendance, and submit leave requests." },
               { icon: <Target className="w-5 h-5" />, color: "from-blue-500 to-indigo-400", title: "Performance", desc: "Track employee performance reviews, ratings, and feedback over time." },
               { icon: <DollarSign className="w-5 h-5" />, color: "from-emerald-500 to-teal-400", title: "Payroll Engine", desc: "Generate automated payslips with attendance-based computation, deductions, and net pay breakdown." },
               { icon: <Crown className="w-5 h-5" />, color: "from-amber-500 to-yellow-400", title: "Bonuses", desc: "Manage employee bonuses with types, amounts, and payout scheduling." },
@@ -750,10 +750,11 @@ export default function Landing() {
                   <ul className="space-y-3 mb-6">
                     {[
                       'Employee profiles & management',
+                      'Live attendance monitoring (real-time)',
                       'Attendance tracking & corrections',
                       'Leave management with types',
                       'Shift roster & scheduling',
-                      'Employee Portal (clock in/out, leave requests)',
+                      'Mobile-friendly Employee Portal (clock in/out from any phone)',
                       'Payroll engine with payslip generator',
                     ].map((f, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
