@@ -76,6 +76,8 @@ import StandaloneHRLeave from './pages/StandaloneHRLeave'
 import StandaloneHRShiftRoster from './pages/StandaloneHRShiftRoster'
 import StandaloneHRPerformances from './pages/StandaloneHRPerformances'
 import StandaloneHRPayroll from './pages/StandaloneHRPayroll'
+import StandaloneHROrgChart from './pages/StandaloneHROrgChart'
+import StandaloneHRBonuses from './pages/StandaloneHRBonuses'
 import StandaloneSalesWizard from './pages/StandaloneSalesWizard'
 import StandaloneSalesReport from './pages/StandaloneSalesReport'
 import StandaloneFBAdsTargeting from './pages/StandaloneFBAdsTargeting'
@@ -171,7 +173,7 @@ export default function App() {
         <Route path="/app/hr" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/dashboard" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/employees" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHREmployees /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
-        <Route path="/app/hr/org-chart" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/org-chart" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHROrgChart /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/company" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRCompany /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/offices" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHROffices /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/departments" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDepartments /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
@@ -182,7 +184,7 @@ export default function App() {
         <Route path="/app/hr/shifts" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRShiftRoster /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/performances" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRPerformances /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
         <Route path="/app/hr/payroll" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRPayroll /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
-        <Route path="/app/hr/bonuses" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRDashboard /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
+        <Route path="/app/hr/bonuses" element={<ProtectedRoute><HRAccessProvider><HRAccessGuard><StandaloneHRBonuses /></HRAccessGuard></HRAccessProvider></ProtectedRoute>} />
 
         {/* Standalone App Modules (assignable to any user) */}
         <Route path="/app/modules" element={<ProtectedRoute><ModuleAccessProvider><StandaloneSalesWizard /></ModuleAccessProvider></ProtectedRoute>} />
