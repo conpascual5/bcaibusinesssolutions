@@ -1,13 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useAuth } from "@/providers/auth";
 import { supabase } from "@/integrations/supabase/client";
 import WeeklySchedule from "@/components/WeeklySchedule";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 import {
   Clock, LogOut, Loader2, Calendar,
   Umbrella, Send, Building2, Sun, Moon,
   AlertCircle, History, Timer, Coffee,
-  Wallet, ChevronRight, X,
+  Wallet, ChevronRight, X, Download, Printer,
   Sparkles, Heart, Star, Smartphone,
   CheckCircle2, Fingerprint
 } from "lucide-react";
@@ -120,6 +122,59 @@ export default function EmployeePortal() {
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
   const [viewingPayslip, setViewingPayslip] = useState<Payslip | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
+
+  const downloadPayslipPDF = async (ps: Payslip) => {
+    setViewingPayslip(ps);
+    setExporting(true);
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      const element = printRef.current;
+      if (!element) { setExporting(false); return; }
+      const canvas = await html2canvas(element, {
+        scale: 2, backgroundColor: "#ffffff", logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      const period = payrollPeriods.find(p => p.id === ps.payroll_period_id);
+      const name = (period?.name || "payslip").replace(/\s+/g, "_");
+      pdf.save(`payslip_${name}.pdf`);
+    } catch (err) {
+      console.error("[EmployeePortal] PDF export error", err);
+    }
+    setExporting(false);
+  };
+
+  const printPayslip = async (ps: Payslip) => {
+    setViewingPayslip(ps);
+    await new Promise(r => setTimeout(r, 150));
+    try {
+      const element = printRef.current;
+      if (!element) return;
+      const canvas = await html2canvas(element, {
+        scale: 2, backgroundColor: "#ffffff", logging: false,
+      });
+      const imgData = canvas.toDataURL("image/png");
+      const win = window.open("", "_blank");
+      if (!win) return;
+      win.document.write(`
+        <html>
+          <head><title>Payslip</title></head>
+          <body style="margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;">
+            <img src="${imgData}" style="max-width:100%;height:auto;" />
+          </body>
+        </html>
+      `);
+      win.document.close();
+      win.onload = () => { win.print(); };
+    } catch (err) {
+      console.error("[EmployeePortal] Print error", err);
+    }
+  };
 
   const today = new Date();
   const todayDayOfWeek = today.getDay();
@@ -755,7 +810,7 @@ export default function EmployeePortal() {
                             </p>
                           </div>
                         </div>
-                        <div className="text-right flex items-center gap-2">
+                        <div className="text-right flex items-center gap-1">
                           <div>
                             <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
                               ₱{Number(ps.net_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
@@ -764,7 +819,23 @@ export default function EmployeePortal() {
                               {ps.status === "paid" ? "Paid" : ps.status}
                             </p>
                           </div>
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          <div className="flex items-center gap-0.5 ml-1">
+                            <span
+                              onClick={(e) => { e.stopPropagation(); downloadPayslipPDF(ps); }}
+                              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-indigo-600 transition-colors cursor-pointer"
+                              title="Download PDF"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                            </span>
+                            <span
+                              onClick={(e) => { e.stopPropagation(); printPayslip(ps); }}
+                              className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                              title="Print"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                            </span>
+                            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                          </div>
                         </div>
                       </button>
                     );
@@ -792,118 +863,137 @@ export default function EmployeePortal() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setViewingPayslip(null)}
-                  className="p-2 hover:bg-muted rounded-xl transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Period Info */}
-              <div className="px-5 py-4 bg-muted/30 border-b border-border">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <span className="text-xs text-muted-foreground">Period Start</span>
-                    <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.start_date || "—"}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Period End</span>
-                    <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.end_date || "—"}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Pay Date</span>
-                    <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.pay_date || "—"}</p>
-                  </div>
-                  <div>
-                    <span className="text-xs text-muted-foreground">Status</span>
-                    <p className="font-medium capitalize">{viewingPayslip.status}</p>
-                  </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => downloadPayslipPDF(viewingPayslip)}
+                    disabled={exporting}
+                    className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-indigo-600 disabled:opacity-50"
+                    title="Download PDF"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => printPayslip(viewingPayslip)}
+                    className="p-2 hover:bg-muted rounded-xl transition-colors text-muted-foreground hover:text-foreground"
+                    title="Print"
+                  >
+                    <Printer className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewingPayslip(null)}
+                    className="p-2 hover:bg-muted rounded-xl transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
 
-              {/* Earnings */}
-              <div className="px-5 py-4 border-b border-border">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Earnings</h4>
-                <div className="space-y-2.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Daily Rate</span>
-                    <span className="font-medium">₱{Number(viewingPayslip.daily_rate).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Days Worked</span>
-                    <span className="font-medium">{viewingPayslip.total_days_worked}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Hours Worked</span>
-                    <span className="font-medium">{viewingPayslip.total_hours_worked}h</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Leave Days</span>
-                    <span className="font-medium">{viewingPayslip.total_leave_days}</span>
-                  </div>
-                  {viewingPayslip.total_tardiness_minutes > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-amber-600 dark:text-amber-400">Tardiness</span>
-                      <span className="font-medium text-amber-600 dark:text-amber-400">{viewingPayslip.total_tardiness_minutes} min</span>
+              <div ref={printRef} className="bg-white dark:bg-slate-900">
+                {/* Period Info */}
+                <div className="px-5 py-4 bg-muted/30 border-b border-border">
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <span className="text-xs text-muted-foreground">Period Start</span>
+                      <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.start_date || "—"}</p>
                     </div>
-                  )}
-                  {viewingPayslip.total_absences > 0 && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-rose-600 dark:text-rose-400">Absences</span>
-                      <span className="font-medium text-rose-600 dark:text-rose-400">{viewingPayslip.total_absences} day(s)</span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Period End</span>
+                      <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.end_date || "—"}</p>
                     </div>
-                  )}
-                  <div className="flex justify-between text-sm pt-2 border-t border-border">
-                    <span className="font-semibold">Gross Pay</span>
-                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                      ₱{Number(viewingPayslip.gross_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                    </span>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Pay Date</span>
+                      <p className="font-medium">{payrollPeriods.find(p => p.id === viewingPayslip.payroll_period_id)?.pay_date || "—"}</p>
+                    </div>
+                    <div>
+                      <span className="text-xs text-muted-foreground">Status</span>
+                      <p className="font-medium capitalize">{viewingPayslip.status}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Deductions */}
-              <div className="px-5 py-4 border-b border-border">
-                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Deductions</h4>
-                {viewingPayslip.deductions_breakdown && viewingPayslip.deductions_breakdown.length > 0 ? (
+                {/* Earnings */}
+                <div className="px-5 py-4 border-b border-border">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Earnings</h4>
                   <div className="space-y-2.5">
-                    {viewingPayslip.deductions_breakdown.map((d: any, i: number) => (
-                      <div key={i} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">{d.name || d.label || `Deduction ${i + 1}`}</span>
-                        <span className="font-medium text-rose-600 dark:text-rose-400">
-                          -₱{Number(d.amount).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                        </span>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Daily Rate</span>
+                      <span className="font-medium">₱{Number(viewingPayslip.daily_rate).toLocaleString("en-PH", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Days Worked</span>
+                      <span className="font-medium">{viewingPayslip.total_days_worked}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Hours Worked</span>
+                      <span className="font-medium">{viewingPayslip.total_hours_worked}h</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Leave Days</span>
+                      <span className="font-medium">{viewingPayslip.total_leave_days}</span>
+                    </div>
+                    {viewingPayslip.total_tardiness_minutes > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-amber-600 dark:text-amber-400">Tardiness</span>
+                        <span className="font-medium text-amber-600 dark:text-amber-400">{viewingPayslip.total_tardiness_minutes} min</span>
                       </div>
-                    ))}
+                    )}
+                    {viewingPayslip.total_absences > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-rose-600 dark:text-rose-400">Absences</span>
+                        <span className="font-medium text-rose-600 dark:text-rose-400">{viewingPayslip.total_absences} day(s)</span>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm pt-2 border-t border-border">
-                      <span className="font-semibold">Total Deductions</span>
-                      <span className="font-bold text-rose-600 dark:text-rose-400">
-                        -₱{Number(viewingPayslip.total_deductions).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                      <span className="font-semibold">Gross Pay</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        ₱{Number(viewingPayslip.gross_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">No deductions</p>
+                </div>
+
+                {/* Deductions */}
+                <div className="px-5 py-4 border-b border-border">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Deductions</h4>
+                  {viewingPayslip.deductions_breakdown && viewingPayslip.deductions_breakdown.length > 0 ? (
+                    <div className="space-y-2.5">
+                      {viewingPayslip.deductions_breakdown.map((d: any, i: number) => (
+                        <div key={i} className="flex justify-between text-sm">
+                          <span className="text-muted-foreground">{d.name || d.label || `Deduction ${i + 1}`}</span>
+                          <span className="font-medium text-rose-600 dark:text-rose-400">
+                            -₱{Number(d.amount).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                      ))}
+                      <div className="flex justify-between text-sm pt-2 border-t border-border">
+                        <span className="font-semibold">Total Deductions</span>
+                        <span className="font-bold text-rose-600 dark:text-rose-400">
+                          -₱{Number(viewingPayslip.total_deductions).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No deductions</p>
+                  )}
+                </div>
+
+                {/* Net Pay */}
+                <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-bold">Net Pay</span>
+                    <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
+                      ₱{Number(viewingPayslip.net_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {viewingPayslip.notes && (
+                  <div className="px-5 py-3 border-t border-border">
+                    <p className="text-xs text-muted-foreground italic">{viewingPayslip.notes}</p>
+                  </div>
                 )}
               </div>
-
-              {/* Net Pay */}
-              <div className="px-5 py-4 bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/30 dark:to-teal-950/30">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-bold">Net Pay</span>
-                  <span className="text-xl font-bold text-emerald-600 dark:text-emerald-400">
-                    ₱{Number(viewingPayslip.net_pay).toLocaleString("en-PH", { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
-
-              {/* Notes */}
-              {viewingPayslip.notes && (
-                <div className="px-5 py-3 border-t border-border">
-                  <p className="text-xs text-muted-foreground italic">{viewingPayslip.notes}</p>
-                </div>
-              )}
 
               {/* Close button */}
               <div className="px-5 py-3 border-t border-border">
