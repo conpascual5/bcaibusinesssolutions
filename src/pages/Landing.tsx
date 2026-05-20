@@ -181,7 +181,7 @@ export default function Landing() {
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">8 Powerful Tools</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
                 <strong>Sales Report</strong> and <strong>Invoice Generator</strong> are <span className="text-emerald-600 font-bold">free and unlimited</span> for all users.
-                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> and <strong>HR Management System</strong> are available as standalone add-ons or included in paid plans. <strong>Pro (1 BMS user)</strong>, <strong>Pro Plus (3 BMS users + HR included)</strong>, <strong>VIP (5 BMS users + HR included)</strong>.
+                The other 4 AI tools come with <strong>3 free trial generations</strong> on the Free plan. <strong>Business Management System</strong> and <strong>HR Management System</strong> are available as standalone add-ons.
               </p>
             </div>
           </AnimatedSection>
@@ -224,7 +224,7 @@ export default function Landing() {
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business &amp; HR Management Systems</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
                 Two powerful suites to run your entire business. <strong>Business Management System</strong> covers products, inventory, sales, expenses, and more. <strong>HR Management System</strong> handles employees, attendance, leave, shift roster, payroll, employee portal, and more.
-                Access is granted per user upon request. Each plan has a user limit: <strong>Pro (1 BMS user)</strong>, <strong>Pro Plus (3 BMS users + HR included)</strong>, <strong>VIP (5 BMS users + HR included)</strong>.
+                Both are available as standalone add-ons — request access from the admin.
               </p>
             </div>
           </AnimatedSection>
@@ -465,9 +465,7 @@ export default function Landing() {
               <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
                 <Crown className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-gray-700">
-                  <strong className="text-amber-700">Business Management System</strong> (standalone ₱999/mo) and <strong className="text-cyan-700">HR Management System</strong> (standalone ₱999/mo) are available as add-ons or included in paid plans.{' '}
-                  <strong>Pro (1 BMS user)</strong> · <strong>Pro Plus (3 BMS users + HR included)</strong> · <strong>VIP (5 BMS users + HR included)</strong>
-                  {' — '}
+                  <strong className="text-amber-700">Business Management System</strong> (₱999/mo) and <strong className="text-cyan-700">HR Management System</strong> (₱999/mo for up to 10 users) are available as standalone add-ons.{' '}
                   <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
                 </p>
               </div>
@@ -502,7 +500,6 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "3 trial generations for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Live chat support",
-                  "BMS Access: 0 users",
                   "Subject to fair usage policy",
                 ],
               },
@@ -520,7 +517,6 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "GCash Cash In/Out Tracker",
                   "Priority live chat support",
-                  "BMS Access: 1 user",
                   "Subject to fair usage policy",
                 ],
               },
@@ -537,9 +533,7 @@ export default function Landing() {
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
                   "GCash Cash In/Out Tracker",
-                  "HR Management System — included",
                   "Priority live chat support",
-                  "BMS Access: 3 users",
                   "Subject to fair usage policy",
                 ],
               },
@@ -556,7 +550,6 @@ export default function Landing() {
                   "Invoice Generator — unlimited & free",
                   "GCash Cash In/Out Tracker",
                   "Dedicated live chat support",
-                  "BMS Access: 5 users",
                   "Subject to fair usage policy",
                 ],
               },
@@ -1139,7 +1132,7 @@ export default function Landing() {
             <div className="absolute bottom-0 left-0 w-64 h-64 bg-cyan-400/30 rounded-full blur-[80px]" />
             <div className="relative">
               <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">Ready to Supercharge Your Business?</h2>
-              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System and HR Management System access is granted per user upon request — Pro (1 BMS user), Pro Plus (3 BMS users + HR included), VIP (5 BMS users + HR included). No credit card needed.</p>
+              <p className="text-blue-100 mb-8 max-w-md mx-auto">Sign up for free and get access to AI marketing tools, sales reports, and invoice generator with e-signature. Business Management System and HR Management System are available as standalone add-ons. No credit card needed.</p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link to="/auth" className="inline-flex items-center gap-2 px-8 py-4 bg-white text-blue-700 rounded-xl font-bold text-lg hover:bg-gray-50 transition-all shadow-xl">
                   Get Started Free <ChevronRight className="w-5 h-5" />
