@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import HRLayout from "@/components/HRLayout";
 import {
   Loader2, Clock, ChevronLeft, ChevronRight, AlertTriangle,
-  Sun, Moon, Calendar, CheckCircle2, Plus, X, Settings
+  Sun, Moon, Calendar, CheckCircle2, XCircle, Filter, Plus, X, Settings
 } from "lucide-react";
 
 type Employee = { id: string; first_name: string; last_name: string; is_active: boolean };
@@ -50,6 +50,12 @@ function formatDate(d: Date): string {
   const m = String(d.getMonth() + 1).padStart(2, "0");
   const day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
+}
+
+function formatTime(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}h ${m}m`;
 }
 
 export default function StandaloneHRAttendance() {
@@ -97,18 +103,70 @@ export default function StandaloneHRAttendance() {
 
   useEffect(() => { if (businessOwnerId) loadData(); }, [loadData]);
 
+  // Real-time subscription for live attendance updates
+  useEffect(() => {
+    if (!businessOwnerId) return;
+
+    const channel = supabase
+      .channel("standalone-attendance-live")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "hr_attendance_logs" },
+        () => {
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [businessOwnerId, loadData]);
+
+  const isHoliday = (dateStr: string) => holidays.find(h => h.date === dateStr);
+  const isRestDay = (date: Date) => restDays.find(r => r.day_of_week === date.getDay());
+  const isOnLeave = (empId: string, dateStr: string) => leaveRequests.find(l => l.employee_id === empId && dateStr >= l.start_date && dateStr <= l.end_date);
+  const isScheduledRestDay = (empId: string, date: Date) => {
+    const sched = getSchedule(empId, date);
+    return sched?.is_rest_day === true;
+  };
+
   const getLog = (empId: string, dateStr: string) => logs.find(l => l.employee_id === empId && l.date === dateStr);
 
-  const updateLog = async (empId: string, dateStr: string, field: string, value: any) => {
+  const getSchedule = (empId: string, date: Date) => {
+    const dayOfWeek = date.getDay();
+    return schedules.find(s => s.employee_id === empId && s.day_of_week === dayOfWeek);
+  };
+
+  const getDefaultStart = (empId: string, date: Date) => {
+    const sched = getSchedule(empId, date);
+    return sched?.start_time?.slice(0, 5) || STANDARD_START;
+  };
+
+  const getDefaultEnd = (empId: string, date: Date) => {
+    const sched = getSchedule(empId, date);
+    return sched?.end_time?.slice(0, 5) || STANDARD_END;
+  };
+
+  const getDefaultStatus = (empId: string, dateStr: string, date: Date): string => {
+    if (isHoliday(dateStr)) return "holiday";
+    if (isRestDay(date)) return "rest-day";
+    if (isScheduledRestDay(empId, date)) return "rest-day";
+    if (isOnLeave(empId, dateStr)) return "leave";
+    return "present";
+  };
+
+  const updateLog = async (empId: string, dateStr: string, date: Date, field: string, value: any) => {
     setSaving(`${empId}-${dateStr}`);
     const existing = getLog(empId, dateStr);
+    const defaultStatus = getDefaultStatus(empId, dateStr, date);
     const payload: any = { employee_id: empId, date: dateStr };
 
     if (field === "status") {
       payload.status = value;
       if (value === "present" || value === "late") {
-        payload.time_in = value === "late" ? "08:15" : STANDARD_START;
-        payload.time_out = STANDARD_END;
+        payload.time_in = value === "late" ? "08:15" : getDefaultStart(empId, date);
+        payload.time_out = getDefaultEnd(empId, date);
       } else {
         payload.time_in = null;
         payload.time_out = null;
@@ -118,7 +176,7 @@ export default function StandaloneHRAttendance() {
       }
     } else {
       payload[field] = value;
-      payload.status = existing?.status || "present";
+      payload.status = existing?.status || defaultStatus;
     }
 
     // Calculate hours and tardiness
@@ -133,10 +191,12 @@ export default function StandaloneHRAttendance() {
       // OT: hours beyond 8
       payload.overtime_hours = Math.max(0, Math.round((payload.hours_worked - 8) * 100) / 100);
 
-      // Tardiness: minutes past 8:00 AM
+      // Tardiness: minutes past scheduled start time
       const startMinutes = inH * 60 + inM;
-      const standardStartMinutes = 8 * 60;
-      payload.tardiness_minutes = Math.max(0, startMinutes - standardStartMinutes);
+      const schedStart = getDefaultStart(empId, date);
+      const [schedH, schedM] = schedStart.split(":").map(Number);
+      const schedStartMinutes = schedH * 60 + schedM;
+      payload.tardiness_minutes = Math.max(0, startMinutes - schedStartMinutes);
       payload.status = payload.tardiness_minutes > 0 ? "late" : "present";
     }
 
@@ -149,6 +209,14 @@ export default function StandaloneHRAttendance() {
     await loadData();
   };
 
+  const todayDateStr = formatDate(new Date());
+
+  // Live monitoring data — only today's logs
+  const todayLogs = logs.filter(l => l.date === todayDateStr);
+  const clockedIn = todayLogs.filter(l => l.time_in && !l.time_out);
+  const clockedOut = todayLogs.filter(l => l.time_in && l.time_out);
+  const notClockedIn = employees.filter(e => !todayLogs.find(l => l.employee_id === e.id));
+
   const filteredEmployees = selectedEmployee === "all" ? employees : employees.filter(e => e.id === selectedEmployee);
 
   const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -156,6 +224,132 @@ export default function StandaloneHRAttendance() {
   return (
     <HRLayout title="Attendance & Time Tracking" description="Daily time logs, tardiness tracking, and hours calculator">
       <div className="space-y-6">
+        {/* Live Monitoring Dashboard */}
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-emerald-50/50 to-indigo-50/50 dark:from-emerald-950/20 dark:to-indigo-950/20">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <h3 className="font-bold text-sm">Live Monitoring</h3>
+              <span className="text-xs text-muted-foreground">— Today's attendance updating in real-time</span>
+            </div>
+          </div>
+          <div className="p-5">
+            {/* Summary stats */}
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl px-4 py-3 border border-emerald-200 dark:border-emerald-800">
+                <p className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Clocked In</p>
+                <p className="text-2xl font-bold text-emerald-700 dark:text-emerald-300 mt-0.5">{clockedIn.length}</p>
+              </div>
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 rounded-xl px-4 py-3 border border-indigo-200 dark:border-indigo-800">
+                <p className="text-[10px] font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Clocked Out</p>
+                <p className="text-2xl font-bold text-indigo-700 dark:text-indigo-300 mt-0.5">{clockedOut.length}</p>
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl px-4 py-3 border border-amber-200 dark:border-amber-800">
+                <p className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Not Yet In</p>
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300 mt-0.5">{notClockedIn.length}</p>
+              </div>
+            </div>
+
+            {/* Live employee cards */}
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {employees.map(emp => {
+                const todayLog = todayLogs.find(l => l.employee_id === emp.id);
+                const isIn = todayLog?.time_in && !todayLog?.time_out;
+                const isOut = todayLog?.time_in && todayLog?.time_out;
+                const sched = getSchedule(emp.id, new Date());
+                const schedStart = sched?.start_time?.slice(0, 5) || STANDARD_START;
+                const schedEnd = sched?.end_time?.slice(0, 5) || STANDARD_END;
+
+                return (
+                  <div
+                    key={emp.id}
+                    className={`rounded-xl border p-3.5 transition-all ${
+                      isIn
+                        ? "border-emerald-300 dark:border-emerald-700 bg-emerald-50/80 dark:bg-emerald-900/15 shadow-sm shadow-emerald-200/50 dark:shadow-emerald-900/30"
+                        : isOut
+                          ? "border-indigo-200 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-900/10"
+                          : "border-border bg-muted/20"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2.5">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0 ${
+                          isIn
+                            ? "bg-emerald-500 shadow-sm shadow-emerald-500/30"
+                            : isOut
+                              ? "bg-indigo-500"
+                              : "bg-muted-foreground/40"
+                        }`}>
+                          {emp.first_name.charAt(0)}{emp.last_name.charAt(0)}
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{emp.first_name} {emp.last_name}</p>
+                          <p className="text-[10px] text-muted-foreground">{schedStart} – {schedEnd}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        {isIn ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-[10px] font-semibold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Live
+                          </span>
+                        ) : isOut ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-400 rounded-full text-[10px] font-semibold">
+                            <CheckCircle2 className="w-3 h-3" />
+                            Done
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-full text-[10px] font-semibold">
+                            <Clock className="w-3 h-3" />
+                            Awaiting
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Time details */}
+                    <div className="flex items-center gap-3 text-xs">
+                      {todayLog?.time_in ? (
+                        <div className="flex items-center gap-1">
+                          <Sun className="w-3 h-3 text-amber-500" />
+                          <span className="font-medium">{todayLog.time_in.slice(0, 5)}</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Sun className="w-3 h-3" />
+                          <span>—</span>
+                        </div>
+                      )}
+                      {todayLog?.time_out ? (
+                        <div className="flex items-center gap-1">
+                          <Moon className="w-3 h-3 text-indigo-400" />
+                          <span className="font-medium">{todayLog.time_out.slice(0, 5)}</span>
+                        </div>
+                      ) : todayLog?.time_in ? (
+                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                          <span className="font-medium text-[10px]">On shift</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <Moon className="w-3 h-3" />
+                          <span>—</span>
+                        </div>
+                      )}
+                      {todayLog?.hours_worked != null && (
+                        <span className="text-muted-foreground font-medium ml-auto">{todayLog.hours_worked}h</span>
+                      )}
+                      {todayLog?.tardiness_minutes != null && todayLog.tardiness_minutes > 0 && (
+                        <span className="text-rose-600 font-medium ml-auto text-[10px]">{todayLog.tardiness_minutes}min late</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
         {/* Week Navigation */}
         <div className="flex items-center justify-between bg-card rounded-2xl border border-border p-4">
           <button onClick={() => { const d = new Date(currentWeekStart); d.setDate(d.getDate() - 7); setCurrentWeekStart(d); setLoading(true); }} className="p-2 rounded-lg hover:bg-muted transition-colors">
@@ -173,6 +367,7 @@ export default function StandaloneHRAttendance() {
 
         {/* Employee Filter */}
         <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-muted-foreground" />
           <select value={selectedEmployee} onChange={e => setSelectedEmployee(e.target.value)} className="px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <option value="all">All Employees</option>
             {employees.map(e => (
@@ -192,11 +387,15 @@ export default function StandaloneHRAttendance() {
                   <tr className="border-b border-border bg-muted/30">
                     <th className="text-left px-4 py-3 font-semibold text-muted-foreground sticky left-0 bg-muted/30 z-10">Employee</th>
                     {weekDates.map((d, i) => {
+                      const hol = isHoliday(formatDate(d));
+                      const rd = isRestDay(d);
                       const isToday = formatDate(d) === formatDate(new Date());
                       return (
-                        <th key={i} className={`px-3 py-3 text-center font-semibold text-xs min-w-[130px] ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''}`}>
+                        <th key={i} className={`px-3 py-3 text-center font-semibold text-xs min-w-[130px] ${isToday ? 'bg-indigo-50 dark:bg-indigo-900/20' : ''} ${rd || hol ? 'text-amber-600' : 'text-muted-foreground'}`}>
                           <div>{dayNames[d.getDay()]}</div>
                           <div className="text-lg font-bold">{d.getDate()}</div>
+                          {hol && <div className="text-[10px] text-amber-600 font-medium mt-0.5">{hol.name}</div>}
+                          {rd && !hol && <div className="text-[10px] text-amber-600 font-medium mt-0.5">Rest Day</div>}
                         </th>
                       );
                     })}
@@ -216,9 +415,13 @@ export default function StandaloneHRAttendance() {
                       {weekDates.map((d, i) => {
                         const dateStr = formatDate(d);
                         const log = getLog(emp.id, dateStr);
+                        const hol = isHoliday(dateStr);
+                        const rd = isRestDay(d);
+                        const leave = isOnLeave(emp.id, dateStr);
                         const isToday = dateStr === formatDate(new Date());
                         const isSaving = saving === `${emp.id}-${dateStr}`;
-                        const currentStatus = log?.status || "absent";
+                        const defaultStatus = getDefaultStatus(emp.id, dateStr, d);
+                        const currentStatus = log?.status || defaultStatus;
 
                         return (
                           <td key={i} className={`px-3 py-3 align-top ${isToday ? 'bg-indigo-50/50 dark:bg-indigo-900/10' : ''}`}>
@@ -229,12 +432,13 @@ export default function StandaloneHRAttendance() {
                                 {/* Status Dropdown */}
                                 <select
                                   value={currentStatus}
-                                  onChange={e => updateLog(emp.id, dateStr, "status", e.target.value)}
+                                  onChange={e => updateLog(emp.id, dateStr, d, "status", e.target.value)}
                                   className={`w-full px-2 py-1.5 rounded-lg text-xs font-medium border focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
                                     currentStatus === "present" ? "bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400" :
                                     currentStatus === "late" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400" :
                                     currentStatus === "absent" ? "bg-rose-50 dark:bg-rose-900/20 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-400" :
-                                    currentStatus === "half-day" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400" :
+                                    currentStatus === "leave" ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400" :
+                                    currentStatus === "holiday" || currentStatus === "rest-day" ? "bg-amber-50 dark:bg-amber-900/20 border-amber-200 dark:border-amber-800 text-amber-600" :
                                     "bg-muted border-border text-muted-foreground"
                                   }`}
                                 >
@@ -242,6 +446,9 @@ export default function StandaloneHRAttendance() {
                                   <option value="late">Late</option>
                                   <option value="absent">Absent</option>
                                   <option value="half-day">Half Day</option>
+                                  <option value="holiday">Holiday</option>
+                                  <option value="rest-day">Rest Day</option>
+                                  <option value="leave">On Leave</option>
                                 </select>
 
                                 {/* Time In/Out (only for present/late) */}
@@ -251,19 +458,33 @@ export default function StandaloneHRAttendance() {
                                       <Sun className="w-3 h-3 text-amber-500 shrink-0" />
                                       <input
                                         type="time"
-                                        value={log?.time_in || STANDARD_START}
-                                        onChange={e => updateLog(emp.id, dateStr, "time_in", e.target.value)}
+                                        value={log?.time_in || getDefaultStart(emp.id, d)}
+                                        onChange={e => updateLog(emp.id, dateStr, d, "time_in", e.target.value)}
                                         className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                       />
                                     </div>
                                     <div className="flex items-center gap-1">
                                       <Moon className="w-3 h-3 text-indigo-400 shrink-0" />
-                                      <input
-                                        type="time"
-                                        value={log?.time_out || STANDARD_END}
-                                        onChange={e => updateLog(emp.id, dateStr, "time_out", e.target.value)}
-                                        className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                      />
+                                      {log?.time_out ? (
+                                        <input
+                                          type="time"
+                                          value={log.time_out}
+                                          onChange={e => updateLog(emp.id, dateStr, d, "time_out", e.target.value)}
+                                          className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                      ) : log?.time_in ? (
+                                        <div className="w-full px-1.5 py-1 rounded-md border border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10 text-[11px] text-emerald-600 dark:text-emerald-400 font-medium text-center flex items-center justify-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                          Clocked in — waiting for punch out
+                                        </div>
+                                      ) : (
+                                        <input
+                                          type="time"
+                                          value={getDefaultEnd(emp.id, d)}
+                                          onChange={e => updateLog(emp.id, dateStr, d, "time_out", e.target.value)}
+                                          className="w-full px-1.5 py-1 rounded-md border border-border bg-background text-[11px] focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        />
+                                      )}
                                     </div>
                                     {log?.hours_worked != null && (
                                       <div className="text-[10px] text-muted-foreground text-center">
@@ -280,6 +501,27 @@ export default function StandaloneHRAttendance() {
                                     )}
                                   </div>
                                 )}
+
+                                {/* Leave info */}
+                                {leave && (
+                                  <div className="text-[10px] text-blue-600 font-medium text-center bg-blue-50 dark:bg-blue-900/20 rounded-lg px-1 py-0.5">
+                                    {leave.days_taken}d leave
+                                  </div>
+                                )}
+
+                                {/* Conflict alert */}
+                                {currentStatus === "present" && leave && (
+                                  <div className="flex items-center gap-1 text-[10px] text-rose-600 font-medium bg-rose-50 dark:bg-rose-900/20 rounded-lg px-1.5 py-1">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    On leave this day
+                                  </div>
+                                )}
+                                {currentStatus === "present" && hol && (
+                                  <div className="flex items-center gap-1 text-[10px] text-amber-600 font-medium bg-amber-50 dark:bg-amber-900/20 rounded-lg px-1.5 py-1">
+                                    <AlertTriangle className="w-3 h-3 shrink-0" />
+                                    Company holiday
+                                  </div>
+                                )}
                               </div>
                             )}
                           </td>
@@ -293,12 +535,96 @@ export default function StandaloneHRAttendance() {
           </div>
         )}
 
+        {/* Holidays & Rest Days Management */}
+        <details className="bg-card rounded-2xl border border-border overflow-hidden">
+          <summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/20 transition-colors">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-indigo-500" />
+              <span className="font-semibold">Holidays & Rest Days</span>
+            </div>
+            <Settings className="w-4 h-4 text-muted-foreground" />
+          </summary>
+          <div className="border-t border-border p-4 space-y-6">
+            {/* Holidays */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold">Company Holidays</h4>
+                <button onClick={async () => {
+                  const name = prompt("Holiday name:");
+                  if (!name) return;
+                  const date = prompt("Date (YYYY-MM-DD):");
+                  if (!date) return;
+                  await supabase.from("hr_holidays").insert({ business_id: businessOwnerId, name, date });
+                  await loadData();
+                }} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Holiday
+                </button>
+              </div>
+              {holidays.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No holidays configured.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {holidays.map(h => (
+                    <div key={h.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full text-xs">
+                      <span className="font-medium text-amber-700 dark:text-amber-400">{h.name}</span>
+                      <span className="text-amber-500">{new Date(h.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                      <button onClick={async () => {
+                        await supabase.from("hr_holidays").delete().eq("id", h.id);
+                        await loadData();
+                      }} className="p-0.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Rest Days */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-bold">Rest Days</h4>
+                <button onClick={async () => {
+                  const day = prompt("Day of week (0=Sunday, 1=Monday, ..., 6=Saturday):");
+                  if (day === null) return;
+                  const dayNum = parseInt(day);
+                  if (isNaN(dayNum) || dayNum < 0 || dayNum > 6) return;
+                  const existing = restDays.find(r => r.day_of_week === dayNum);
+                  if (existing) { alert("Rest day already set for this day."); return; }
+                  await supabase.from("hr_rest_days").insert({ business_id: businessOwnerId, day_of_week: dayNum });
+                  await loadData();
+                }} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold hover:bg-indigo-700 transition-colors">
+                  <Plus className="w-3 h-3" /> Add Rest Day
+                </button>
+              </div>
+              {restDays.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No rest days configured.</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {restDays.map(r => (
+                    <div key={r.id} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-full text-xs">
+                      <span className="font-medium text-amber-700 dark:text-amber-400">{["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"][r.day_of_week]}</span>
+                      <button onClick={async () => {
+                        await supabase.from("hr_rest_days").delete().eq("id", r.id);
+                        await loadData();
+                      }} className="p-0.5 rounded-full hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </details>
+
         {/* Legend */}
         <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500" /> Present</span>
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-500" /> Late</span>
           <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500" /> Absent</span>
-          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> Half Day</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-500" /> On Leave</span>
+          <span className="inline-flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-300" /> Holiday/Rest Day</span>
         </div>
       </div>
     </HRLayout>
