@@ -1057,7 +1057,7 @@ function AISupportSettings() {
 function AdminAssetManager() {
   const [users, setUsers] = useState<{ id: string; full_name: string | null; email: string | null }[]>([]);
   const [selectedUserId, setSelectedUserId] = useState("");
-  const [packageType, setPackageType] = useState<"pro" | "pro_plus">("pro");
+  const [packageType, setPackageType] = useState<"pro">("pro");
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<string[]>([]);
@@ -1202,11 +1202,10 @@ function AdminAssetManager() {
             <label className="block text-xs font-semibold text-muted-foreground mb-1.5">Package Type</label>
             <select
               value={packageType}
-              onChange={(e) => setPackageType(e.target.value as "pro" | "pro_plus")}
+              onChange={(e) => setPackageType(e.target.value as "pro")}
               className="w-full px-3 py-2.5 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-emerald-500"
             >
-              <option value="pro">Pro</option>
-              <option value="pro_plus">Pro Plus</option>
+              <option value="pro">Marketing Kit</option>
             </select>
           </div>
 
@@ -1319,8 +1318,8 @@ function AdminAssetManager() {
                   )}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
                   <div className="absolute top-1.5 left-1.5">
-                    <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold text-white ${asset.package_type === "pro_plus" ? "bg-rose-500" : "bg-amber-500"}`}>
-                      {asset.package_type === "pro_plus" ? "Pro+" : "Pro"}
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold text-white bg-amber-500">
+                      MK
                     </span>
                   </div>
                   <div className="absolute top-1.5 right-1.5 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">

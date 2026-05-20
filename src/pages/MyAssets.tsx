@@ -7,16 +7,12 @@ import {
   Download,
   ImageIcon,
   Film,
-  FileType,
   Calendar,
   HardDrive,
-  ExternalLink,
   Crown,
   Star,
   Sparkles,
   Loader2,
-  AlertCircle,
-  FileDown,
 } from "lucide-react";
 
 interface UserAsset {
@@ -26,7 +22,7 @@ interface UserAsset {
   file_type: "image" | "video";
   file_size: number;
   mime_type: string;
-  package_type: "pro" | "pro_plus";
+  package_type: "pro";
   created_at: string;
 }
 
@@ -95,11 +91,7 @@ export default function MyAssets() {
     }
   };
 
-  const proAssets = assets.filter((a) => a.package_type === "pro");
-  const proPlusAssets = assets.filter((a) => a.package_type === "pro_plus");
-
-  const hasProAccess = user?.plan === "pro" || user?.plan === "pro_plus";
-  const hasProPlusAccess = user?.plan === "pro_plus";
+  const hasProAccess = user?.plan === "pro" || user?.plan === "vip";
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50">
@@ -129,7 +121,7 @@ export default function MyAssets() {
         </div>
 
         {/* Plan Info Banner */}
-        {!hasProAccess && !hasProPlusAccess && (
+        {!hasProAccess && (
           <div className="mb-8 p-5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl flex items-start gap-4">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center flex-shrink-0 shadow-sm">
               <Crown className="w-5 h-5 text-white" />
@@ -161,7 +153,7 @@ export default function MyAssets() {
             </div>
             <h2 className="text-xl font-extrabold text-gray-900">No assets yet</h2>
             <p className="text-sm text-gray-500 mt-2 max-w-md mx-auto">
-              {hasProAccess || hasProPlusAccess
+              {hasProAccess
                 ? "Your purchased images and videos will appear here once they've been added by our team."
                 : "Upgrade to a paid plan to get access to your assets."}
             </p>
@@ -169,62 +161,31 @@ export default function MyAssets() {
         ) : (
           <div className="space-y-10">
             {/* Pro Assets (30 Images) */}
-            {proAssets.length > 0 && (
-              <section>
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
-                    <Crown className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">
-                      Pro Package — Product Images
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      {proAssets.length} of 30 images delivered
-                    </p>
-                  </div>
+            <section>
+              <div className="flex items-center gap-3 mb-5">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center shadow-sm">
+                  <Crown className="w-4 h-4 text-white" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                  {proAssets.map((asset) => (
-                    <AssetCard
-                      key={asset.id}
-                      asset={asset}
-                      onDownload={handleDownload}
-                      downloading={downloading}
-                    />
-                  ))}
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">
+                    Marketing Kit — Product Images
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    {assets.length} of 30 images delivered
+                  </p>
                 </div>
-              </section>
-            )}
-
-            {/* Pro Plus Assets (1 UGC/Cinematic) */}
-            {proPlusAssets.length > 0 && (
-              <section>
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center shadow-sm">
-                    <Film className="w-4 h-4 text-white" />
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-bold text-gray-900">
-                      Pro Plus — UGC / Cinematic Ad
-                    </h2>
-                    <p className="text-xs text-gray-500">
-                      {proPlusAssets.length} of 1 video delivered
-                    </p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {proPlusAssets.map((asset) => (
-                    <AssetCard
-                      key={asset.id}
-                      asset={asset}
-                      onDownload={handleDownload}
-                      downloading={downloading}
-                    />
-                  ))}
-                </div>
-              </section>
-            )}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {assets.map((asset) => (
+                  <AssetCard
+                    key={asset.id}
+                    asset={asset}
+                    onDownload={handleDownload}
+                    downloading={downloading}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
         )}
       </div>
@@ -280,19 +241,9 @@ function AssetCard({
 
         {/* Package badge */}
         <div className="absolute top-2 right-2">
-          <span
-            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-white backdrop-blur ${
-              asset.package_type === "pro_plus"
-                ? "bg-rose-500/80"
-                : "bg-amber-500/80"
-            }`}
-          >
-            {asset.package_type === "pro_plus" ? (
-              <Film className="w-3 h-3" />
-            ) : (
-              <Crown className="w-3 h-3" />
-            )}
-            {asset.package_type === "pro_plus" ? "Pro Plus" : "Pro"}
+          <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-500/80 backdrop-blur rounded-lg text-[10px] font-bold text-white">
+            <Crown className="w-3 h-3" />
+            MK
           </span>
         </div>
       </div>

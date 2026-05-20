@@ -139,7 +139,7 @@ export default function AdminModuleAccess() {
             Module Access Management
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Grant or revoke access to individual modules. Pro Plus and VIP users automatically get all modules.
+            Grant or revoke access to individual modules. VIP users automatically get all modules.
           </p>
         </div>
         <div className="relative">
@@ -233,7 +233,7 @@ export default function AdminModuleAccess() {
                         </button>
                       ) : (
                         <span className="text-xs text-muted-foreground italic">
-                          Auto (Pro Plus/VIP)
+                          Auto (VIP)
                         </span>
                       )}
                     </td>
@@ -310,7 +310,7 @@ export default function AdminModuleAccess() {
 
       <div className="text-xs text-muted-foreground flex items-center gap-2">
         <Shield className="w-3.5 h-3.5" />
-        <span>Pro Plus and VIP users automatically get all module access. Only non-admin users are shown.</span>
+        <span>VIP users automatically get all module access. Only non-admin users are shown.</span>
       </div>
     </div>
   );

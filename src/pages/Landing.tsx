@@ -488,7 +488,7 @@ export default function Landing() {
             </div>
           </AnimatedSection>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
               {
                 name: "Free",
@@ -505,35 +505,17 @@ export default function Landing() {
                 ],
               },
               {
-                name: "Pro",
-                price: "499",
+                name: "Marketing Kit",
+                price: "299",
                 period: "/month",
                 icon: Sparkles,
                 gradient: "from-amber-400 to-orange-500",
-                popular: false,
-                features: [
-                  "500 generations per month",
-                  "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
-                  "Sales Report — unlimited & free",
-                  "Invoice Generator — unlimited & free",
-                  "GCash Cash In/Out Tracker",
-                  "Priority live chat support",
-                  "Subject to fair usage policy",
-                ],
-              },
-              {
-                name: "Pro Plus",
-                price: "1,499",
-                period: "/month",
-                icon: Sparkles,
-                gradient: "from-rose-500 to-pink-600",
                 popular: true,
                 features: [
                   "500 generations per month",
                   "Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
-                  "GCash Cash In/Out Tracker",
                   "Priority live chat support",
                   "Subject to fair usage policy",
                 ],
@@ -549,7 +531,6 @@ export default function Landing() {
                   "100 generations per month for Sales Wizard, FB Ads Targeting, Image Ad Analyzer & Ad Analyzer",
                   "Sales Report — unlimited & free",
                   "Invoice Generator — unlimited & free",
-                  "GCash Cash In/Out Tracker",
                   "Dedicated live chat support",
                   "Subject to fair usage policy",
                 ],
@@ -1035,10 +1016,10 @@ export default function Landing() {
                   <h3 className="text-2xl font-extrabold text-white mb-4">How Much Can You Earn?</h3>
                   <div className="space-y-4">
                     {[
-                      { refs: "1 referral", earn: "₱150", plan: "Pro (₱499/mo)" },
-                      { refs: "5 referrals", earn: "₱1,500", plan: "Pro (₱499/mo each)" },
-                      { refs: "10 referrals", earn: "₱3,000", plan: "Pro (₱499/mo each)" },
-                      { refs: "10 referrals", earn: "₱3,000", plan: "Pro Plus (₱1,499/mo each)" },
+                      { refs: "1 referral", earn: "₱150", plan: "Marketing Kit (₱299/mo)" },
+                      { refs: "5 referrals", earn: "₱1,500", plan: "Marketing Kit (₱299/mo each)" },
+                      { refs: "10 referrals", earn: "₱3,000", plan: "Marketing Kit (₱299/mo each)" },
+                      { refs: "10 referrals", earn: "₱3,000", plan: "VIP (Exclusive)" },
                     ].map((row, i) => (
                       <div key={i} className="flex items-center justify-between bg-white/15 backdrop-blur rounded-xl px-4 py-3 border border-white/20">
                         <div>

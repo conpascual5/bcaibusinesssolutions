@@ -7,7 +7,7 @@ export type AuthUser = {
   email: string;
   name: string;
   isAdmin: boolean;
-  plan: "free" | "pro" | "pro_plus" | "vip";
+  plan: "free" | "pro" | "vip";
   isActive: boolean;
 };
 
@@ -40,7 +40,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email,
         name: (s.user.user_metadata as any)?.full_name ?? (s.user.user_metadata as any)?.name ?? "",
         isAdmin: true,
-        plan: "pro_plus",
+        plan: "pro",
         isActive: true,
       };
     }
