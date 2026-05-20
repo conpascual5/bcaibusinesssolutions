@@ -56,6 +56,7 @@ import {
   BookOpen,
   Gift,
   CreditCard,
+  Settings,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -297,6 +298,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
             </div>
 
             <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  isActive={location.pathname === '/app/settings'}
+                  onClick={() => navigate('/app/settings')}
+                  tooltip="Settings"
+                  className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
+                >
+                  <Settings className="w-[18px] h-[18px] stroke-[1.5]" />
+                  <span>Settings</span>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {user?.isAdmin && (
                 <SidebarMenuItem>
                   <SidebarMenuButton

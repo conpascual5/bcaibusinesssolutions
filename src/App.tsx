@@ -75,6 +75,7 @@ import StandaloneMyAssets from './pages/StandaloneMyAssets'
 import StandaloneLibrary from './pages/StandaloneLibrary'
 import AppShop from './pages/AppShop'
 import Shop from './pages/Shop'
+import Settings from './pages/Settings'
 
 function LoadingScreen() {
   return (
@@ -194,6 +195,7 @@ export default function App() {
         <Route path="/app/affiliate" element={<ProtectedRoute><AppLayoutRoute><Affiliate /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/gcash" element={<ProtectedRoute><AppLayoutRoute><BusinessGCash /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/app/shop" element={<ProtectedRoute><AppLayoutRoute><AppShop /></AppLayoutRoute></ProtectedRoute>} />
+        <Route path="/app/settings" element={<ProtectedRoute><AppLayoutRoute><Settings /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/library" element={<ProtectedRoute><AppLayoutRoute><Library /></AppLayoutRoute></ProtectedRoute>} />
         <Route path="/admin" element={<AdminRoute><AppLayoutRoute><Admin /></AppLayoutRoute></AdminRoute>} />
         <Route path="/terms" element={<Terms />} />
