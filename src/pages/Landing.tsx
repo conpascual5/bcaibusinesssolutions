@@ -370,16 +370,17 @@ export default function Landing() {
                   <div className="inline-flex items-center gap-1 px-3 py-1 bg-blue-200 text-blue-800 rounded-full text-xs font-bold uppercase tracking-wider mb-4">
                     <FileText className="w-3 h-3" /> New Feature
                   </div>
-                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Customizable Invoices with E-Signature</h3>
+                  <h3 className="text-2xl font-extrabold text-gray-900 mb-3">Customizable Invoices with E-Signature & Payment Links</h3>
                   <p className="text-gray-600 leading-relaxed mb-4">
                     Create professional, fully customizable invoices for your business. Add your
-                    business name, logo, address, and TIN. Include your e-signature for authenticity.
+                    business name, logo, address, and TIN. Include your e-signature for authenticity
+                    and attach a payment link so customers can pay online instantly.
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: "Business Branding", desc: "Add your logo, name & address" },
                       { label: "E-Signature", desc: "Sign invoices digitally" },
-                      { label: "Custom Items", desc: "Add items with qty & price" },
+                      { label: "Payment Links", desc: "GCash, PayMaya, bank portal" },
                       { label: "Status Tracking", desc: "Sent, paid, overdue" },
                     ].map((item, i) => (
                       <div key={i} className="flex items-start gap-2">
@@ -830,7 +831,7 @@ export default function Landing() {
                   },
                   {
                     q: "How do I avail the Business Management System or HR Management System?",
-                    a: "Business Management System (₱999/month) and HR Management System (₱999/month for up to 10 users) are standalone add-ons available to any plan. To subscribe, simply message us on our Facebook page or send us a message through the in-app live chat. We'll guide you through the process and activate access for your account.",
+                    a: "Business Management System (₱999/month) and HR Management System (₱999/month for up to 10 users) are standalone add-ons available to any plan. The HR Management System comes with 10 employee seats included — you can add up to 10 employees right away. If you need more, additional seats are ₱69/month each. You can also request me to manually increase your seat limit anytime. To subscribe, simply message us on our Facebook page or send us a message through the in-app live chat. We'll guide you through the process and activate access for your account.",
                   },
                 ].map((faq, i) => (
                   <details key={i} className="group bg-white rounded-xl border border-gray-100 overflow-hidden">

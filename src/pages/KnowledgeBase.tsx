@@ -101,8 +101,8 @@ const entries: KBEntry[] = [
     color: "bg-amber-500",
     gradient: "from-amber-500 to-orange-400",
     sections: [
-      { heading: "What is Invoice Generator?", content: "Create professional invoices in seconds. Add your business details, client information, itemized billing, and payment terms. Generate and download PDF invoices instantly." },
-      { heading: "How to Use", content: "1. Fill in your business details (name, address, contact info). 2. Add client information. 3. Add line items with descriptions, quantities, and prices. 4. Set payment terms and due date. 5. Preview and download as PDF." },
+      { heading: "What is Invoice Generator?", content: "Create professional invoices in seconds. Add your business details, client information, itemized billing, payment terms, and an optional payment link (GCash, PayMaya, bank portal, etc.) so your customers can pay online instantly. Generate and download PDF invoices with all the details included." },
+      { heading: "How to Use", content: "1. Fill in your business details (name, address, contact info). 2. Add client information. 3. Add line items with descriptions, quantities, and prices. 4. Set payment terms and due date. 5. Optionally add a payment link (e.g., GCash payment URL, PayMaya link, or bank portal) — this will appear in both the preview and the PDF. 6. Preview and download as PDF." },
       { heading: "Invoice Management", content: "All created invoices are saved in your account. You can view, download, or delete them anytime. Track which invoices have been paid and which are still outstanding." },
     ],
   },
@@ -163,7 +163,7 @@ const entries: KBEntry[] = [
       { heading: "Performance Reviews", content: "Track employee performance with review entries including rating (1-5), review date, reviewer, and notes. View performance history per employee over time." },
       { heading: "Bonuses", content: "Manage employee bonuses with type (13th month, performance bonus, Christmas bonus, etc.), amount, and payout status." },
       { heading: "Attendance Corrections", content: "Handle attendance discrepancies by correcting time-in, time-out, status, and notes for any past attendance record." },
-      { heading: "Pricing", content: "Standalone HR Management is ₱999/month for up to 10 users, with ₱69/month per additional user beyond 10. Contact us via Facebook to activate the standalone add-on." },
+      { heading: "Pricing & Seat Limits", content: "Standalone HR Management is ₱999/month for up to 10 users, with ₱69/month per additional user beyond 10. The system enforces a seat limit — you can only add as many employees as your seat count allows. If you need more seats, contact us via Facebook and we can manually increase your limit. The seat count is adjustable from the Admin panel." },
     ],
   },
   {
