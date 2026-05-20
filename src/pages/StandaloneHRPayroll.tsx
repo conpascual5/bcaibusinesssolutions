@@ -451,7 +451,10 @@ export default function StandaloneHRPayroll() {
     const period = payrollPeriods.find(p => p.id === periodId)
     if (!period) return
 
+    console.log("[StandaloneHRPayroll] Starting payslip generation", { periodId, periodName: period.name, businessOwnerId })
+
     const activeEmployees = employees.filter(e => e.is_active)
+    console.log("[StandaloneHRPayroll] Active employees count:", activeEmployees.length)
     let generated = 0
     let errors = 0
 
@@ -463,13 +466,17 @@ export default function StandaloneHRPayroll() {
         const hourlyRate = dailyRate / 8
         const perMinuteRate = hourlyRate / 60
 
+        console.log("[StandaloneHRPayroll] Processing employee:", emp.first_name, emp.last_name, { monthlySalary, dailyRate })
+
         // 2. Get attendance for this period
-        const { data: attendance } = await supabase
+        const { data: attendance, error: attError } = await supabase
           .from("hr_attendance_logs")
           .select("*")
           .eq("employee_id", emp.id)
           .gte("date", period.start_date)
           .lte("date", period.end_date)
+
+        console.log("[StandaloneHRPayroll] Attendance for", emp.first_name, emp.last_name, { count: attendance?.length || 0, error: attError })
 
         // 3. Get schedules to determine working days
         const { data: schedules } = await supabase
@@ -643,6 +650,13 @@ export default function StandaloneHRPayroll() {
           { name: "Pag-IBIG", code: "PAGIBIG", amount: Math.round(pagibigDed * 100) / 100 },
           { name: "BIR Withholding Tax", code: "BIR", amount: Math.round(birWithholding * 100) / 100 },
         ].filter(d => d.amount > 0)
+
+        console.log("[StandaloneHRPayroll] Computed values for", emp.first_name, emp.last_name, {
+          daysPresent, totalLeaveDays, totalAbsences, totalTardinessMinutes,
+          grossPay, tardinessDeduction, absencesDeduction,
+          sssDed, philhealthDed, pagibigDed, birWithholding,
+          totalDeductions, netPay
+        })
 
         // 14. Check if payslip already exists for this employee + period
         const { data: existingPayslip } = await supabase
