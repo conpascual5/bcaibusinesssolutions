@@ -10,6 +10,9 @@ import StandalonePayrollDashboard from "@/components/payroll/StandalonePayrollDa
 import StandalonePayrollPeriods from "@/components/payroll/StandalonePayrollPeriods"
 import StandalonePayslipViewer from "@/components/payroll/StandalonePayslipViewer"
 import StandaloneDeductionManager from "@/components/payroll/StandaloneDeductionManager"
+import StandaloneAttendanceLogger from "@/components/payroll/StandaloneAttendanceLogger"
+import StandaloneScheduleManager from "@/components/payroll/StandaloneScheduleManager"
+import StandaloneAutoPayrollRunner from "@/components/payroll/StandaloneAutoPayrollRunner"
 
 // ─── Types ───────────────────────────────────────────────────────────────
 export interface Employee {
@@ -26,6 +29,7 @@ export interface Payslip { id: string; business_id: string; employee_id: string;
 export interface Deduction { id: string; business_id: string; name: string; code: string; description: string | null; amount_type: string; amount: number; is_mandatory: boolean; is_active: boolean; created_at: string }
 export interface StatutoryBracket { id: string; business_id: string; deduction_type: string; min_compensation: number | null; max_compensation: number | null; employee_share: number | null; employer_share: number | null; is_active: boolean; effective_date: string; created_at: string }
 export interface EmployeeDeduction { id: string; employee_id: string; deduction_type: string; monthly_compensation: number | null; employee_share: number | null; employer_share: number | null; is_overridden: boolean; created_at: string }
+export interface Schedule { id: string; employee_id: string; day_of_week: number; start_time: string; end_time: string; is_rest_day: boolean; grace_period_minutes: number | null; break_start: string | null; break_end: string | null; break_paid: boolean | null; shift_id: string | null; created_at: string }
 
 const fmtCurrency = (n: number) => new Intl.NumberFormat("en-PH", { style: "currency", currency: "PHP", minimumFractionDigits: 2 }).format(n)
 
@@ -419,6 +423,8 @@ export default function StandaloneHRPayroll() {
   const [deductions, setDeductions] = useState<Deduction[]>([])
   const [brackets, setBrackets] = useState<StatutoryBracket[]>([])
   const [employeeDeductions, setEmployeeDeductions] = useState<EmployeeDeduction[]>([])
+  const [attendance, setAttendance] = useState<any[]>([])
+  const [schedules, setSchedules] = useState<Schedule[]>([])
 
   const getEmployee = useCallback((id: string) => employees.find(e => e.id === id), [employees])
 
@@ -426,7 +432,8 @@ export default function StandaloneHRPayroll() {
     if (!businessOwnerId) return
     const [
       { data: empData }, { data: periodData }, { data: payslipData },
-      { data: dedData }, { data: bracketData }, { data: empDedData }
+      { data: dedData }, { data: bracketData }, { data: empDedData },
+      { data: attData }, { data: schedData }
     ] = await Promise.all([
       supabase.from("hr_employees").select("*").eq("business_id", businessOwnerId),
       supabase.from("hr_payroll_periods").select("*").eq("business_id", businessOwnerId).order("start_date", { ascending: false }),
@@ -434,6 +441,8 @@ export default function StandaloneHRPayroll() {
       supabase.from("hr_deductions").select("*").eq("business_id", businessOwnerId).eq("is_active", true),
       supabase.from("hr_statutory_brackets").select("*").eq("business_id", businessOwnerId).eq("is_active", true).order("min_compensation", { ascending: true }),
       supabase.from("hr_employee_deductions").select("*"),
+      supabase.from("hr_attendance_logs").select("*"),
+      supabase.from("hr_employee_schedules").select("*"),
     ])
     setEmployees(empData || [])
     setPayrollPeriods(periodData || [])
@@ -441,6 +450,8 @@ export default function StandaloneHRPayroll() {
     setDeductions(dedData || [])
     setBrackets(bracketData || [])
     setEmployeeDeductions(empDedData || [])
+    setAttendance(attData || [])
+    setSchedules(schedData || [])
     setLoading(false)
   }, [businessOwnerId])
 
@@ -723,6 +734,9 @@ export default function StandaloneHRPayroll() {
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
     { id: "periods", label: "Periods", icon: Calendar },
+    { id: "attendance", label: "Attendance", icon: Clock },
+    { id: "schedules", label: "Schedules", icon: UserCheck },
+    { id: "auto-payroll", label: "Auto Payroll", icon: Play },
     { id: "payslips", label: "Payslips", icon: Receipt },
     { id: "deductions", label: "Deductions", icon: Calculator },
     { id: "statutory", label: "Statutory Brackets", icon: BookOpen },
@@ -764,6 +778,25 @@ export default function StandaloneHRPayroll() {
 
           <TabsContent value="periods">
             <StandalonePayrollPeriods businessOwnerId={businessOwnerId} payrollPeriods={payrollPeriods} onRefresh={loadData} />
+          </TabsContent>
+
+          <TabsContent value="attendance">
+            <StandaloneAttendanceLogger
+              employees={employees} attendance={attendance}
+              payrollPeriods={payrollPeriods} schedules={schedules}
+              onRefresh={loadData} getEmployee={getEmployee} />
+          </TabsContent>
+
+          <TabsContent value="schedules">
+            <StandaloneScheduleManager
+              employees={employees} schedules={schedules}
+              onRefresh={loadData} getEmployee={getEmployee} />
+          </TabsContent>
+
+          <TabsContent value="auto-payroll">
+            <StandaloneAutoPayrollRunner
+              businessOwnerId={businessOwnerId} payrollPeriods={payrollPeriods}
+              onGenerate={generatePayslips} />
           </TabsContent>
 
           <TabsContent value="payslips">
