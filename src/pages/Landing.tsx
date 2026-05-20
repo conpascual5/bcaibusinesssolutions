@@ -846,6 +846,10 @@ export default function Landing() {
                     q: "When will my account be activated after payment?",
                     a: "After your payment is confirmed, your BC AI Marketing Tool account will update within 12 hours. You'll then have full access to your upgraded plan features.",
                   },
+                  {
+                    q: "How do I avail the Business Management System or HR Management System?",
+                    a: "Business Management System (₱999/month) and HR Management System (₱999/month for up to 10 users) are standalone add-ons available to any plan. To subscribe, simply message us on our Facebook page or send us a message through the in-app live chat. We'll guide you through the process and activate access for your account.",
+                  },
                 ].map((faq, i) => (
                   <details key={i} className="group bg-white rounded-xl border border-gray-100 overflow-hidden">
                     <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors list-none">
