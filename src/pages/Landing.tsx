@@ -224,7 +224,7 @@ export default function Landing() {
               </span>
               <h2 className="text-4xl font-extrabold text-gray-900 mt-4">Business &amp; HR Management Systems</h2>
               <p className="text-gray-500 mt-3 max-w-2xl mx-auto">
-                Two powerful suites to run your entire business. <strong>Business Management System</strong> covers products, inventory, sales, expenses, and more. <strong>HR Management System</strong> handles employees, attendance, leave, shift roster, payroll, employee portal, and more.
+                Two powerful suites to run your entire business. <strong>Business Management System</strong> covers products, inventory, sales, expenses, and more. <strong>HR Management System</strong> handles employees, attendance, shift roster, payroll, employee portal, and more.
                 Both are available as standalone add-ons — request access from the admin.
               </p>
             </div>
@@ -467,9 +467,9 @@ export default function Landing() {
               <div className="inline-flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-2xl shadow-sm">
                 <Crown className="w-5 h-5 text-amber-600" />
                 <p className="text-sm text-gray-700">
-                  <strong className="text-amber-700">Business Management System</strong> (₱999/mo) and <strong className="text-cyan-700">HR Management System</strong> (₱999/mo for up to 10 users) are available as standalone add-ons.{' '}
-                  <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
-                </p>
+                    <strong className="text-amber-700">Business Management System</strong> (₱999/mo, ₱69/mo per additional team member) and <strong className="text-cyan-700">HR Management System</strong> (₱999/mo for up to 10 employees, ₱69/mo per additional employee) are available as standalone add-ons.{' '}
+                    <a href="https://www.facebook.com/bcsocialmediaservices" target="_blank" rel="noopener noreferrer" className="text-indigo-600 font-semibold hover:text-indigo-700 underline">Request access →</a>
+                  </p>
               </div>
             </div>
           </AnimatedSection>
@@ -672,6 +672,9 @@ export default function Landing() {
                       <span className="line-through text-gray-300">₱3,000</span>
                       <span className="text-emerald-600 font-semibold ml-1">Save 67%</span>
                     </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      <span className="text-amber-600 font-semibold">₱69/month per additional team member</span>
+                    </p>
                   </div>
                   <ul className="space-y-3 mb-6">
                     {[
@@ -679,7 +682,7 @@ export default function Landing() {
                       'Expenses, Pricing Calculator & Finance',
                       'Customers, Invoices & Receipts',
                       'Targets, Records & Team Management',
-                      'Team & Employee Management',
+                      'Team Management — ₱69/month per additional member',
                     ].map((f, j) => (
                       <li key={j} className="flex items-start gap-3 text-sm text-gray-700">
                         <div className="w-5 h-5 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -831,7 +834,7 @@ export default function Landing() {
                   },
                   {
                     q: "How do I avail the Business Management System or HR Management System?",
-                    a: "Business Management System (₱999/month) and HR Management System (₱999/month for up to 10 users) are standalone add-ons available to any plan. The HR Management System comes with 10 employee seats included — you can add up to 10 employees right away. If you need more, additional seats are ₱69/month each. You can also request me to manually increase your seat limit anytime. To subscribe, simply message us on our Facebook page or send us a message through the in-app live chat. We'll guide you through the process and activate access for your account.",
+                    a: "Business Management System (₱999/month, ₱69/month per additional team member) and HR Management System (₱999/month for up to 10 employees, ₱69/month per additional employee) are standalone add-ons available to any plan. The HR Management System comes with 10 employee seats included — you can add up to 10 employees right away. If you need more, additional seats are ₱69/month each. The Business Management System also lets you add team members for ₱69/month per member. You can also request me to manually increase your seat limit anytime. To subscribe, simply message us on our Facebook page or send us a message through the in-app live chat. We'll guide you through the process and activate access for your account.",
                   },
                 ].map((faq, i) => (
                   <details key={i} className="group bg-white rounded-xl border border-gray-100 overflow-hidden">
