@@ -62,6 +62,27 @@ export default function BusinessTeam() {
     setAdding(true);
 
     try {
+      // Check seat limit
+      const { data: seats } = await supabase
+        .from("business_seats")
+        .select("seat_limit, additional_seat_price")
+        .eq("business_id", businessOwnerId)
+        .maybeSingle();
+
+      if (seats) {
+        const { data: currentMembers } = await supabase
+          .from("business_team_members")
+          .select("id", { count: "exact" })
+          .eq("owner_id", businessOwnerId);
+
+        const memberCount = currentMembers?.length || 0;
+        if (memberCount >= seats.seat_limit) {
+          setError(`Seat limit reached (${seats.seat_limit}). Contact admin to increase your limit. Additional seats are ₱69/month each.`);
+          setAdding(false);
+          return;
+        }
+      }
+
       // Find user by email (case-insensitive)
       const emailTrimmed = email.trim().toLowerCase();
       const { data: profile, error: profileError } = await supabase

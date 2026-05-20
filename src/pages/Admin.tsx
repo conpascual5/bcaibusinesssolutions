@@ -9,6 +9,7 @@ import AdminBMSAccess from "@/components/AdminBMSAccess";
 import AdminGCashAccess from "@/components/AdminGCashAccess";
 import AdminHRAccess from "@/components/AdminHRAccess";
 import AdminModuleAccess from "@/components/AdminModuleAccess";
+import AdminTeamMembers from "@/components/AdminTeamMembers";
 import DueSoonBanner from "@/components/DueSoonBanner";
 import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
@@ -1362,7 +1363,7 @@ const PLAN_OPTIONS = [
 export default function Admin() {
   const navigate = useNavigate();
   const { user, isLoading } = useAuth();
-  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "hr" | "gcash" | "affiliates" | "modules" | "seats">("dashboard");
+  const [activeSection, setActiveSection] = useState<"dashboard" | "users" | "assets" | "support" | "settings" | "downloads" | "bms" | "hr" | "gcash" | "affiliates" | "modules" | "seats" | "team">("dashboard");
   const [historyUserId, setHistoryUserId] = useState<string | null>(null);
 
   const [loadingUsers, setLoadingUsers] = useState(true);
@@ -1666,6 +1667,15 @@ export default function Admin() {
             Seats
           </button>
           <button
+            onClick={() => setActiveSection("team")}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeSection === "team" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            }`}
+          >
+            <Users className="w-4 h-4 stroke-[1.5]" />
+            Team Members
+          </button>
+          <button
             onClick={() => setActiveSection("affiliates")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeSection === "affiliates" ? "bg-primary text-primary-foreground shadow-md" : "text-muted-foreground hover:text-foreground hover:bg-accent"
@@ -1919,6 +1929,8 @@ export default function Admin() {
         {activeSection === "affiliates" && <AdminAffiliates />}
 
         {activeSection === "seats" && <AdminSeats />}
+
+        {activeSection === "team" && <AdminTeamMembers />}
 
         {activeSection === "settings" && <ApiKeySettings />}
       </div>

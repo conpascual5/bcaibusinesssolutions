@@ -82,6 +82,11 @@ export default function AdminBMSAccess() {
           p_plan: "bms",
           p_amount: 999,
         });
+        // Create business_seats record if not exists
+        const { data: existingSeats } = await supabase.from("business_seats").select("id").eq("business_id", userId).maybeSingle();
+        if (!existingSeats) {
+          await supabase.from("business_seats").insert({ business_id: userId, seat_limit: 10, additional_seat_price: 69 });
+        }
         setAccessMap((prev) => ({ ...prev, [userId]: true }));
         // Refresh subscriptions
         const { data } = await supabase.from("subscriptions").select("*").eq("user_id", userId).eq("plan", "bms").eq("status", "active").maybeSingle();
