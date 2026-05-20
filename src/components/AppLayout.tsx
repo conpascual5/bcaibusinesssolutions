@@ -57,6 +57,13 @@ import {
   Gift,
   CreditCard,
   Settings,
+  UserPlus,
+  GitBranch,
+  MapPin,
+  Layers,
+  BadgeCheck,
+  RefreshCw,
+  Calendar,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';
@@ -97,10 +104,25 @@ const businessNavItems = [
   { icon: FileSearch, label: 'Receipts', path: '/app/business/receipts' },
   { icon: Target, label: 'Targets', path: '/app/business/targets' },
   { icon: Database, label: 'Records', path: '/app/business/records' },
-  { icon: BarChart3, label: 'HR Dashboard', path: '/app/business/hr' },
-  { icon: Users, label: 'Employees', path: '/app/business/hr/employees' },
-  { icon: Clock, label: 'Attendance', path: '/app/business/hr/attendance' },
-  { icon: Umbrella, label: 'Leave Mgmt', path: '/app/business/hr/leave' },
+  { icon: UserPlus, label: 'Team', path: '/app/business/team' },
+  { icon: BookOpen, label: 'Help & Guide', path: '/app/business/help' },
+];
+
+const hrNavItems = [
+  { icon: BarChart3, label: 'HR Dashboard', path: '/app/hr' },
+  { icon: Users, label: 'Employees', path: '/app/hr/employees' },
+  { icon: GitBranch, label: 'Org Chart', path: '/app/hr/org-chart' },
+  { icon: Building2, label: 'Company', path: '/app/hr/company' },
+  { icon: MapPin, label: 'Offices', path: '/app/hr/offices' },
+  { icon: Layers, label: 'Departments', path: '/app/hr/departments' },
+  { icon: BadgeCheck, label: 'Designations', path: '/app/hr/designations' },
+  { icon: Clock, label: 'Attendance', path: '/app/hr/attendance' },
+  { icon: RefreshCw, label: 'Corrections', path: '/app/hr/corrections' },
+  { icon: Umbrella, label: 'Leave Mgmt', path: '/app/hr/leave' },
+  { icon: Calendar, label: 'Shift Roster', path: '/app/hr/shifts' },
+  { icon: TrendingUp, label: 'Performances', path: '/app/hr/performances' },
+  { icon: Calculator, label: 'Payroll Engine', path: '/app/hr/payroll' },
+  { icon: Gift, label: 'Bonuses', path: '/app/hr/bonuses' },
 ];
 
 export default function AppLayout({ children }: AppLayoutProps) {
@@ -115,22 +137,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
     return false;
   });
   const [hasBMSAccess, setHasBMSAccess] = useState(false);
+  const [hasHRAccess, setHasHRAccess] = useState(false);
   const [hasGCashAccess, setHasGCashAccess] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     if (user.isAdmin) {
       setHasBMSAccess(true);
+      setHasHRAccess(true);
       setHasGCashAccess(true);
       return;
     }
     (async () => {
-      const [accessRes, teamRes, gcashRes] = await Promise.all([
+      const [accessRes, teamRes, hrRes, gcashRes] = await Promise.all([
         supabase.from('user_business_access').select('id').eq('user_id', user.id).maybeSingle(),
         supabase.from('business_team_members').select('id').eq('member_id', user.id).maybeSingle(),
+        supabase.from('hr_user_access').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle(),
         supabase.from('user_gcash_access').select('id').eq('user_id', user.id).maybeSingle(),
       ]);
       setHasBMSAccess(!!accessRes.data || !!teamRes.data);
+      setHasHRAccess(!!hrRes.data);
       setHasGCashAccess(!!gcashRes.data);
     })();
   }, [user]);
@@ -225,6 +251,46 @@ export default function AppLayout({ children }: AppLayoutProps) {
                       <SidebarGroupContent>
                         <SidebarMenu>
                           {businessNavItems.map((item) => {
+                            const isActive = location.pathname.startsWith(item.path);
+                            return (
+                              <SidebarMenuItem key={item.path}>
+                                <SidebarMenuButton
+                                  isActive={isActive}
+                                  onClick={() => navigate(item.path)}
+                                  tooltip={item.label}
+                                  className="cursor-pointer gap-3 px-3 py-2.5 text-sm font-medium"
+                                >
+                                  <item.icon className="w-[18px] h-[18px] stroke-[1.5]" />
+                                  <span>{item.label}</span>
+                                </SidebarMenuButton>
+                              </SidebarMenuItem>
+                            );
+                          })}
+                        </SidebarMenu>
+                      </SidebarGroupContent>
+                    </SidebarGroup>
+                  </CollapsibleContent>
+                </Collapsible>
+              </>
+            )}
+
+            {/* HR Management Section - Standalone (separate from BMS) */}
+            {hasHRAccess && (
+              <>
+                <SidebarSeparator className="mx-4 w-auto opacity-30" />
+                <Collapsible
+                  defaultOpen={location.pathname.startsWith('/app/hr')}
+                  className="group-data-[collapsible=icon]:hidden"
+                >
+                  <CollapsibleTrigger className="flex w-full items-center justify-between px-4 py-3 text-xs font-bold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground/80 transition-colors">
+                    <span>HR Management</span>
+                    <ChevronDown className="w-3.5 h-3.5 transition-transform group-data-[state=open]:rotate-180" />
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    <SidebarGroup>
+                      <SidebarGroupContent>
+                        <SidebarMenu>
+                          {hrNavItems.map((item) => {
                             const isActive = location.pathname.startsWith(item.path);
                             return (
                               <SidebarMenuItem key={item.path}>
