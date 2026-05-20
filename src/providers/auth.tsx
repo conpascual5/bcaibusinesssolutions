@@ -22,8 +22,6 @@ type AuthContextType = {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const SESSION_TIMEOUT_MS = 8000;
-
 const ADMIN_EMAILS = new Set(["conpascual5@gmail.com"]);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -81,7 +79,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     let resolved = false;
-    let sessionResolved = false; // tracks if we got a session from any source
 
     const finishLoading = () => {
       if (!resolved && mounted) {
@@ -90,67 +87,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Longer timeout — only fires if NO session was resolved at all
-    const timeoutId = setTimeout(() => {
+    // Safety timeout — if nothing resolves in 15s, stop loading anyway
+    const safetyTimeout = setTimeout(() => {
       if (!resolved && mounted) {
-        console.warn("[auth] Session resolution timed out — forcing loading=false");
-        if (!sessionResolved) {
-          // Only clear session if we never got one
-          setSession(null);
-          setUser(null);
-        }
+        console.warn("[auth] Safety timeout — forcing loading=false");
         finishLoading();
       }
-    }, SESSION_TIMEOUT_MS);
+    }, 15000);
 
-    // Try to get the session — but DON'T clear on failure if onAuthStateChange already handled it
-    const getSessionWithTimeout = async () => {
-      try {
-        const result = await Promise.race([
-          supabase.auth.getSession(),
-          new Promise<null>((_, reject) =>
-            setTimeout(() => reject(new Error("getSession timed out")), SESSION_TIMEOUT_MS - 1000)
-          ),
-        ]);
-
-        if (!mounted || resolved) return;
-
-        if (result && result.data?.session) {
-          console.log("[auth] Found existing session via getSession()");
-          sessionResolved = true;
-          setSession(result.data.session);
-          const profile = await fetchProfile(result.data.session);
-          if (mounted) {
-            setUser(profile);
-            finishLoading();
-          }
-        } else {
-          console.log("[auth] No existing session found via getSession()");
-          // Don't clear — onAuthStateChange might still fire
-          if (!sessionResolved) {
-            setSession(null);
-            setUser(null);
-            finishLoading();
-          }
-        }
-      } catch (err) {
-        console.error("[auth] getSession failed or timed out:", err);
-        // Don't clear localStorage or session here — onAuthStateChange may have already set it
-        if (!sessionResolved && mounted) {
-          finishLoading();
-        }
-      }
-    };
-
-    getSessionWithTimeout();
-
-    // Subscribe to subsequent auth changes
+    // Use ONLY onAuthStateChange — no getSession() call that can hang
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
       if (!mounted) return;
 
       console.log("[auth] onAuthStateChange event:", event, "hasSession:", !!newSession);
 
       if (event === "INITIAL_SESSION") {
+        // This fires on page load with the current session (or null)
+        if (newSession) {
+          setSession(newSession);
+          const profile = await fetchProfile(newSession);
+          if (mounted) {
+            setUser(profile);
+            finishLoading();
+          }
+        } else {
+          if (mounted) {
+            setSession(null);
+            setUser(null);
+            finishLoading();
+          }
+        }
         return;
       }
 
@@ -163,7 +129,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (newSession) {
-        sessionResolved = true;
         setSession(newSession);
         const profile = await fetchProfile(newSession);
         if (mounted) {
@@ -175,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     return () => {
       mounted = false;
-      clearTimeout(timeoutId);
+      clearTimeout(safetyTimeout);
       sub.subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
