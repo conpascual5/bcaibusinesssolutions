@@ -5,24 +5,34 @@ import { supabase } from "@/integrations/supabase/client";
 import HRLayout from "@/components/HRLayout";
 import { Loader2, Plus, Pencil, Trash2, X, Check, Layers, Users } from "lucide-react";
 
-type Department = { id: string; name: string; code: string | null; description: string | null; head_name: string | null; };
+type Department = { id: string; name: string; code: string | null; office_id: string | null; head_employee_id: string | null; description: string | null; is_active: boolean; };
+type Office = { id: string; name: string };
+type Employee = { id: string; first_name: string; last_name: string };
 
 export default function StandaloneHRDepartments() {
   const { user } = useAuth();
   const { hrBusinessId } = useHRAccess();
   const businessOwnerId = hrBusinessId || user?.id || "";
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [offices, setOffices] = useState<Office[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Department | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", code: "", description: "", head_name: "" });
+  const [form, setForm] = useState({ name: "", code: "", office_id: "", head_employee_id: "", description: "" });
 
   const load = async () => {
     if (!businessOwnerId) return;
-    const { data: deps } = await supabase.from("hr_departments").select("*").eq("business_id", businessOwnerId).order("name");
-    if (deps) setDepartments(deps);
+    const [depRes, offRes, empRes] = await Promise.all([
+      supabase.from("hr_departments").select("*").eq("business_id", businessOwnerId).order("name"),
+      supabase.from("hr_offices").select("id, name").eq("business_id", businessOwnerId).eq("is_active", true).order("name"),
+      supabase.from("hr_employees").select("id, first_name, last_name").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
+    ]);
+    if (depRes.data) setDepartments(depRes.data);
+    if (offRes.data) setOffices(offRes.data);
+    if (empRes.data) setEmployees(empRes.data);
     const { data: emps } = await supabase.from("hr_employees").select("department").eq("business_id", businessOwnerId);
     if (emps) {
       const counts: Record<string, number> = {};
@@ -33,13 +43,13 @@ export default function StandaloneHRDepartments() {
   };
   useEffect(() => { load(); }, [businessOwnerId]);
 
-  const resetForm = () => { setForm({ name: "", code: "", description: "", head_name: "" }); setEditing(null); setShowForm(false); };
-  const openEdit = (d: Department) => { setForm({ name: d.name, code: d.code || "", description: d.description || "", head_name: d.head_name || "" }); setEditing(d); setShowForm(true); };
+  const resetForm = () => { setForm({ name: "", code: "", office_id: "", head_employee_id: "", description: "" }); setEditing(null); setShowForm(false); };
+  const openEdit = (d: Department) => { setForm({ name: d.name, code: d.code || "", office_id: d.office_id || "", head_employee_id: d.head_employee_id || "", description: d.description || "" }); setEditing(d); setShowForm(true); };
 
   const handleSave = async () => {
     if (!form.name) return;
     setSaving(true);
-    const payload = { ...form, business_id: businessOwnerId };
+    const payload = { business_id: businessOwnerId, name: form.name, code: form.code || null, office_id: form.office_id || null, head_employee_id: form.head_employee_id || null, description: form.description || null };
     if (editing) await supabase.from("hr_departments").update(payload).eq("id", editing.id);
     else await supabase.from("hr_departments").insert(payload);
     setSaving(false);
@@ -51,6 +61,12 @@ export default function StandaloneHRDepartments() {
     if (!confirm("Delete this department?")) return;
     await supabase.from("hr_departments").delete().eq("id", id);
     load();
+  };
+
+  const getOfficeName = (id: string | null) => offices.find(o => o.id === id)?.name || "—";
+  const getEmployeeName = (id: string | null) => {
+    const e = employees.find(emp => emp.id === id);
+    return e ? `${e.first_name} ${e.last_name}` : "—";
   };
 
   return (
@@ -74,8 +90,19 @@ export default function StandaloneHRDepartments() {
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><label className="text-xs font-medium text-muted-foreground">Department Name *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div><label className="text-xs font-medium text-muted-foreground">Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div><label className="text-xs font-medium text-muted-foreground">Department Head</label><input value={form.head_name} onChange={e => setForm({ ...form, head_name: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground">Code</label><input value={form.code} onChange={e => setForm({ ...form, code: e.target.value })} placeholder="e.g. IT, HR, FIN" className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground">Office</label>
+                  <select value={form.office_id} onChange={e => setForm({ ...form, office_id: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                    <option value="">Select office...</option>
+                    {offices.map(o => <option key={o.id} value={o.id}>{o.name}</option>)}
+                  </select>
+                </div>
+                <div><label className="text-xs font-medium text-muted-foreground">Department Head</label>
+                  <select value={form.head_employee_id} onChange={e => setForm({ ...form, head_employee_id: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                    <option value="">Select employee...</option>
+                    {employees.map(e => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
+                  </select>
+                </div>
                 <div className="sm:col-span-2"><label className="text-xs font-medium text-muted-foreground">Description</label><textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
@@ -104,7 +131,8 @@ export default function StandaloneHRDepartments() {
                 <h4 className="font-semibold">{d.name}</h4>
                 {d.code && <span className="text-xs text-muted-foreground">{d.code}</span>}
                 {d.description && <p className="text-xs text-muted-foreground mt-1">{d.description}</p>}
-                {d.head_name && <p className="text-xs mt-2"><span className="text-muted-foreground">Head: </span>{d.head_name}</p>}
+                <p className="text-xs mt-1"><span className="text-muted-foreground">Office: </span>{getOfficeName(d.office_id)}</p>
+                <p className="text-xs"><span className="text-muted-foreground">Head: </span>{getEmployeeName(d.head_employee_id)}</p>
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                   <Users className="w-3 h-3" /> {employeeCounts[d.name] || 0} employees
                 </div>

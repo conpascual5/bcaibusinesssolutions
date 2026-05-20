@@ -3,111 +3,316 @@ import { useAuth } from "@/providers/auth";
 import { useHRAccess } from "@/providers/hr-access";
 import { supabase } from "@/integrations/supabase/client";
 import HRLayout from "@/components/HRLayout";
-import { Loader2, Plus, Pencil, Trash2, X, Check, CalendarRange, Clock } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, X, Check, Clock, Users, RefreshCw } from "lucide-react";
 
-type Shift = { id: string; name: string; start_time: string; end_time: string; grace_period: number | null; description: string | null; };
+type Shift = { id: string; name: string; start_time: string; end_time: string; grace_period_minutes: number; break_start: string | null; break_end: string | null; break_paid: boolean; description: string | null; is_active: boolean; days_off: number[]; };
+type Employee = { id: string; first_name: string; last_name: string; };
+type EmployeeShift = { id: string; employee_id: string; shift_id: string; effective_from: string; effective_to: string | null; day_of_week: number | null; is_active: boolean; };
+
+const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
 export default function StandaloneHRShiftRoster() {
   const { user } = useAuth();
   const { hrBusinessId } = useHRAccess();
   const businessOwnerId = hrBusinessId || user?.id || "";
   const [shifts, setShifts] = useState<Shift[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [employeeShifts, setEmployeeShifts] = useState<EmployeeShift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing] = useState<Shift | null>(null);
+  const [showShiftForm, setShowShiftForm] = useState(false);
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [editingShift, setEditingShift] = useState<Shift | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", start_time: "08:00", end_time: "17:00", grace_period: 15, description: "" });
+  const [syncing, setSyncing] = useState(false);
+  const [shiftForm, setShiftForm] = useState({
+    name: "", start_time: "08:00", end_time: "17:00",
+    grace_period_minutes: 15, break_start: "12:00", break_end: "13:00",
+    break_paid: false, description: "", days_off: [] as number[],
+  });
+  const [assignForm, setAssignForm] = useState({
+    employee_id: "", shift_id: "",
+    effective_from: new Date().toISOString().split("T")[0],
+    effective_to: "", day_of_week: "",
+  });
 
-  const load = async () => {
+  const loadData = async () => {
     if (!businessOwnerId) return;
-    const { data } = await supabase.from("hr_shifts").select("*").eq("business_id", businessOwnerId).order("name");
-    if (data) setShifts(data);
+    const [shRes, empRes, esRes] = await Promise.all([
+      supabase.from("hr_shift_rosters").select("*").eq("business_id", businessOwnerId).order("name"),
+      supabase.from("hr_employees").select("id, first_name, last_name").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
+      supabase.from("hr_employee_shifts").select("*").eq("business_id", businessOwnerId).order("effective_from", { ascending: false }),
+    ]);
+    if (shRes.data) setShifts(shRes.data);
+    if (empRes.data) setEmployees(empRes.data);
+    if (esRes.data) setEmployeeShifts(esRes.data);
     setLoading(false);
   };
-  useEffect(() => { load(); }, [businessOwnerId]);
 
-  const resetForm = () => { setForm({ name: "", start_time: "08:00", end_time: "17:00", grace_period: 15, description: "" }); setEditing(null); setShowForm(false); };
-  const openEdit = (s: Shift) => { setForm({ name: s.name, start_time: s.start_time, end_time: s.end_time, grace_period: s.grace_period || 15, description: s.description || "" }); setEditing(s); setShowForm(true); };
+  useEffect(() => { if (businessOwnerId) loadData(); }, [businessOwnerId]);
 
-  const handleSave = async () => {
-    if (!form.name || !form.start_time || !form.end_time) return;
+  const resetShiftForm = () => {
+    setShiftForm({ name: "", start_time: "08:00", end_time: "17:00", grace_period_minutes: 15, break_start: "12:00", break_end: "13:00", break_paid: false, description: "", days_off: [] });
+    setEditingShift(null);
+    setShowShiftForm(false);
+  };
+
+  const openEditShift = (s: Shift) => {
+    setShiftForm({
+      name: s.name, start_time: s.start_time.slice(0, 5), end_time: s.end_time.slice(0, 5),
+      grace_period_minutes: s.grace_period_minutes, break_start: s.break_start?.slice(0, 5) || "",
+      break_end: s.break_end?.slice(0, 5) || "", break_paid: s.break_paid,
+      description: s.description || "", days_off: s.days_off || [],
+    });
+    setEditingShift(s);
+    setShowShiftForm(true);
+  };
+
+  const toggleDayOff = (day: number) => {
+    setShiftForm(p => ({
+      ...p,
+      days_off: p.days_off.includes(day) ? p.days_off.filter(d => d !== day) : [...p.days_off, day],
+    }));
+  };
+
+  const handleSaveShift = async () => {
+    if (!shiftForm.name.trim() || !businessOwnerId) return;
     setSaving(true);
-    const payload = { ...form, business_id: businessOwnerId };
-    if (editing) await supabase.from("hr_shifts").update(payload).eq("id", editing.id);
-    else await supabase.from("hr_shifts").insert(payload);
+    const payload = {
+      business_id: businessOwnerId, name: shiftForm.name.trim(), start_time: shiftForm.start_time, end_time: shiftForm.end_time,
+      grace_period_minutes: shiftForm.grace_period_minutes, break_start: shiftForm.break_start || null, break_end: shiftForm.break_end || null,
+      break_paid: shiftForm.break_paid, description: shiftForm.description || null, days_off: shiftForm.days_off,
+    };
+    if (editingShift) await supabase.from("hr_shift_rosters").update(payload).eq("id", editingShift.id);
+    else await supabase.from("hr_shift_rosters").insert(payload);
     setSaving(false);
-    resetForm();
-    load();
+    resetShiftForm();
+    loadData();
   };
 
-  const deleteShift = async (id: string) => {
-    if (!confirm("Delete this shift?")) return;
-    await supabase.from("hr_shifts").delete().eq("id", id);
-    load();
+  const handleDeleteShift = async (id: string) => {
+    await supabase.from("hr_shift_rosters").delete().eq("id", id);
+    loadData();
   };
+
+  const syncToSchedules = async (es: EmployeeShift) => {
+    const shift = shifts.find(s => s.id === es.shift_id);
+    if (!shift) return;
+    const daysOff = shift.days_off || [];
+    const daysToSync = es.day_of_week !== null ? [es.day_of_week] : [0, 1, 2, 3, 4, 5, 6];
+    for (const dayOfWeek of daysToSync) {
+      const isRestDay = daysOff.includes(dayOfWeek);
+      await supabase.from("hr_employee_schedules").upsert({
+        employee_id: es.employee_id, day_of_week: dayOfWeek,
+        start_time: isRestDay ? null : shift.start_time,
+        end_time: isRestDay ? null : shift.end_time,
+        is_rest_day: isRestDay,
+        grace_period_minutes: isRestDay ? null : shift.grace_period_minutes,
+        break_start: isRestDay ? null : shift.break_start,
+        break_end: isRestDay ? null : shift.break_end,
+        break_paid: isRestDay ? null : shift.break_paid,
+        shift_id: shift.id,
+      }, { onConflict: "employee_id,day_of_week", ignoreDuplicates: false });
+    }
+  };
+
+  const unsyncFromSchedules = async (es: EmployeeShift) => {
+    const daysToRemove = es.day_of_week !== null ? [es.day_of_week] : [0, 1, 2, 3, 4, 5, 6];
+    for (const dayOfWeek of daysToRemove) {
+      await supabase.from("hr_employee_schedules").delete().eq("employee_id", es.employee_id).eq("day_of_week", dayOfWeek).eq("shift_id", es.shift_id);
+    }
+  };
+
+  const handleAssign = async () => {
+    if (!assignForm.employee_id || !assignForm.shift_id || !businessOwnerId) return;
+    setSaving(true);
+    const { data: newAssignment, error } = await supabase.from("hr_employee_shifts").insert({
+      business_id: businessOwnerId, employee_id: assignForm.employee_id, shift_id: assignForm.shift_id,
+      effective_from: assignForm.effective_from, effective_to: assignForm.effective_to || null,
+      day_of_week: assignForm.day_of_week ? parseInt(assignForm.day_of_week) : null,
+    }).select().single();
+    if (!error && newAssignment) await syncToSchedules(newAssignment);
+    setSaving(false);
+    setAssignForm({ employee_id: "", shift_id: "", effective_from: new Date().toISOString().split("T")[0], effective_to: "", day_of_week: "" });
+    setShowAssignForm(false);
+    loadData();
+  };
+
+  const handleUnassign = async (es: EmployeeShift) => {
+    await unsyncFromSchedules(es);
+    await supabase.from("hr_employee_shifts").update({ is_active: false }).eq("id", es.id);
+    loadData();
+  };
+
+  const syncAllToSchedules = async () => {
+    setSyncing(true);
+    const activeAssignments = employeeShifts.filter(es => es.is_active);
+    for (const es of activeAssignments) await syncToSchedules(es);
+    setSyncing(false);
+    loadData();
+  };
+
+  const getEmployeeName = (id: string) => employees.find(e => e.id === id) ? `${employees.find(e => e.id === id)!.first_name} ${employees.find(e => e.id === id)!.last_name}` : "Unknown";
+  const getShiftName = (id: string) => shifts.find(s => s.id === id)?.name || "Unknown";
 
   return (
-    <HRLayout title="Shift Roster" description="Define work shifts and schedules">
+    <HRLayout title="Shift Roster" description="Define work shifts and assign them to employees — auto-syncs to attendance & payroll schedules">
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="w-6 h-6 animate-spin text-muted-foreground" /></div>
       ) : (
-        <div className="space-y-4">
-          <div className="flex justify-end">
-            <button onClick={() => { resetForm(); setShowForm(true); }}
-              className="flex items-center gap-1.5 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 transition-colors">
-              <Plus className="w-4 h-4" /> Add Shift
+        <div className="space-y-6">
+          <div className="flex gap-3 flex-wrap">
+            <button onClick={() => { resetShiftForm(); setShowShiftForm(true); }} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors flex items-center gap-2">
+              <Plus className="w-4 h-4" /> New Shift
+            </button>
+            <button onClick={() => setShowAssignForm(true)} className="px-4 py-2 border border-border rounded-xl text-sm font-semibold hover:bg-muted transition-colors flex items-center gap-2">
+              <Users className="w-4 h-4" /> Assign Shift
+            </button>
+            <button onClick={syncAllToSchedules} disabled={syncing}
+              className="px-4 py-2 border border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-400 rounded-xl text-sm font-semibold hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-colors flex items-center gap-2">
+              {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+              Sync All to Schedules
             </button>
           </div>
 
-          {showForm && (
+          {showShiftForm && (
             <div className="bg-card rounded-2xl border border-border p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="font-bold">{editing ? "Edit Shift" : "New Shift"}</h3>
-                <button onClick={resetForm} className="p-1 hover:bg-muted rounded-lg"><X className="w-4 h-4" /></button>
+              <h3 className="font-bold mb-4">{editingShift ? "Edit Shift" : "New Shift"}</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Shift Name *</label><input type="text" value={shiftForm.name} onChange={e => setShiftForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Morning Shift" className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Start Time</label><input type="time" value={shiftForm.start_time} onChange={e => setShiftForm(p => ({ ...p, start_time: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">End Time</label><input type="time" value={shiftForm.end_time} onChange={e => setShiftForm(p => ({ ...p, end_time: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Grace Period (min)</label><input type="number" value={shiftForm.grace_period_minutes} onChange={e => setShiftForm(p => ({ ...p, grace_period_minutes: parseInt(e.target.value) || 0 }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Break Start</label><input type="time" value={shiftForm.break_start} onChange={e => setShiftForm(p => ({ ...p, break_start: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Break End</label><input type="time" value={shiftForm.break_end} onChange={e => setShiftForm(p => ({ ...p, break_end: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div className="sm:col-span-3"><label className="flex items-center gap-3 cursor-pointer"><input type="checkbox" checked={shiftForm.break_paid} onChange={e => setShiftForm(p => ({ ...p, break_paid: e.target.checked }))} className="w-4 h-4 rounded border-border text-indigo-600 focus:ring-indigo-500" /><span className="text-sm font-medium">Break is paid</span></label></div>
+                <div className="sm:col-span-3"><label className="text-xs font-medium text-muted-foreground block mb-1">Description</label><textarea value={shiftForm.description} onChange={e => setShiftForm(p => ({ ...p, description: e.target.value }))} rows={2} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" /></div>
+                <div className="sm:col-span-3 border-t border-border pt-4 mt-2">
+                  <label className="text-xs font-medium text-muted-foreground block mb-3">Days Off (employees assigned this shift will have these as rest days)</label>
+                  <div className="flex flex-wrap gap-2">
+                    {DAYS.map((day, i) => {
+                      const isOff = shiftForm.days_off.includes(i);
+                      return (
+                        <button key={i} type="button" onClick={() => toggleDayOff(i)}
+                          className={`px-3 py-2 rounded-xl text-xs font-semibold border transition-all ${isOff ? "bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400 shadow-sm" : "bg-background border-border text-muted-foreground hover:border-amber-300 hover:text-amber-600"}`}>
+                          {isOff ? "✓ " : ""}{day}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {shiftForm.days_off.length > 0 && <p className="text-xs text-amber-600 dark:text-amber-400 mt-2 font-medium">Rest days: {shiftForm.days_off.map(d => DAYS[d]).join(", ")}</p>}
+                </div>
               </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div><label className="text-xs font-medium text-muted-foreground">Shift Name *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div><label className="text-xs font-medium text-muted-foreground">Grace Period (min)</label><input type="number" value={form.grace_period} onChange={e => setForm({ ...form, grace_period: parseInt(e.target.value) || 0 })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div><label className="text-xs font-medium text-muted-foreground">Start Time *</label><input type="time" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div><label className="text-xs font-medium text-muted-foreground">End Time *</label><input type="time" value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div className="sm:col-span-2"><label className="text-xs font-medium text-muted-foreground">Description</label><textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} rows={2} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-              </div>
-              <div className="flex justify-end gap-2 mt-4">
-                <button onClick={resetForm} className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors">Cancel</button>
-                <button onClick={handleSave} disabled={saving || !form.name || !form.start_time || !form.end_time}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-indigo-500 text-white rounded-xl text-sm font-medium hover:bg-indigo-600 disabled:opacity-50 transition-colors">
+              <div className="flex gap-2 mt-4">
+                <button onClick={handleSaveShift} disabled={saving || !shiftForm.name.trim()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
                   {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {editing ? "Update" : "Save"}
+                  {editingShift ? "Update" : "Create"}
                 </button>
+                <button onClick={resetShiftForm} className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
+              </div>
+            </div>
+          )}
+
+          {showAssignForm && (
+            <div className="bg-card rounded-2xl border border-border p-6">
+              <h3 className="font-bold mb-4">Assign Shift to Employee</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Employee *</label>
+                  <select value={assignForm.employee_id} onChange={e => setAssignForm(p => ({ ...p, employee_id: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Select employee...</option>
+                    {employees.map(e => <option key={e.id} value={e.id}>{e.first_name} {e.last_name}</option>)}
+                  </select>
+                </div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Shift *</label>
+                  <select value={assignForm.shift_id} onChange={e => setAssignForm(p => ({ ...p, shift_id: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">Select shift...</option>
+                    {shifts.filter(s => s.is_active).map(s => {
+                      const daysOff = s.days_off || [];
+                      return <option key={s.id} value={s.id}>{s.name} ({s.start_time.slice(0,5)}-{s.end_time.slice(0,5)}){daysOff.length > 0 ? ` — Off: ${daysOff.map(d => DAYS[d].slice(0,3)).join(", ")}` : ""}</option>;
+                    })}
+                  </select>
+                </div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Effective From</label><input type="date" value={assignForm.effective_from} onChange={e => setAssignForm(p => ({ ...p, effective_from: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Effective To (optional)</label><input type="date" value={assignForm.effective_to} onChange={e => setAssignForm(p => ({ ...p, effective_to: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground block mb-1">Day of Week (optional)</label>
+                  <select value={assignForm.day_of_week} onChange={e => setAssignForm(p => ({ ...p, day_of_week: e.target.value }))} className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-background focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="">All days</option>
+                    {DAYS.map((day, i) => <option key={i} value={i}>{day}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-4">
+                <button onClick={handleAssign} disabled={saving || !assignForm.employee_id || !assignForm.shift_id} className="px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} Assign
+                </button>
+                <button onClick={() => setShowAssignForm(false)} className="px-4 py-2 border border-border rounded-xl text-sm font-medium hover:bg-muted transition-colors">Cancel</button>
               </div>
             </div>
           )}
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {shifts.map(s => (
-              <div key={s.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="p-2 rounded-xl bg-cyan-100 dark:bg-cyan-900/30">
-                    <CalendarRange className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+            {shifts.map(s => {
+              const daysOff = s.days_off || [];
+              return (
+                <div key={s.id} className="bg-card rounded-2xl border border-border p-5 hover:shadow-sm transition-shadow">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-2.5">
+                      <div className="p-2 rounded-xl bg-indigo-100 dark:bg-indigo-900/30"><Clock className="w-4 h-4 text-indigo-600 dark:text-indigo-400" /></div>
+                      <div><p className="font-semibold text-sm">{s.name}</p><p className="text-xs text-muted-foreground">{s.start_time.slice(0, 5)} - {s.end_time.slice(0, 5)}</p></div>
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => openEditShift(s)} className="p-1.5 rounded-lg hover:bg-muted text-muted-foreground"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => handleDeleteShift(s.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-muted-foreground hover:text-red-500"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </div>
                   </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => openEdit(s)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Pencil className="w-3.5 h-3.5 text-muted-foreground" /></button>
-                    <button onClick={() => deleteShift(s.id)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Trash2 className="w-3.5 h-3.5 text-rose-500" /></button>
+                  <div className="space-y-1 text-xs text-muted-foreground">
+                    <p>Grace: {s.grace_period_minutes} min</p>
+                    {s.break_start && <p>Break: {s.break_start.slice(0, 5)} - {s.break_end?.slice(0, 5)} {s.break_paid ? "(paid)" : "(unpaid)"}</p>}
+                    {daysOff.length > 0 && <p className="text-amber-600 dark:text-amber-400 font-medium">Off: {daysOff.map(d => DAYS[d].slice(0, 3)).join(", ")}</p>}
+                    {s.description && <p className="truncate">{s.description}</p>}
                   </div>
+                  <div className="mt-3"><p className="text-xs text-muted-foreground"><Users className="w-3 h-3 inline mr-1" />{employeeShifts.filter(es => es.shift_id === s.id && es.is_active).length} assigned</p></div>
                 </div>
-                <h4 className="font-semibold">{s.name}</h4>
-                <div className="flex items-center gap-2 mt-2 text-sm">
-                  <Clock className="w-4 h-4 text-muted-foreground" />
-                  <span>{s.start_time} — {s.end_time}</span>
-                </div>
-                {s.grace_period ? <p className="text-xs text-muted-foreground mt-1">{s.grace_period} min grace period</p> : null}
-                {s.description && <p className="text-xs text-muted-foreground mt-2">{s.description}</p>}
-              </div>
-            ))}
-            {shifts.length === 0 && (
-              <div className="sm:col-span-2 lg:col-span-3 py-12 text-center text-muted-foreground">No shifts defined yet.</div>
-            )}
+              );
+            })}
+            {shifts.length === 0 && (<div className="sm:col-span-2 lg:col-span-3 text-center py-12 text-muted-foreground"><Clock className="w-8 h-8 mx-auto mb-2 opacity-40" /><p className="text-sm">No shifts defined yet.</p></div>)}
           </div>
+
+          {employeeShifts.length > 0 && (
+            <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="px-4 py-3 border-b border-border font-semibold text-sm flex items-center gap-2">
+                <Users className="w-4 h-4 text-indigo-500" /> Current Assignments
+                <span className="text-xs text-muted-foreground font-normal ml-1">(auto-synced to attendance & payroll schedules)</span>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-border bg-muted/30">
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Employee</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Shift</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Effective</th>
+                    <th className="text-left px-4 py-3 font-medium text-muted-foreground">Day</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
+                  </tr></thead>
+                  <tbody>
+                    {employeeShifts.filter(es => es.is_active).slice(0, 20).map(es => {
+                      const shift = shifts.find(s => s.id === es.shift_id);
+                      const daysOff = shift?.days_off || [];
+                      return (
+                        <tr key={es.id} className="border-b border-border last:border-0 hover:bg-muted/20">
+                          <td className="px-4 py-3 font-medium">{getEmployeeName(es.employee_id)}</td>
+                          <td className="px-4 py-3">{getShiftName(es.shift_id)}{daysOff.length > 0 && <span className="text-[10px] text-amber-600 ml-1.5 font-medium">(Off: {daysOff.map(d => DAYS[d].slice(0, 3)).join(", ")})</span>}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{es.effective_from}{es.effective_to ? ` → ${es.effective_to}` : ""}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{es.day_of_week !== null ? DAYS[es.day_of_week] : "All"}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button onClick={() => handleUnassign(es)} className="p-1.5 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/30 text-muted-foreground hover:text-red-600 transition-colors" title="Unassign"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </HRLayout>

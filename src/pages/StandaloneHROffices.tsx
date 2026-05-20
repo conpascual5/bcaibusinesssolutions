@@ -3,9 +3,9 @@ import { useAuth } from "@/providers/auth";
 import { useHRAccess } from "@/providers/hr-access";
 import { supabase } from "@/integrations/supabase/client";
 import HRLayout from "@/components/HRLayout";
-import { Loader2, Plus, Pencil, Trash2, X, Check, Building2, MapPin } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, X, Check, Building2, MapPin, Phone, Mail, Star } from "lucide-react";
 
-type Office = { id: string; name: string; address: string | null; phone: string | null; is_head_office: boolean; };
+type Office = { id: string; name: string; address: string | null; phone: string | null; email: string | null; is_head_office: boolean; is_active: boolean; };
 
 export default function StandaloneHROffices() {
   const { user } = useAuth();
@@ -16,7 +16,7 @@ export default function StandaloneHROffices() {
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Office | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", address: "", phone: "", is_head_office: false });
+  const [form, setForm] = useState({ name: "", address: "", phone: "", email: "", is_head_office: false });
 
   const load = async () => {
     if (!businessOwnerId) return;
@@ -26,13 +26,13 @@ export default function StandaloneHROffices() {
   };
   useEffect(() => { load(); }, [businessOwnerId]);
 
-  const resetForm = () => { setForm({ name: "", address: "", phone: "", is_head_office: false }); setEditing(null); setShowForm(false); };
-  const openEdit = (o: Office) => { setForm({ name: o.name, address: o.address || "", phone: o.phone || "", is_head_office: o.is_head_office }); setEditing(o); setShowForm(true); };
+  const resetForm = () => { setForm({ name: "", address: "", phone: "", email: "", is_head_office: false }); setEditing(null); setShowForm(false); };
+  const openEdit = (o: Office) => { setForm({ name: o.name, address: o.address || "", phone: o.phone || "", email: o.email || "", is_head_office: o.is_head_office }); setEditing(o); setShowForm(true); };
 
   const handleSave = async () => {
     if (!form.name) return;
     setSaving(true);
-    const payload = { ...form, business_id: businessOwnerId };
+    const payload = { business_id: businessOwnerId, name: form.name, address: form.address || null, phone: form.phone || null, email: form.email || null, is_head_office: form.is_head_office };
     if (editing) await supabase.from("hr_offices").update(payload).eq("id", editing.id);
     else await supabase.from("hr_offices").insert(payload);
     setSaving(false);
@@ -68,6 +68,7 @@ export default function StandaloneHROffices() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div><label className="text-xs font-medium text-muted-foreground">Office Name *</label><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
                 <div><label className="text-xs font-medium text-muted-foreground">Phone</label><input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground">Email</label><input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
                 <div className="sm:col-span-2"><label className="text-xs font-medium text-muted-foreground">Address</label><input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
                 <div className="flex items-center gap-2"><input type="checkbox" id="head_office" checked={form.is_head_office} onChange={e => setForm({ ...form, is_head_office: e.target.checked })} className="rounded border-border" /><label htmlFor="head_office" className="text-sm">Head Office</label></div>
               </div>
@@ -97,7 +98,8 @@ export default function StandaloneHROffices() {
                 <h4 className="font-semibold mb-1">{o.name}</h4>
                 {o.is_head_office && <span className="inline-block px-2 py-0.5 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 mb-2">Head Office</span>}
                 {o.address && <p className="text-xs text-muted-foreground flex items-start gap-1.5 mt-1"><MapPin className="w-3 h-3 mt-0.5 shrink-0" />{o.address}</p>}
-                {o.phone && <p className="text-xs text-muted-foreground mt-1">{o.phone}</p>}
+                {o.phone && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Phone className="w-3 h-3 shrink-0" />{o.phone}</p>}
+                {o.email && <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1"><Mail className="w-3 h-3 shrink-0" />{o.email}</p>}
               </div>
             ))}
             {offices.length === 0 && (

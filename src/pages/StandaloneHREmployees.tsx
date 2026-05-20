@@ -21,6 +21,7 @@ type Employee = {
   is_active: boolean;
   gender: string | null;
   notes: string | null;
+  daily_rate: number;
 };
 
 function calculateTenure(hireDate: string, resignationDate: string | null): string {
@@ -48,7 +49,8 @@ export default function StandaloneHREmployees() {
 
   const [form, setForm] = useState({
     first_name: "", last_name: "", email: "", phone: "",
-    position: "", department: "", hire_date: "", gender: "", notes: "",
+    position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: "",
+    daily_rate: ""
   });
 
   const loadEmployees = async () => {
@@ -65,7 +67,7 @@ export default function StandaloneHREmployees() {
   useEffect(() => { loadEmployees(); }, [businessOwnerId]);
 
   const resetForm = () => {
-    setForm({ first_name: "", last_name: "", email: "", phone: "", position: "", department: "", hire_date: "", gender: "", notes: "" });
+    setForm({ first_name: "", last_name: "", email: "", phone: "", position: "", department: "", hire_date: "", resignation_date: "", gender: "", notes: "", daily_rate: "" });
     setEditing(null);
     setShowForm(false);
   };
@@ -74,7 +76,8 @@ export default function StandaloneHREmployees() {
     setForm({
       first_name: emp.first_name, last_name: emp.last_name, email: emp.email || "",
       phone: emp.phone || "", position: emp.position || "", department: emp.department || "",
-      hire_date: emp.hire_date, gender: emp.gender || "", notes: emp.notes || "",
+      hire_date: emp.hire_date, resignation_date: emp.resignation_date || "", gender: emp.gender || "", notes: emp.notes || "",
+      daily_rate: emp.daily_rate ? String(emp.daily_rate) : ""
     });
     setEditing(emp);
     setShowForm(true);
@@ -109,7 +112,21 @@ export default function StandaloneHREmployees() {
     }
 
     setSaving(true);
-    const payload = { ...form, business_id: businessOwnerId };
+    const payload = {
+      business_id: businessOwnerId,
+      first_name: form.first_name,
+      last_name: form.last_name,
+      email: form.email || null,
+      phone: form.phone || null,
+      position: form.position || null,
+      department: form.department || null,
+      hire_date: form.hire_date,
+      resignation_date: form.resignation_date || null,
+      is_active: !form.resignation_date,
+      gender: form.gender || null,
+      notes: form.notes || null,
+      daily_rate: form.daily_rate ? Number(form.daily_rate) : 0,
+    };
     if (editing) {
       await supabase.from("hr_employees").update(payload).eq("id", editing.id);
     } else {
@@ -121,7 +138,8 @@ export default function StandaloneHREmployees() {
   };
 
   const toggleActive = async (emp: Employee) => {
-    await supabase.from("hr_employees").update({ is_active: !emp.is_active }).eq("id", emp.id);
+    const resignation_date = emp.is_active ? new Date().toISOString().split('T')[0] : null;
+    await supabase.from("hr_employees").update({ is_active: !emp.is_active, resignation_date }).eq("id", emp.id);
     loadEmployees();
   };
 
@@ -181,7 +199,9 @@ export default function StandaloneHREmployees() {
                 <div><label className="text-xs font-medium text-muted-foreground">Position</label><input value={form.position} onChange={e => setForm({ ...form, position: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
                 <div><label className="text-xs font-medium text-muted-foreground">Department</label><input value={form.department} onChange={e => setForm({ ...form, department: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
                 <div><label className="text-xs font-medium text-muted-foreground">Hire Date *</label><input type="date" value={form.hire_date} onChange={e => setForm({ ...form, hire_date: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
-                <div><label className="text-xs font-medium text-muted-foreground">Gender</label><select value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"><option value="">Select</option><option>Male</option><option>Female</option></select></div>
+                <div><label className="text-xs font-medium text-muted-foreground">Resignation Date</label><input type="date" value={form.resignation_date} onChange={e => setForm({ ...form, resignation_date: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
+                <div><label className="text-xs font-medium text-muted-foreground">Gender</label><select value={form.gender} onChange={e => setForm({ ...form, gender: e.target.value })} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20"><option value="">Select</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+                <div><label className="text-xs font-medium text-muted-foreground">Daily Rate (₱)</label><input type="number" value={form.daily_rate} onChange={e => setForm({ ...form, daily_rate: e.target.value })} placeholder="e.g. 750" className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
                 <div className="sm:col-span-2 lg:col-span-3"><label className="text-xs font-medium text-muted-foreground">Notes</label><textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} rows={2} className="w-full mt-1 px-3 py-2 rounded-xl border border-border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20" /></div>
               </div>
               <div className="flex justify-end gap-2 mt-4">
@@ -203,6 +223,7 @@ export default function StandaloneHREmployees() {
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground">Employee</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden sm:table-cell">Position</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden md:table-cell">Department</th>
+                    <th className="text-right px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Daily Rate</th>
                     <th className="text-left px-4 py-3 font-medium text-muted-foreground hidden lg:table-cell">Tenure</th>
                     <th className="text-center px-4 py-3 font-medium text-muted-foreground">Status</th>
                     <th className="text-right px-4 py-3 font-medium text-muted-foreground">Actions</th>
@@ -224,18 +245,21 @@ export default function StandaloneHREmployees() {
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell"><span className="text-muted-foreground">{emp.position || "—"}</span></td>
                       <td className="px-4 py-3 hidden md:table-cell"><span className="text-muted-foreground">{emp.department || "—"}</span></td>
-                      <td className="px-4 py-3 hidden lg:table-cell"><span className="text-xs text-muted-foreground">{calculateTenure(emp.hire_date, emp.resignation_date)}</span></td>
-                      <td className="px-4 py-3 text-center">
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium ${emp.is_active ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-400' : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400'}`}>
-                          {emp.is_active ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                          {emp.is_active ? "Active" : "Inactive"}
+                      <td className="px-4 py-3 text-right hidden lg:table-cell font-medium">₱{Number(emp.daily_rate || 0).toLocaleString()}</td>
+                      <td className="px-4 py-3 hidden lg:table-cell">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400">
+                          <Calendar className="w-3 h-3" />
+                          {calculateTenure(emp.hire_date, emp.resignation_date)}
                         </span>
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        <button onClick={() => toggleActive(emp)} className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold transition-colors ${emp.is_active ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400'}`}>
+                          {emp.is_active ? <ToggleRight className="w-3.5 h-3.5" /> : <ToggleLeft className="w-3.5 h-3.5" />}
+                          {emp.is_active ? "Active" : "Inactive"}
+                        </button>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => toggleActive(emp)} className="p-1.5 hover:bg-muted rounded-lg transition-colors" title={emp.is_active ? "Deactivate" : "Activate"}>
-                            {emp.is_active ? <ToggleRight className="w-4 h-4 text-emerald-500" /> : <ToggleLeft className="w-4 h-4 text-muted-foreground" />}
-                          </button>
                           <button onClick={() => openEdit(emp)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Pencil className="w-4 h-4 text-muted-foreground" /></button>
                           <button onClick={() => deleteEmployee(emp.id)} className="p-1.5 hover:bg-muted rounded-lg transition-colors"><Trash2 className="w-4 h-4 text-rose-500" /></button>
                         </div>
@@ -243,7 +267,7 @@ export default function StandaloneHREmployees() {
                     </tr>
                   ))}
                   {filtered.length === 0 && (
-                    <tr><td colSpan={6} className="px-4 py-12 text-center text-muted-foreground">No employees found.</td></tr>
+                    <tr><td colSpan={7} className="px-4 py-12 text-center text-muted-foreground">No employees found.</td></tr>
                   )}
                 </tbody>
               </table>
