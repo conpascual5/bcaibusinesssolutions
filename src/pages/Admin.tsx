@@ -9,6 +9,7 @@ import AdminBMSAccess from "@/components/AdminBMSAccess";
 import AdminGCashAccess from "@/components/AdminGCashAccess";
 import AdminHRAccess from "@/components/AdminHRAccess";
 import AdminModuleAccess from "@/components/AdminModuleAccess";
+import DueSoonBanner from "@/components/DueSoonBanner";
 import { formatCurrency } from "@/lib/currency";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -1683,6 +1684,8 @@ export default function Admin() {
             Settings
           </button>
         </div>
+
+        <DueSoonBanner />
 
         {activeSection === "dashboard" && <AdminDashboard />}
 
