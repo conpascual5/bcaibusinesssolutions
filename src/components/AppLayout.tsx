@@ -64,7 +64,6 @@ import {
   BadgeCheck,
   RefreshCw,
   Calendar,
-  Package,
 } from 'lucide-react';
 import { useUsageLimit } from '@/hooks/useUsageLimit';
 import UsageBadge from '@/components/UsageBadge';

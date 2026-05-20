@@ -190,7 +190,7 @@ export default function SupportChatWidget() {
                 <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-700">
                   {user.plan === "pro" ? <Crown className="w-3.5 h-3.5 text-amber-500" /> : null}
                   {user.plan === "vip" ? <Sparkles className="w-3.5 h-3.5 text-purple-600" /> : null}
-                  {String(user.plan ?? "free").toUpperCase()}
+                  {user.plan === "pro" ? "MK" : String(user.plan ?? "free").toUpperCase()}
                 </div>
               </div>
             </div>
