@@ -465,7 +465,7 @@ export default function StandaloneHRPayroll() {
 
         // 2. Get attendance for this period
         const { data: attendance } = await supabase
-          .from("hr_attendance")
+          .from("hr_attendance_logs")
           .select("*")
           .eq("employee_id", emp.id)
           .gte("date", period.start_date)
