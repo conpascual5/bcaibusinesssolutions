@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Loader2, Check, X, Search, Users, Shield, UserCheck,
-  Plus, Minus, Link2, UserPlus
+  Plus, Minus, Link2, UserPlus, Pause, Play
 } from "lucide-react";
+import { toast } from "sonner";
 
 type ProfileRow = {
   id: string;
@@ -21,6 +22,16 @@ type HRAccessRow = {
   created_at: string;
 };
 
+type SubscriptionRow = {
+  id: string;
+  user_id: string;
+  plan: string;
+  status: string;
+  amount: number;
+  suspended: boolean;
+  next_billing_date: string;
+};
+
 type EmployeeRow = {
   id: string;
   first_name: string;
@@ -32,10 +43,12 @@ type EmployeeRow = {
 export default function AdminHRAccess() {
   const [users, setUsers] = useState<ProfileRow[]>([]);
   const [accessMap, setAccessMap] = useState<Record<string, HRAccessRow | null>>({});
+  const [subscriptions, setSubscriptions] = useState<Record<string, SubscriptionRow>>({});
   const [employeeCounts, setEmployeeCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [toggling, setToggling] = useState<string | null>(null);
+  const [suspending, setSuspending] = useState<string | null>(null);
   const [adjustingSeats, setAdjustingSeats] = useState<string | null>(null);
   const [showLinkModal, setShowLinkModal] = useState<string | null>(null);
   const [unlinkedEmployees, setUnlinkedEmployees] = useState<EmployeeRow[]>([]);
@@ -43,9 +56,10 @@ export default function AdminHRAccess() {
 
   useEffect(() => {
     (async () => {
-      const [usersRes, accessRes, empRes] = await Promise.all([
+      const [usersRes, accessRes, subsRes, empRes] = await Promise.all([
         supabase.from("profiles").select("id, email, full_name, is_admin, plan").order("created_at", { ascending: false }),
         supabase.from("hr_user_access").select("user_id, business_id, is_active, seats"),
+        supabase.from("subscriptions").select("*").eq("plan", "hr").eq("status", "active"),
         supabase.from("hr_employees").select("id, first_name, last_name, auth_user_id, business_id"),
       ]);
 
@@ -58,6 +72,13 @@ export default function AdminHRAccess() {
           map[a.user_id] = a;
         });
         setAccessMap(map);
+      }
+      if (subsRes.data) {
+        const subMap: Record<string, SubscriptionRow> = {};
+        (subsRes.data as SubscriptionRow[]).forEach((s) => {
+          subMap[s.user_id] = s;
+        });
+        setSubscriptions(subMap);
       }
       if (empRes.data) {
         const counts: Record<string, number> = {};
@@ -79,7 +100,13 @@ export default function AdminHRAccess() {
           .update({ is_active: false })
           .eq("user_id", userId)
           .eq("is_active", true);
+        await supabase.from("subscriptions").update({ status: "cancelled", cancelled_at: new Date().toISOString() }).eq("user_id", userId).eq("plan", "hr").eq("status", "active");
         setAccessMap((prev) => ({ ...prev, [userId]: null }));
+        setSubscriptions((prev) => {
+          const next = { ...prev };
+          delete next[userId];
+          return next;
+        });
       } else {
         const { data: existing } = await supabase
           .from("hr_user_access")
@@ -100,15 +127,65 @@ export default function AdminHRAccess() {
             seats: 10,
           });
         }
+
+        await supabase.rpc("create_subscription_with_invoice", {
+          p_user_id: userId,
+          p_plan: "hr",
+          p_amount: 999,
+        });
+
+        setAccessMap((prev) => ({
+          ...prev,
+          [userId]: { user_id: userId, business_id: userId, is_active: true, seats: 10, created_at: new Date().toISOString() },
+        }));
+
+        const { data } = await supabase.from("subscriptions").select("*").eq("user_id", userId).eq("plan", "hr").eq("status", "active").maybeSingle();
+        if (data) {
+          setSubscriptions((prev) => ({ ...prev, [userId]: data as SubscriptionRow }));
+        }
+
+        toast.success("HR access granted. ₱999/month subscription created.");
+      }
+    } catch (err) {
+      console.error("Failed to toggle HR access", err);
+      toast.error("Failed to toggle HR access");
+    }
+    setToggling(null);
+  };
+
+  const toggleSuspend = async (userId: string, sub: SubscriptionRow) => {
+    setSuspending(userId);
+    try {
+      const newSuspended = !sub.suspended;
+      await supabase.from("subscriptions").update({ suspended: newSuspended, updated_at: new Date().toISOString() }).eq("id", sub.id);
+
+      if (newSuspended) {
+        await supabase.from("hr_user_access").update({ is_active: false }).eq("user_id", userId).eq("is_active", true);
+        setAccessMap((prev) => ({ ...prev, [userId]: null }));
+      } else {
+        const { data: existing } = await supabase.from("hr_user_access").select("id").eq("user_id", userId).maybeSingle();
+        if (existing) {
+          await supabase.from("hr_user_access").update({ is_active: true }).eq("id", existing.id);
+        } else {
+          await supabase.from("hr_user_access").insert({ user_id: userId, business_id: userId, is_active: true, seats: 10 });
+        }
         setAccessMap((prev) => ({
           ...prev,
           [userId]: { user_id: userId, business_id: userId, is_active: true, seats: 10, created_at: new Date().toISOString() },
         }));
       }
+
+      setSubscriptions((prev) => ({
+        ...prev,
+        [userId]: { ...sub, suspended: newSuspended },
+      }));
+
+      toast.success(newSuspended ? "Subscription suspended. Access revoked." : "Subscription resumed. Access restored.");
     } catch (err) {
-      console.error("Failed to toggle HR access", err);
+      console.error("Failed to toggle suspension", err);
+      toast.error("Failed to update subscription");
     }
-    setToggling(null);
+    setSuspending(null);
   };
 
   const adjustSeats = async (userId: string, delta: number) => {
@@ -133,7 +210,6 @@ export default function AdminHRAccess() {
 
   const openLinkModal = async (userId: string) => {
     setShowLinkModal(userId);
-    // Fetch employees belonging to this user that have no auth_user_id linked
     const { data } = await supabase
       .from("hr_employees")
       .select("id, first_name, last_name, auth_user_id, business_id")
@@ -183,7 +259,7 @@ export default function AdminHRAccess() {
             HR Management Access
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Grant or revoke standalone HR access. Each grant includes 10 employee seats by default.
+            Grant or revoke standalone HR access. ₱999/month — creates subscription with invoices. 10 employee seats included.
           </p>
         </div>
         <div className="relative">
@@ -207,16 +283,18 @@ export default function AdminHRAccess() {
                 <th className="text-left px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Email</th>
                 <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Plan</th>
                 <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">HR Access</th>
+                <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Subscription</th>
+                <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Next Billing</th>
                 <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Seats</th>
                 <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Employees</th>
                 <th className="text-center px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Link User</th>
-                <th className="text-right px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Action</th>
+                <th className="text-right px-5 py-3.5 text-xs font-bold uppercase tracking-wider text-muted-foreground">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filteredUsers.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-5 py-12 text-center text-sm text-muted-foreground">
+                  <td colSpan={10} className="px-5 py-12 text-center text-sm text-muted-foreground">
                     {search ? "No users match your search." : "No users found."}
                   </td>
                 </tr>
@@ -226,6 +304,8 @@ export default function AdminHRAccess() {
                 const hasAccess = access?.is_active ?? false;
                 const seats = access?.seats ?? 0;
                 const empCount = employeeCounts[u.id] || 0;
+                const sub = subscriptions[u.id];
+                const isSuspended = sub?.suspended ?? false;
 
                 return (
                   <tr key={u.id} className="hover:bg-muted/30 transition-colors">
@@ -257,6 +337,22 @@ export default function AdminHRAccess() {
                           <X className="w-3 h-3" /> None
                         </span>
                       )}
+                    </td>
+                    <td className="px-5 py-4 text-center">
+                      {sub ? (
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold ${
+                          isSuspended
+                            ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+                            : "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+                        }`}>
+                          {isSuspended ? "Suspended" : "Active"}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-5 py-4 text-center text-sm text-muted-foreground">
+                      {sub ? new Date(sub.next_billing_date).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }) : "—"}
                     </td>
                     <td className="px-5 py-4 text-center">
                       {hasAccess ? (
@@ -312,23 +408,44 @@ export default function AdminHRAccess() {
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      <button
-                        onClick={() => toggleAccess(u.id, hasAccess)}
-                        disabled={toggling === u.id}
-                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                          hasAccess
-                            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
-                            : "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-200 dark:hover:bg-cyan-900/50"
-                        } disabled:opacity-50`}
-                      >
-                        {toggling === u.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : hasAccess ? (
-                          <><X className="w-4 h-4" /> Revoke</>
-                        ) : (
-                          <><UserCheck className="w-4 h-4" /> Grant</>
+                      <div className="flex items-center justify-end gap-2">
+                        {sub && (
+                          <button
+                            onClick={() => toggleSuspend(u.id, sub)}
+                            disabled={suspending === u.id}
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                              isSuspended
+                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400"
+                                : "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-400"
+                            } disabled:opacity-50`}
+                          >
+                            {suspending === u.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : isSuspended ? (
+                              <><Play className="w-3.5 h-3.5" /> Resume</>
+                            ) : (
+                              <><Pause className="w-3.5 h-3.5" /> Suspend</>
+                            )}
+                          </button>
                         )}
-                      </button>
+                        <button
+                          onClick={() => toggleAccess(u.id, hasAccess)}
+                          disabled={toggling === u.id}
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                            hasAccess
+                              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                              : "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-200 dark:hover:bg-cyan-900/50"
+                          } disabled:opacity-50`}
+                        >
+                          {toggling === u.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : hasAccess ? (
+                            <><X className="w-4 h-4" /> Revoke</>
+                          ) : (
+                            <><UserCheck className="w-4 h-4" /> Grant</>
+                          )}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -404,7 +521,7 @@ export default function AdminHRAccess() {
 
       <div className="text-xs text-muted-foreground flex items-center gap-2">
         <Shield className="w-3.5 h-3.5" />
-        <span>Only non-admin users are shown. Each HR grant includes 10 employee seats by default.</span>
+        <span>Only non-admin users are shown. ₱999/month — Suspend stops access but keeps subscription record. 10 employee seats included.</span>
       </div>
     </div>
   );
