@@ -89,10 +89,8 @@ export default function AuthPage() {
         });
         if (signInError) throw signInError;
 
-        // Wait for the session to be persisted to localStorage before reloading
-        // This prevents the stale session race condition
-        await new Promise(resolve => setTimeout(resolve, 500));
-        window.location.href = "/app";
+        // Navigate instead of full reload — avoids getSession() race condition
+        navigate("/app", { replace: true });
       }
     } catch (err: any) {
       setError(err.message || "An error occurred");

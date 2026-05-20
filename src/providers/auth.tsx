@@ -81,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     let resolved = false;
+    let sessionResolved = false; // tracks if we got a session from any source
 
     const finishLoading = () => {
       if (!resolved && mounted) {
@@ -89,20 +90,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
+    // Longer timeout — only fires if NO session was resolved at all
     const timeoutId = setTimeout(() => {
-      if (!resolved) {
+      if (!resolved && mounted) {
         console.warn("[auth] Session resolution timed out — forcing loading=false");
-        // If getSession() timed out, the session is likely stale/corrupted
-        // Clear it so the user can re-login
-        if (mounted) {
+        if (!sessionResolved) {
+          // Only clear session if we never got one
           setSession(null);
           setUser(null);
-          finishLoading();
         }
+        finishLoading();
       }
     }, SESSION_TIMEOUT_MS);
 
-    // Try to get the session with a race against the timeout
+    // Try to get the session — but DON'T clear on failure if onAuthStateChange already handled it
     const getSessionWithTimeout = async () => {
       try {
         const result = await Promise.race([
@@ -116,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (result && result.data?.session) {
           console.log("[auth] Found existing session via getSession()");
+          sessionResolved = true;
           setSession(result.data.session);
           const profile = await fetchProfile(result.data.session);
           if (mounted) {
@@ -123,26 +125,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             finishLoading();
           }
         } else {
-          console.log("[auth] No existing session found");
-          setSession(null);
-          setUser(null);
-          finishLoading();
+          console.log("[auth] No existing session found via getSession()");
+          // Don't clear — onAuthStateChange might still fire
+          if (!sessionResolved) {
+            setSession(null);
+            setUser(null);
+            finishLoading();
+          }
         }
       } catch (err) {
         console.error("[auth] getSession failed or timed out:", err);
-        // Session is stale — clear localStorage and treat as logged out
-        const keysToRemove: string[] = [];
-        for (let i = localStorage.length - 1; i >= 0; i--) {
-          const key = localStorage.key(i);
-          if (key && (key.includes("supabase") || key.includes("sb-") || key.includes("auth-token"))) {
-            keysToRemove.push(key);
-          }
-        }
-        keysToRemove.forEach(key => localStorage.removeItem(key));
-
-        if (mounted) {
-          setSession(null);
-          setUser(null);
+        // Don't clear localStorage or session here — onAuthStateChange may have already set it
+        if (!sessionResolved && mounted) {
           finishLoading();
         }
       }
@@ -169,6 +163,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (newSession) {
+        sessionResolved = true;
         setSession(newSession);
         const profile = await fetchProfile(newSession);
         if (mounted) {
