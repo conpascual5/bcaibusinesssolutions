@@ -4,8 +4,8 @@ import { useHRAccess } from "@/providers/hr-access";
 import { supabase } from "@/integrations/supabase/client";
 import HRLayout from "@/components/HRLayout";
 import {
-  Loader2, Plus, Pencil, Trash2, X, Check, Clock, CalendarDays, Search,
-  ChevronLeft, ChevronRight, Sun, Moon, AlertTriangle
+  Loader2, Clock, ChevronLeft, ChevronRight, AlertTriangle,
+  Sun, Moon, Calendar, CheckCircle2, Plus, X, Settings
 } from "lucide-react";
 
 type Employee = { id: string; first_name: string; last_name: string; is_active: boolean };
@@ -15,6 +15,20 @@ type AttendanceLog = {
   status: string; hours_worked: number | null;
   overtime_hours: number | null; tardiness_minutes: number | null;
   notes: string | null;
+};
+type Holiday = { id: string; name: string; date: string };
+type RestDay = { id: string; day_of_week: number; name: string };
+type LeaveRequest = { id: string; employee_id: string; start_date: string; end_date: string; days_taken: number; leave_type_id: string };
+type EmployeeSchedule = {
+  employee_id: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  grace_period_minutes: number | null;
+  break_start: string | null;
+  break_end: string | null;
+  break_paid: boolean | null;
+  is_rest_day: boolean | null;
 };
 
 const STANDARD_START = "08:00";
@@ -44,6 +58,10 @@ export default function StandaloneHRAttendance() {
   const businessOwnerId = hrBusinessId || user?.id || "";
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [logs, setLogs] = useState<AttendanceLog[]>([]);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
+  const [restDays, setRestDays] = useState<RestDay[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
+  const [schedules, setSchedules] = useState<EmployeeSchedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentWeekStart, setCurrentWeekStart] = useState(() => {
     const d = new Date();
@@ -60,12 +78,20 @@ export default function StandaloneHRAttendance() {
 
   const loadData = useCallback(async () => {
     if (!businessOwnerId) return;
-    const [empRes, logRes] = await Promise.all([
+    const [empRes, logRes, holRes, restRes, leaveRes, schedRes] = await Promise.all([
       supabase.from("hr_employees").select("id, first_name, last_name, is_active").eq("business_id", businessOwnerId).eq("is_active", true).order("last_name"),
       supabase.from("hr_attendance_logs").select("*").gte("date", weekStartStr).lte("date", weekEndStr),
+      supabase.from("hr_holidays").select("*").eq("business_id", businessOwnerId),
+      supabase.from("hr_rest_days").select("*").eq("business_id", businessOwnerId),
+      supabase.from("hr_leave_requests").select("*").gte("end_date", weekStartStr).lte("start_date", weekEndStr).eq("status", "approved"),
+      supabase.from("hr_employee_schedules").select("employee_id, day_of_week, start_time, end_time, grace_period_minutes, break_start, break_end, break_paid, is_rest_day"),
     ]);
     if (empRes.data) setEmployees(empRes.data);
     if (logRes.data) setLogs(logRes.data);
+    if (holRes.data) setHolidays(holRes.data);
+    if (restRes.data) setRestDays(restRes.data);
+    if (leaveRes.data) setLeaveRequests(leaveRes.data);
+    if (schedRes.data) setSchedules(schedRes.data);
     setLoading(false);
   }, [businessOwnerId, weekStartStr, weekEndStr]);
 
