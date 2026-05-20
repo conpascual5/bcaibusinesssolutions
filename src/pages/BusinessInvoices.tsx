@@ -94,6 +94,7 @@ interface InvoiceForm {
   signature_data: string;
   signature_name: string;
   customer_id: string;
+  payment_link: string;
 }
 
 const INVOICE_TYPE_LABELS: Record<InvoiceType, string> = {
@@ -155,6 +156,7 @@ export default function BusinessInvoices() {
     signature_data: '',
     signature_name: '',
     customer_id: '',
+    payment_link: '',
   });
 
   useEffect(() => {
@@ -243,6 +245,7 @@ export default function BusinessInvoices() {
       signature_data: '',
       signature_name: '',
       customer_id: '',
+      payment_link: '',
     });
   }
 
@@ -387,6 +390,7 @@ export default function BusinessInvoices() {
       business_logo_url: form.business_logo_url || null,
       signature_data: form.signature_data || null,
       signature_name: form.signature_name || null,
+      payment_link: form.payment_link || null,
     });
 
     if (error) { toast.error(error.message); return; }
@@ -693,6 +697,22 @@ export default function BusinessInvoices() {
                       <Label>Payment Terms</Label>
                       <Input value={form.payment_terms} onChange={e => updateForm('payment_terms', e.target.value)} placeholder="Due upon receipt" />
                     </div>
+                  </div>
+
+                  {/* Payment Link */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-1.5">
+                      <svg className="w-3.5 h-3.5 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                      </svg>
+                      Payment Link <span className="text-xs text-muted-foreground font-normal">(optional)</span>
+                    </Label>
+                    <Input
+                      value={form.payment_link}
+                      onChange={e => updateForm('payment_link', e.target.value)}
+                      placeholder="https://gcash.com/pay/... or https://paymaya.com/link/..."
+                    />
+                    <p className="text-xs text-muted-foreground">Add a payment link so your customer can pay online.</p>
                   </div>
 
                   {/* Buyer / Customer */}

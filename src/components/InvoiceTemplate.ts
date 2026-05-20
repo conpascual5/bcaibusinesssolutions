@@ -28,6 +28,7 @@ interface InvoiceData {
   business_name: string | null;
   business_address: string | null;
   business_logo_url: string | null;
+  payment_link?: string | null;
 }
 
 const INVOICE_TYPE_LABELS: Record<string, string> = {
