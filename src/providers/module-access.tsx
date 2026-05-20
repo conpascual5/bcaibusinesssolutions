@@ -59,19 +59,6 @@ export function ModuleAccessProvider({ children }: { children: ReactNode }) {
     }
 
     (async () => {
-      // Pro Plus and VIP users automatically get all module access
-      const plan = user.plan || 'free';
-      if (plan === 'pro_plus' || plan === 'vip') {
-        const allModules: ModuleKey[] = [
-          'sales_wizard', 'sales_report', 'fb_ads_targeting',
-          'image_analyzer', 'ad_analyzer', 'invoices',
-          'my_assets', 'library'
-        ];
-        setGrantedModules(allModules);
-        setLoading(false);
-        return;
-      }
-
       // Check user_module_access table
       const { data } = await supabase
         .from('user_module_access')

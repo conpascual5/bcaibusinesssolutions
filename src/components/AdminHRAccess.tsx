@@ -112,7 +112,7 @@ export default function AdminHRAccess() {
             HR Management Access
           </h3>
           <p className="text-sm text-muted-foreground mt-1">
-            Grant or revoke standalone HR access for specific users. Pro Plus and VIP users automatically get HR access.
+            Grant or revoke standalone HR access for specific users.
           </p>
         </div>
         <div className="relative">
@@ -149,8 +149,6 @@ export default function AdminHRAccess() {
               )}
               {filteredUsers.map((u) => {
                 const hasAccess = !!accessMap[u.id];
-                const isProPlus = u.plan === "pro_plus" || u.plan === "vip";
-                const canToggle = !isProPlus; // Can't manually toggle for Pro Plus/VIP since they auto-get it
 
                 return (
                   <tr key={u.id} className="hover:bg-muted/30 transition-colors">
@@ -174,7 +172,7 @@ export default function AdminHRAccess() {
                       </span>
                     </td>
                     <td className="px-5 py-4 text-center">
-                      {hasAccess || isProPlus ? (
+                      {hasAccess ? (
                         <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 rounded-full text-xs font-bold">
                           <Check className="w-3 h-3" /> Granted
                         </span>
@@ -185,29 +183,23 @@ export default function AdminHRAccess() {
                       )}
                     </td>
                     <td className="px-5 py-4 text-right">
-                      {canToggle ? (
-                        <button
-                          onClick={() => toggleAccess(u.id, hasAccess)}
-                          disabled={toggling === u.id}
-                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
-                            hasAccess
-                              ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
-                              : "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-200 dark:hover:bg-cyan-900/50"
-                          } disabled:opacity-50`}
-                        >
-                          {toggling === u.id ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : hasAccess ? (
-                            <><X className="w-4 h-4" /> Revoke</>
-                          ) : (
-                            <><UserCheck className="w-4 h-4" /> Grant</>
-                          )}
-                        </button>
-                      ) : (
-                        <span className="text-xs text-muted-foreground italic">
-                          Auto (Pro Plus/VIP)
-                        </span>
-                      )}
+                      <button
+                        onClick={() => toggleAccess(u.id, hasAccess)}
+                        disabled={toggling === u.id}
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all ${
+                          hasAccess
+                            ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 hover:bg-red-200 dark:hover:bg-red-900/50"
+                            : "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-400 hover:bg-cyan-200 dark:hover:bg-cyan-900/50"
+                        } disabled:opacity-50`}
+                      >
+                        {toggling === u.id ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : hasAccess ? (
+                          <><X className="w-4 h-4" /> Revoke</>
+                        ) : (
+                          <><UserCheck className="w-4 h-4" /> Grant</>
+                        )}
+                      </button>
                     </td>
                   </tr>
                 );
@@ -219,7 +211,7 @@ export default function AdminHRAccess() {
 
       <div className="text-xs text-muted-foreground flex items-center gap-2">
         <Shield className="w-3.5 h-3.5" />
-        <span>Pro Plus and VIP users automatically get HR access. Only non-admin users are shown.</span>
+        <span>Only non-admin users are shown.</span>
       </div>
     </div>
   );
