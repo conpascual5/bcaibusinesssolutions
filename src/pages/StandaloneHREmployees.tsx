@@ -82,6 +82,32 @@ export default function StandaloneHREmployees() {
 
   const handleSave = async () => {
     if (!form.first_name || !form.last_name || !form.hire_date) return;
+
+    // Check seat limit before adding a new employee
+    if (!editing) {
+      const { data: access } = await supabase
+        .from("hr_user_access")
+        .select("seats")
+        .eq("user_id", businessOwnerId)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (access) {
+        const { count } = await supabase
+          .from("hr_employees")
+          .select("id", { count: "exact", head: true })
+          .eq("business_id", businessOwnerId)
+          .eq("is_active", true);
+
+        const currentCount = count || 0;
+        if (currentCount >= access.seats) {
+          alert(`Employee seat limit reached (${access.seats}). Contact admin to increase your limit. Additional seats are ₱69/month each.`);
+          setSaving(false);
+          return;
+        }
+      }
+    }
+
     setSaving(true);
     const payload = { ...form, business_id: businessOwnerId };
     if (editing) {
