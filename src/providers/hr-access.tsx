@@ -41,8 +41,9 @@ export function HRAccessProvider({ children }: { children: ReactNode }) {
         setHasAccess(true);
         setHrBusinessId(data.business_id);
       } else {
-        setHasAccess(false);
-        setHrBusinessId(null);
+        // Fallback: use the user's own ID as the business ID
+        setHasAccess(true);
+        setHrBusinessId(user.id);
       }
       setLoading(false);
     })();
