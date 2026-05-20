@@ -179,6 +179,12 @@ export function buildInvoiceHTML(inv: InvoiceData): string {
       <div class="border-b-light pt-3">
         <p class="text-xs text-gray" style="margin:0"><span class="font-semibold">Payment Terms:</span> ${escHtml(inv.payment_terms || 'Due upon receipt')}</p>
       </div>
+      ${inv.payment_link ? `
+        <div class="mt-4 pt-3" style="border:1px solid #3b82f6;border-radius:2mm;padding:3mm;background:#eff6ff">
+          <p class="text-xs font-semibold" style="color:#1d4ed8;margin:0 0 1mm">Pay Online</p>
+          <p class="text-xs" style="color:#2563eb;margin:0;word-break:break-all">${escHtml(inv.payment_link)}</p>
+        </div>
+      ` : ''}
       ${inv.signature_data ? `
         <div class="border-b-light mt-4 pt-3 flex" style="align-items:center;gap:3mm">
           <div>
