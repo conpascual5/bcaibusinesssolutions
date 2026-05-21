@@ -12,8 +12,10 @@ import {
   Sparkles,
   Target,
   Wand2,
+  Grid3X3,
 } from "lucide-react";
 import { saveGeneration } from "@/lib/saveGeneration";
+import MarketingToolkitDrawer from "@/components/MarketingToolkitDrawer";
 
 export default function FBAdsTargeting() {
   const { token } = useAuth();
@@ -139,20 +141,33 @@ export default function FBAdsTargeting() {
   return (
     <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
       <div className="bg-white rounded-3xl border border-slate-100 shadow-sm p-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
-            <Target className="w-5 h-5 text-white" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-2xl font-extrabold text-slate-900">FB Ads Targeting</h1>
-            <p className="text-sm text-slate-500">Generate personas, interests, and angles.</p>
-          </div>
-          {!usageLoading && usage && (
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-700">
-              <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-              {remaining} left
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-sm">
+              <Target className="w-5 h-5 text-white" />
             </div>
-          )}
+            <div className="flex-1">
+              <h1 className="text-2xl font-extrabold text-slate-900">FB Ads Targeting</h1>
+              <p className="text-sm text-slate-500">Generate personas, interests, and angles.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {!usageLoading && usage && (
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-bold text-slate-700">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
+                {remaining} left
+              </div>
+            )}
+            {/* Mobile: drawer trigger */}
+            <div className="sm:hidden">
+              <MarketingToolkitDrawer>
+                <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                  Tools
+                </button>
+              </MarketingToolkitDrawer>
+            </div>
+          </div>
         </div>
 
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">

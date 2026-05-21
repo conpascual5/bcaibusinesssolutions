@@ -12,12 +12,14 @@ import {
   Tooltip,
   CartesianGrid,
 } from "recharts";
+import MarketingToolkitDrawer from "@/components/MarketingToolkitDrawer";
 import {
   BarChart3,
   CalendarDays,
   Upload,
   Plus,
   TrendingUp,
+  Grid3X3,
   RefreshCw,
   Pencil,
   Check,
@@ -282,7 +284,16 @@ export default function SalesReport() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
+            {/* Mobile: drawer trigger */}
+            <div className="sm:hidden">
+              <MarketingToolkitDrawer>
+                <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
+                  <Grid3X3 className="w-3.5 h-3.5" />
+                  Tools
+                </button>
+              </MarketingToolkitDrawer>
+            </div>
             <label className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-slate-900 text-white text-sm font-bold cursor-pointer hover:bg-slate-800 transition-colors">
               <Upload className="w-4 h-4" />
               {uploading ? "Importing…" : "Import Excel"}
