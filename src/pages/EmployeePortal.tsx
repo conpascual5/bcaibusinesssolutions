@@ -192,12 +192,33 @@ export default function EmployeePortal() {
     if (!user) return;
     setLoading(true);
 
-    const { data: empData } = await supabase
+    // Try by auth_user_id first, then fall back to email
+    let { data: empData } = await supabase
       .from("hr_employees")
       .select("*")
       .eq("auth_user_id", user.id)
       .eq("is_active", true)
       .maybeSingle();
+
+    // Fallback: look up by email if auth_user_id didn't match
+    if (!empData && user.email) {
+      const { data: empByEmail } = await supabase
+        .from("hr_employees")
+        .select("*")
+        .eq("email", user.email)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (empByEmail) {
+        empData = empByEmail;
+        // Try to link auth_user_id for next time (best-effort)
+        supabase
+          .from("hr_employees")
+          .update({ auth_user_id: user.id })
+          .eq("id", empByEmail.id)
+          .then(() => {});
+      }
+    }
 
     if (!empData) {
       setLoading(false);

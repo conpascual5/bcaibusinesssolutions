@@ -97,8 +97,7 @@ export default function EmployeeAuth() {
           await supabase
             .from("hr_employees")
             .update({ auth_user_id: signInData.user.id })
-            .eq("email", email)
-            .is("auth_user_id", null);
+            .eq("email", email);
         }
 
         navigate("/employee/portal");
@@ -114,8 +113,7 @@ export default function EmployeeAuth() {
           await supabase
             .from("hr_employees")
             .update({ auth_user_id: signUpData.user.id })
-            .eq("email", email)
-            .is("auth_user_id", null);
+            .eq("email", email);
         }
 
         setError("Account created! You can now log in.");
