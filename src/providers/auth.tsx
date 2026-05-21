@@ -111,10 +111,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             finishLoading();
           }
         } else {
+          // Don't finish loading yet — wait for SIGNED_IN or safety timeout
+          // This prevents redirect loops when the session is established after INITIAL_SESSION
           if (mounted) {
             setSession(null);
             setUser(null);
-            finishLoading();
           }
         }
         return;

@@ -182,8 +182,11 @@ export default function EmployeePortal() {
 
   useEffect(() => {
     if (!user) {
-      navigate("/employee/auth");
-      return;
+      // Don't immediately redirect — wait a bit for auth to settle
+      const timer = setTimeout(() => {
+        navigate("/employee/auth");
+      }, 2000);
+      return () => clearTimeout(timer);
     }
     loadEmployeeData();
   }, [user]);
