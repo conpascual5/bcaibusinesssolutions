@@ -6,7 +6,7 @@ const app = new Hono();
 
 app.post("/api/fb-ads-targeting", async (c) => {
   try {
-    const { businessName, product } = await c.req.json();
+    const { businessName, product, targetMarket } = await c.req.json();
 
     if (!businessName || !product) {
       return c.json({ error: "Missing required fields: businessName, product" }, 400);
@@ -33,14 +33,20 @@ app.post("/api/fb-ads-targeting", async (c) => {
       return c.json({ error: "Deepseek API key not configured. Ask an admin to set it in Settings." }, 500);
     }
 
+    const marketInstruction = targetMarket === "philippines"
+      ? `The target market is the PHILIPPINES. All locations, demographics, interests, and behaviors must be SPECIFICALLY FILIPINO. Use Philippine cities/provinces (e.g., Metro Manila, Cebu, Davao), Philippine income brackets, Philippine education levels, and Filipino-relevant interests. Do NOT generate generic or international locations.`
+      : `The target market is INTERNATIONAL / GLOBAL. Focus on worldwide audiences, major global cities, and international demographics.`;
+
     const systemPrompt = `You are a Facebook Ads targeting expert. Generate a comprehensive Facebook Ads targeting strategy for the given business and product.
+
+${marketInstruction}
 
 Generate exactly 3 detailed buyer personas. For each persona, provide ALL of the following:
 
 ## Persona [Number]: [Persona Name]
 - **Age Range**: [specific age range]
 - **Gender**: [male/female/all]
-- **Location**: [where they live]
+- **Location**: [where they live — MUST be ${targetMarket === "philippines" ? "Philippine-specific" : "international"}]
 - **Education**: [education level]
 - **Income**: [income bracket]
 - **Relationship Status**: [single/married/parent/etc]
