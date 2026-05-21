@@ -192,22 +192,29 @@ export default function EmployeePortal() {
     if (!user) return;
     setLoading(true);
 
+    console.log("[EmployeePortal] Loading employee data for user", { userId: user.id, email: user.email });
+
     // Try by auth_user_id first, then fall back to email
-    let { data: empData } = await supabase
+    let { data: empData, error: err1 } = await supabase
       .from("hr_employees")
       .select("*")
       .eq("auth_user_id", user.id)
       .eq("is_active", true)
       .maybeSingle();
 
+    console.log("[EmployeePortal] Query by auth_user_id result", { empData, error: err1 });
+
     // Fallback: look up by email if auth_user_id didn't match
     if (!empData && user.email) {
-      const { data: empByEmail } = await supabase
+      console.log("[EmployeePortal] Trying fallback by email:", user.email);
+      const { data: empByEmail, error: err2 } = await supabase
         .from("hr_employees")
         .select("*")
         .eq("email", user.email)
         .eq("is_active", true)
         .maybeSingle();
+
+      console.log("[EmployeePortal] Query by email result", { empByEmail, error: err2 });
 
       if (empByEmail) {
         empData = empByEmail;
@@ -216,7 +223,7 @@ export default function EmployeePortal() {
           .from("hr_employees")
           .update({ auth_user_id: user.id })
           .eq("id", empByEmail.id)
-          .then(() => {});
+          .then((res) => console.log("[EmployeePortal] auth_user_id update result", res));
       }
     }
 
