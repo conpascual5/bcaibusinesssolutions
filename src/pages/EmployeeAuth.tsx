@@ -17,7 +17,19 @@ export default function EmployeeAuth() {
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [company, setCompany] = useState<CompanyInfo | null>(null);
   const [lookingUp, setLookingUp] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Check if already signed in — redirect to portal
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        navigate("/employee/portal", { replace: true });
+      } else {
+        setCheckingSession(false);
+      }
+    });
+  }, [navigate]);
 
   // Look up company branding when email changes
   useEffect(() => {
@@ -117,6 +129,17 @@ export default function EmployeeAuth() {
 
   const displayName = company?.name || "Employee Portal";
   const displayLogo = company?.logo_url;
+
+  if (checkingSession) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950 flex items-center justify-center p-4">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-500 mx-auto" />
+          <p className="text-sm text-muted-foreground mt-3">Checking session...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-indigo-50/30 to-slate-50 dark:from-slate-950 dark:via-indigo-950/20 dark:to-slate-950 flex items-center justify-center p-4">

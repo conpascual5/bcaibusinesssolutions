@@ -94,7 +94,7 @@ type PayrollPeriod = {
 };
 
 export default function EmployeePortal() {
-  const { user, logout } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const navigate = useNavigate();
   const [employee, setEmployee] = useState<Employee | null>(null);
   const [loading, setLoading] = useState(true);
@@ -182,11 +182,8 @@ export default function EmployeePortal() {
 
   useEffect(() => {
     if (!user) {
-      // Don't immediately redirect — wait a bit for auth to settle
-      const timer = setTimeout(() => {
-        navigate("/employee/auth");
-      }, 2000);
-      return () => clearTimeout(timer);
+      navigate("/employee/auth");
+      return;
     }
     loadEmployeeData();
   }, [user]);
@@ -464,6 +461,17 @@ export default function EmployeePortal() {
       default: return "bg-muted text-muted-foreground";
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-pink-50 via-purple-50/30 to-sky-50 dark:from-slate-950 dark:via-purple-950/20 dark:to-slate-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-500 mx-auto" />
+          <p className="text-sm text-muted-foreground mt-3">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
