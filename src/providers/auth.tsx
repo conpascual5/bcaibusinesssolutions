@@ -45,11 +45,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     }
 
-    const { data, error } = await supabase
+    // Race the profile query against a 5s timeout to prevent hanging
+    const profilePromise = supabase
       .from("profiles")
       .select("full_name, is_admin, plan, is_active")
       .eq("id", s.user.id)
       .maybeSingle();
+
+    const timeoutPromise = new Promise<null>((_, reject) =>
+      setTimeout(() => reject(new Error("profile query timed out")), 5000)
+    );
+
+    let data: any, error: any;
+    try {
+      const result = await Promise.race([profilePromise, timeoutPromise]) as any;
+      data = result?.data;
+      error = result?.error;
+    } catch {
+      // Timeout — return fallback user
+      return {
+        id: s.user.id,
+        email,
+        name: (s.user.user_metadata as any)?.full_name ?? (s.user.user_metadata as any)?.name ?? "",
+        isAdmin: false,
+        plan: "free",
+        isActive: true,
+      };
+    }
 
     if (error || !data) {
       return {
@@ -87,13 +109,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    // Safety timeout — if nothing resolves in 15s, stop loading anyway
+    // Safety timeout — if nothing resolves in 8s, stop loading anyway
     const safetyTimeout = setTimeout(() => {
       if (!resolved && mounted) {
         console.warn("[auth] Safety timeout — forcing loading=false");
         finishLoading();
       }
-    }, 15000);
+    }, 8000);
 
     // Use ONLY onAuthStateChange — no getSession() call that can hang
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, newSession) => {
