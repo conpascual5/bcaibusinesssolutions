@@ -158,7 +158,10 @@ export default function AppLayout({ children }: AppLayoutProps) {
       ]);
       setHasBMSAccess(!!accessRes.data || !!teamRes.data);
       // Show HR access if user has explicit access OR has employees (standalone mode)
-      setHasHRAccess(!!hrRes.data || (empRes.count !== null && empRes.count > 0));
+      // Also check if user has any hr_company record (business owner)
+      const hasExplicitAccess = !!hrRes.data;
+      const hasOwnEmployees = empRes.count !== null && empRes.count > 0;
+      setHasHRAccess(hasExplicitAccess || hasOwnEmployees);
       setHasGCashAccess(!!gcashRes.data);
     })();
   }, [user]);

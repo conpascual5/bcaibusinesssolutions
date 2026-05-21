@@ -30,7 +30,7 @@ export function HRAccessProvider({ children }: { children: ReactNode }) {
 
     (async () => {
       // Check if user has explicit HR access via hr_user_access table
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('hr_user_access')
         .select('business_id')
         .eq('user_id', user.id)
@@ -40,8 +40,12 @@ export function HRAccessProvider({ children }: { children: ReactNode }) {
       if (data) {
         setHasAccess(true);
         setHrBusinessId(data.business_id);
+      } else if (error) {
+        console.warn("[hr-access] Query error, falling back to user.id", error);
+        setHasAccess(true);
+        setHrBusinessId(user.id);
       } else {
-        // Fallback: use the user's own ID as the business ID
+        // No access record found — user might be the business owner themselves
         setHasAccess(true);
         setHrBusinessId(user.id);
       }

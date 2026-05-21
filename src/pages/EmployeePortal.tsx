@@ -118,6 +118,9 @@ export default function EmployeePortal() {
   const [submittingLeave, setSubmittingLeave] = useState(false);
   const [leaveError, setLeaveError] = useState("");
 
+  // Company info
+  const [companyInfo, setCompanyInfo] = useState<{ name: string; address: string | null; phone: string | null } | null>(null);
+
   // Payslip state
   const [payslips, setPayslips] = useState<Payslip[]>([]);
   const [payrollPeriods, setPayrollPeriods] = useState<PayrollPeriod[]>([]);
@@ -342,6 +345,15 @@ export default function EmployeePortal() {
       .order("start_date", { ascending: false });
 
     if (ppData) setPayrollPeriods(ppData as unknown as PayrollPeriod[]);
+
+    // Get company info for payslip header
+    const { data: coData } = await supabase
+      .from("hr_company")
+      .select("name, address, phone")
+      .eq("business_id", empData.business_id)
+      .maybeSingle();
+
+    if (coData) setCompanyInfo(coData as { name: string; address: string | null; phone: string | null });
 
     setLoading(false);
   };
@@ -928,6 +940,30 @@ export default function EmployeePortal() {
               </div>
 
               <div ref={printRef} className="bg-white dark:bg-slate-900">
+                {/* Company Header */}
+                {companyInfo && (
+                  <div className="px-5 py-4 border-b border-border bg-gradient-to-r from-indigo-50/50 to-transparent dark:from-indigo-950/20">
+                    <div className="flex items-center gap-3 mb-1">
+                      <Building2 className="w-5 h-5 text-indigo-500 shrink-0" />
+                      <h4 className="font-bold text-base">{companyInfo.name}</h4>
+                    </div>
+                    {companyInfo.address && (
+                      <p className="text-xs text-muted-foreground ml-8">{companyInfo.address}</p>
+                    )}
+                    {companyInfo.phone && (
+                      <p className="text-xs text-muted-foreground ml-8">{companyInfo.phone}</p>
+                    )}
+                  </div>
+                )}
+
+                {/* Employee Name */}
+                <div className="px-5 py-3 border-b border-border bg-muted/20">
+                  <p className="text-sm font-semibold">{employee?.first_name} {employee?.last_name}</p>
+                  {employee?.position && (
+                    <p className="text-xs text-muted-foreground">{employee.position}</p>
+                  )}
+                </div>
+
                 {/* Period Info */}
                 <div className="px-5 py-4 bg-muted/30 border-b border-border">
                   <div className="grid grid-cols-2 gap-3 text-sm">
