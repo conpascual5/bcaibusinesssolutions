@@ -8,7 +8,7 @@ type HRAccessContextType = {
   loading: boolean;
 };
 
-const HRAccessContext = createContext<HRAccessContextType>({
+export const HRAccessContext = createContext<HRAccessContextType>({
   hasHRAccess: false,
   hrBusinessId: null,
   loading: true,

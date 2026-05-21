@@ -1,6 +1,7 @@
-import { type ReactNode, useState, useEffect } from 'react';
+import { type ReactNode, useState, useEffect, useContext } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { useAuth } from '@/providers/auth';
+import { HRAccessContext } from '@/providers/hr-access';
 import { supabase } from '@/integrations/supabase/client';
 import {
   SidebarProvider,
@@ -139,6 +140,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   const [hasBMSAccess, setHasBMSAccess] = useState(false);
   const [hasHRAccess, setHasHRAccess] = useState(false);
   const [hasGCashAccess, setHasGCashAccess] = useState(false);
+  const hrAccessCtx = useContext(HRAccessContext);
 
   useEffect(() => {
     if (!user) return;
@@ -158,13 +160,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
       ]);
       setHasBMSAccess(!!accessRes.data || !!teamRes.data);
       // Show HR access if user has explicit access OR has employees (standalone mode)
-      // Also check if user has any hr_company record (business owner)
+      // Also use hr-access provider context as fallback (handles edge cases)
       const hasExplicitAccess = !!hrRes.data;
       const hasOwnEmployees = empRes.count !== null && empRes.count > 0;
-      setHasHRAccess(hasExplicitAccess || hasOwnEmployees);
+      const hasProviderAccess = hrAccessCtx.hasHRAccess;
+      setHasHRAccess(hasExplicitAccess || hasOwnEmployees || hasProviderAccess);
       setHasGCashAccess(!!gcashRes.data);
     })();
-  }, [user]);
+  }, [user, hrAccessCtx.hasHRAccess]);
 
   useEffect(() => {
     const root = document.documentElement;
