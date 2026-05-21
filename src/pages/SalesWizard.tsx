@@ -224,8 +224,7 @@ export default function SalesWizard() {
               <p className="text-sm text-slate-500">Generate captions + blog posts using proven frameworks.</p>
             </div>
           </div>
-          {/* Mobile: drawer trigger */}
-          <div className="sm:hidden shrink-0">
+          <div className="shrink-0">
             <MarketingToolkitDrawer>
               <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
                 <Grid3X3 className="w-3.5 h-3.5" />

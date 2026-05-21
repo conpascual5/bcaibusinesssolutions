@@ -158,8 +158,7 @@ export default function FBAdsTargeting() {
                 {remaining} left
               </div>
             )}
-            {/* Mobile: drawer trigger */}
-            <div className="sm:hidden">
+            <div>
               <MarketingToolkitDrawer>
                 <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
                   <Grid3X3 className="w-3.5 h-3.5" />

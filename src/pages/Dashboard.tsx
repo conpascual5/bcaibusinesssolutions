@@ -292,15 +292,12 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-extrabold text-gray-900">Quick Actions</h2>
           <div className="flex items-center gap-2">
-            {/* Mobile: drawer trigger */}
-            <div className="sm:hidden">
-              <MarketingToolkitDrawer>
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
-                  <Grid3X3 className="w-3.5 h-3.5" />
-                  All Tools
-                </button>
-              </MarketingToolkitDrawer>
-            </div>
+            <MarketingToolkitDrawer>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
+                <Grid3X3 className="w-3.5 h-3.5" />
+                All Tools
+              </button>
+            </MarketingToolkitDrawer>
             <span className="text-xs text-gray-400 hidden sm:inline">{quickActions.length} tools available</span>
           </div>
         </div>
