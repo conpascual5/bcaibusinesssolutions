@@ -5,7 +5,9 @@ import {
   Download, Check, FileSpreadsheet, FileText, Star, ArrowRight,
   ShoppingCart, Loader2, ExternalLink, MessageSquare, Shield,
   Sparkles, Layers, BarChart3, ChevronRight, AlertCircle,
+  Grid3X3,
 } from 'lucide-react';
+import MarketingToolkitDrawer from "@/components/MarketingToolkitDrawer";
 
 type TrackerTemplate = {
   id: string;
@@ -107,11 +109,22 @@ export default function AppShop() {
   return (
     <div className="max-w-5xl mx-auto space-y-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground tracking-tight">Tracker Shop</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Purchase downloadable tracker templates. One-time payment, lifetime access.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Tracker Shop</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            Purchase downloadable tracker templates. One-time payment, lifetime access.
+          </p>
+        </div>
+        {/* Mobile: drawer trigger */}
+        <div className="sm:hidden shrink-0">
+          <MarketingToolkitDrawer>
+            <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
+              <Grid3X3 className="w-3.5 h-3.5" />
+              Tools
+            </button>
+          </MarketingToolkitDrawer>
+        </div>
       </div>
 
       {templates.map((template) => {

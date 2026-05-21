@@ -13,7 +13,9 @@ import {
   Star,
   Sparkles,
   Loader2,
+  Grid3X3,
 } from "lucide-react";
+import MarketingToolkitDrawer from "@/components/MarketingToolkitDrawer";
 
 interface UserAsset {
   id: string;
@@ -110,13 +112,24 @@ export default function MyAssets() {
                 View and download your purchased images and videos.
               </p>
             </div>
-            <button
-              onClick={() => navigate("/app")}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 shadow-sm text-sm font-semibold text-gray-700 hover:bg-gray-50"
-            >
-              <Sparkles className="w-4 h-4 text-indigo-500" />
-              Back to App
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {/* Mobile: drawer trigger */}
+              <div className="sm:hidden">
+                <MarketingToolkitDrawer>
+                  <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
+                    <Grid3X3 className="w-3.5 h-3.5" />
+                    Tools
+                  </button>
+                </MarketingToolkitDrawer>
+              </div>
+              <button
+                onClick={() => navigate("/app")}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-gray-200 shadow-sm text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                Back to App
+              </button>
+            </div>
           </div>
         </div>
 

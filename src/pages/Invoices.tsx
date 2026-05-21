@@ -18,7 +18,9 @@ import {
   ToggleLeft,
   ToggleRight,
   Crown,
-} from 'lucide-react';
+  Grid3X3,
+} from "lucide-react";
+import MarketingToolkitDrawer from "@/components/MarketingToolkitDrawer";
 
 type InvoiceType = 'sales' | 'cash' | 'charge';
 type VatType = 'vatable' | 'vat-exempt' | 'zero-rated';
@@ -168,18 +170,31 @@ export default function Invoices() {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
-            <Receipt className="w-3 h-3" /> BIR-Compliant
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Receipt className="w-3 h-3" /> BIR-Compliant
+              </div>
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" /> Free — Unlimited
+              </div>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Philippine Invoice Generator</h1>
+            <p className="text-gray-500 mt-1 max-w-2xl">
+              Generate BIR-compliant Sales, Cash, or Charge Invoices with VAT/Non-VAT support. Download as PDF. <strong>Free and unlimited for all users.</strong>
+            </p>
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3 h-3" /> Free — Unlimited
+          {/* Mobile: drawer trigger */}
+          <div className="sm:hidden shrink-0">
+            <MarketingToolkitDrawer>
+              <button className="flex items-center gap-1.5 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-colors">
+                <Grid3X3 className="w-3.5 h-3.5" />
+                Tools
+              </button>
+            </MarketingToolkitDrawer>
           </div>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Philippine Invoice Generator</h1>
-        <p className="text-gray-500 mt-1 max-w-2xl">
-          Generate BIR-compliant Sales, Cash, or Charge Invoices with VAT/Non-VAT support. Download as PDF. <strong>Free and unlimited for all users.</strong>
-        </p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
