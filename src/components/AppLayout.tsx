@@ -149,14 +149,16 @@ export default function AppLayout({ children }: AppLayoutProps) {
       return;
     }
     (async () => {
-      const [accessRes, teamRes, hrRes, gcashRes] = await Promise.all([
+      const [accessRes, teamRes, hrRes, gcashRes, empRes] = await Promise.all([
         supabase.from('user_business_access').select('id').eq('user_id', user.id).maybeSingle(),
         supabase.from('business_team_members').select('id').eq('member_id', user.id).maybeSingle(),
         supabase.from('hr_user_access').select('id').eq('user_id', user.id).eq('is_active', true).maybeSingle(),
         supabase.from('user_gcash_access').select('id').eq('user_id', user.id).maybeSingle(),
+        supabase.from('hr_employees').select('id', { count: 'exact', head: true }).eq('business_id', user.id).limit(1),
       ]);
       setHasBMSAccess(!!accessRes.data || !!teamRes.data);
-      setHasHRAccess(!!hrRes.data);
+      // Show HR access if user has explicit access OR has employees (standalone mode)
+      setHasHRAccess(!!hrRes.data || (empRes.count !== null && empRes.count > 0));
       setHasGCashAccess(!!gcashRes.data);
     })();
   }, [user]);
